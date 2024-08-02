@@ -340,6 +340,17 @@ module.exports = {
         });
     },
 
+	getAnnotatePage: async (req, res) => {
+		username = req.cookies.Username;
+		console.log("getAnnotatePage");
+
+		res.render('annotate', {
+			title: 'annotate',
+			user: req.cookies.Username,
+			logged: req.query.logged
+		});
+	},
+
     // project page
     getProjectPage: async (req, res) => {
         console.log("getProjectPage");
