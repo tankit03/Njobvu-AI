@@ -341,15 +341,144 @@ module.exports = {
     },
 
 	getAnnotatePage: async (req, res) => {
-		username = req.cookies.Username;
-		console.log("getAnnotatePage");
+		var username = req.cookies.Username;
+		console.log('Received IDX:', req.query.IDX);
+		var IDX = parseInt(req.query.IDX, 10);
+		console.log('Parsed IDX:', IDX);
+		
+		if (isNaN(IDX)) {
+			console.error('Invalid IDX:', IDX);
+			return res.redirect('/home');
+		}
+	
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '" + username + "'");
+		var project = projects[IDX];
+	
+		if (!project) {
+			console.error('No project found for IDX:', IDX);
+			return res.redirect('/home');
+		}
+	
+		var PName = project.PName;
+		var admin = project.Admin;
+	
+		// Construct the database path
+		var public_path = __dirname.replace('routes', '');
+		var db_path = public_path + 'public/projects/' + admin + '-' + PName + '/' + PName + '.db';
+	
+		// Log the database path being accessed
+		console.log('Accessing database file:', db_path);
+	
+		// If you need to connect to this specific database
+		var pdb = new sqlite3.Database(db_path, (err) => {
+			if (err) {
+				return console.error('Database connection error:', err.message);
+			}
+			console.log('Connected to pdb.');
+		});
 
+		pdb.allAsync = function (sql) {
+			var that = this;
+			return new Promise(function (resolve, reject) {
+				that.all(sql, function (err, row) {
+					if (err)
+					{
+						console.log("runAsync ERROR! ", err);
+						reject(err);
+					}
+					else
+						resolve(row);
+				});
+			}).catch(err => {
+				console.log(err)
+			});
+		};	
+
+		var Classes = await pdb.allAsync("SELECT * FROM `Classes`");
+
+		console.log('Classes:', Classes);
+			
 		res.render('annotate', {
 			title: 'annotate',
-			user: req.cookies.Username,
-			logged: req.query.logged
+			user: username,
+			logged: req.query.logged,
+			db: req.query.db,
+			PName: PName,
+			classes: Classes,
+			IDX: IDX 
 		});
 	},
+
+	getReviewPage: async (req, res) => {
+		var username = req.cookies.Username;
+		var CName = req.query.class;
+		var IDX = req.query.IDX;
+	
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '" + username + "'");
+		var project = projects[IDX];
+	
+		if (!project) {
+			console.error('No project found for IDX:', IDX);
+			return res.redirect('/home');
+		}
+	
+		var PName = project.PName;
+		var admin = project.Admin;
+	
+		var public_path = __dirname.replace('routes', '');
+		var db_path = public_path + 'public/projects/' + admin + '-' + PName + '/' + PName + '.db';
+	
+		console.log('Accessing database file for Review Page:', db_path);
+	
+		var pdb = new sqlite3.Database(db_path, (err) => {
+			if (err) {
+				return console.error('Database connection error:', err.message);
+			}
+			console.log('Connected to pdb.');
+		});
+	
+		pdb.allAsync = function (sql, params) {
+			var that = this;
+			return new Promise(function (resolve, reject) {
+				that.all(sql, params, function (err, row) {
+					if (err) {
+						console.log("runAsync ERROR! ", err);
+						reject(err);
+					} else {
+						resolve(row);
+					}
+				});
+			}).catch(err => {
+				console.log(err);
+			});
+		};
+
+		var images = await pdb.allAsync(`
+			SELECT Images.IName
+			FROM Images
+			INNER JOIN Labels ON Images.IName = Labels.IName
+			WHERE Labels.CName = ?
+		`, [CName]);
+
+		console.log('Images:', images);
+
+		pdb.close((err) => {
+			if (err) {
+				console.error('Error closing database connection:', err.message);
+			}
+			console.log('Closed pdb connection.');
+		});
+	
+		res.render('review', {
+			user: username,
+			CName: CName,
+			images: images,
+			PName: PName // Added PName to the render call
+		});
+
+		
+	},
+
 
     // project page
     getProjectPage: async (req, res) => {
