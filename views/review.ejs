@@ -1,0 +1,39 @@
+<%- include('includes/header') %>
+
+<div id="review">
+    <div class="container">
+        <div class="Review">
+            <h3>Review Images for Class: <%= CName %></h3>
+            <p>User: <%= user %></p>
+            <div class="col-md-12">
+                <form action="/submit-review" method="POST">
+                    <table class="table table-striped">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">Image Name</th>
+                                <th scope="col">Image</th>
+                                <th scope="col">Good</th>
+                                <th scope="col">Bad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% images.forEach(function(image) { %>
+                                <tr>
+                                    <td><%= image.IName %></td>
+                                    <td><img src="/projects/<%= user %>-<%= PName %>/images/<%= image.IName %>" alt="<%= image.IName %>" style="width: 100px; height: auto;"></td>
+                                    <td>
+                                        <input type="checkbox" name="good_<%= image.IName %>" value="good">
+                                    </td>
+                                    <td>
+                                        <input type="checkbox" name="bad_<%= image.IName %>" value="bad">
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

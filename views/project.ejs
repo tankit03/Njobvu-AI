@@ -32,15 +32,19 @@
 		<h1 style="text-align: center;"><%= PName %></h1>
 	</div>
 	<div class="form-group col-md-2">
+		<button type="button" class="btn btn-primary" style="float: right; margin-left: 15px" onclick="annotatePage(<%= IDX %>)">Annotate</button>
 		<label for="page">Page:</label>
 		<input type="number" id="page" name="page" min="1" max="<%=pages%>" value="<%=Number(current)%>" style="width: 25%;">
 
 		<label for="perpage">PerPage:</label>
 		<input type="number" id="perpage" name="perpage" min="1" value="<%=perPage%>" style="width: 25%;">
 		
+		
 	</div>
 
-		<button type="button" class="btn btn-primary" style="float: right; margin-left: 15px"onclick="annotatePage()">Annotate</button>
+
+
+	
 
 
 	<div class="col-md-12">
@@ -124,11 +128,14 @@
 </div>
 
 
+
+
 <script>
-	function annotatePage(){
-		window.location.href = "/annotate"
-	}
+    function annotatePage(IDX){
+        window.location.href = `/annotate?IDX=${IDX}`;
+    }
 </script>
+
 
 <script>
 	var pgnum = document.getElementById("page");

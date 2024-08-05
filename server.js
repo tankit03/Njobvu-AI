@@ -160,6 +160,7 @@ const {
     getCreatePage,
     getProjectPage,
     getAnnotatePage,
+    getReviewPage,
 	getConfigPage,
 	getDownloadPage,
 	getLabelingPage,
@@ -202,6 +203,7 @@ app.get('/signup', getSignupPage);
 app.get('/home', getHomePage);
 app.get('/create', getCreatePage);
 app.get('/annotate', getAnnotatePage);
+app.get('/review', getReviewPage);
 app.get('/project', getProjectPage);
 app.get('/config', getConfigPage);
 app.get('/download', getDownloadPage);
