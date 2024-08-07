@@ -17,17 +17,29 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% labels.forEach(function(label) { %>
-                                <tr>
-                                    <td><%= label.IName %></td>
-                        	    <td><img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" alt="<%= label.IName %>"style="clip-path: polygon(<%=label.X%> <%=label.Y%>, <%=label.X + label.W%> <%=label.Y%>, <%=label.X + label.W%> <%=label.Y + label.H%>, <%= label.X%> <%=label.Y + label.H%>); overflow: hidden;"></td>
-				    <td>
-                                        <input type="checkbox" name="good_<%= label.IName %>" value="good">
-                                    </td>
-                                    <td>
-                                        <input type="checkbox" name="bad_<%= label.IName %>" value="bad">
-                                    </td>
-                                </tr>
+                            <% images.forEach(function(image) { %>
+                                <% let imageName = image.IName; %>
+                                <% let labels = imageLabels[imageName]; %>
+                                <% if (labels) { %>
+                                    <% labels.forEach(function(label) { %>
+                                        <tr>
+                                            <td><%= label.IName %></td>
+                                            <td>
+                                                <div style="width: <%= label.W %>px; height: <%= label.H %>px; overflow: hidden; position: relative;">
+                                                    <img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" 
+                                                         alt="<%= label.IName %>" 
+                                                         style="position: absolute; top: -<%= label.Y %>px; left: -<%= label.X %>px;">
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="good_<%= label.IName %>" value="good">
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="bad_<%= label.IName %>" value="bad">
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                <% } %>
                             <% }); %>
                         </tbody>
                     </table>
