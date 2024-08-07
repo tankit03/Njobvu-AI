@@ -17,15 +17,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% images.forEach(function(image) { %>
+                            <% labels.forEach(function(label) { %>
                                 <tr>
-                                    <td><%= image.IName %></td>
-                                    <td><img src="/projects/<%= user %>-<%= PName %>/images/<%= image.IName %>" alt="<%= image.IName %>" style="width: 100px; height: auto;"></td>
-                                    <td>
-                                        <input type="checkbox" name="good_<%= image.IName %>" value="good">
+                                    <td><%= label.IName %></td>
+                        	    <td><img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" alt="<%= label.IName %>"style="clip-path: polygon(<%=label.X%> <%=label.Y%>, <%=label.X + label.W%> <%=label.Y%>, <%=label.X + label.W%> <%=label.Y + label.H%>, <%= label.X%> <%=label.Y + label.H%>); overflow: hidden;"></td>
+				    <td>
+                                        <input type="checkbox" name="good_<%= label.IName %>" value="good">
                                     </td>
                                     <td>
-                                        <input type="checkbox" name="bad_<%= image.IName %>" value="bad">
+                                        <input type="checkbox" name="bad_<%= label.IName %>" value="bad">
                                     </td>
                                 </tr>
                             <% }); %>
