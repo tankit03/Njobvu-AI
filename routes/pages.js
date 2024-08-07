@@ -452,16 +452,32 @@ module.exports = {
 				console.log(err);
 			});
 		};
-
+		//right here is where we need to change this call to change one image into partials
+		//bc rn its just copying the base image for each label
+		
+		//instead of selecting all images we are going to need to select all labels then
+		//for each unqiue image link all labels to it - map
 		var images = await pdb.allAsync(`
 			SELECT Images.IName
 			FROM Images
 			INNER JOIN Labels ON Images.IName = Labels.IName
 			WHERE Labels.CName = ?
 		`, [CName]);
-
+		var all_images = await pdb.allAsync(`
+			SELECT * FROM Images
+		`);	
 		console.log('Images:', images);
+		var labels;
 
+		for(let i = 0; i < all_images.length; i++){
+			let image = all_images[i];
+			let imageName = image.IName
+
+			labels = await pdb.allAsync(`
+				SELECT * FROM Labels WHERE IName = ?
+				`,[imageName]);
+			console.log('labels',imageName,":", labels);
+		}	
 		pdb.close((err) => {
 			if (err) {
 				console.error('Error closing database connection:', err.message);
@@ -473,6 +489,7 @@ module.exports = {
 			user: username,
 			CName: CName,
 			images: images,
+			labels: labels,
 			PName: PName // Added PName to the render call
 		});
 
