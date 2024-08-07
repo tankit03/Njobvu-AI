@@ -458,26 +458,28 @@ module.exports = {
 		//instead of selecting all images we are going to need to select all labels then
 		//for each unqiue image link all labels to it - map
 		var images = await pdb.allAsync(`
-			SELECT Images.IName
+			SELECT DISTINCT Images.IName
 			FROM Images
 			INNER JOIN Labels ON Images.IName = Labels.IName
 			WHERE Labels.CName = ?
 		`, [CName]);
-		var all_images = await pdb.allAsync(`
-			SELECT * FROM Images
-		`);	
+	
 		console.log('Images:', images);
-		var labels;
-
-		for(let i = 0; i < all_images.length; i++){
-			let image = all_images[i];
-			let imageName = image.IName
-
-			labels = await pdb.allAsync(`
+	
+		var imageLabels = {};
+	
+		// For each unique image, select all labels and link them to the image
+		for (let i = 0; i < images.length; i++) {
+			let imageName = images[i].IName;
+	
+			let labels = await pdb.allAsync(`
 				SELECT * FROM Labels WHERE IName = ?
-				`,[imageName]);
-			console.log('labels',imageName,":", labels);
-		}	
+			`, [imageName]);
+	
+			imageLabels[imageName] = labels;
+			console.log('Labels for', imageName, ":", labels);
+		}
+			
 		pdb.close((err) => {
 			if (err) {
 				console.error('Error closing database connection:', err.message);
@@ -489,14 +491,12 @@ module.exports = {
 			user: username,
 			CName: CName,
 			images: images,
-			labels: labels,
+			imageLabels: imageLabels,
 			PName: PName // Added PName to the render call
 		});
 
 		
 	},
-
-
     // project page
     getProjectPage: async (req, res) => {
         console.log("getProjectPage");
