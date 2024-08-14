@@ -458,11 +458,13 @@ module.exports = {
 		//instead of selecting all images we are going to need to select all labels then
 		//for each unqiue image link all labels to it - map
 		var images = await pdb.allAsync(`
-			SELECT DISTINCT Images.IName
+			SELECT Images.IName
 			FROM Images
 			INNER JOIN Labels ON Images.IName = Labels.IName
 			WHERE Labels.CName = ?
 		`, [CName]);
+
+		console.log('Hello');
 	
 		console.log('Images:', images);
 	
@@ -477,8 +479,12 @@ module.exports = {
 			`, [imageName]);
 	
 			imageLabels[imageName] = labels;
-			console.log('Labels for', imageName, ":", labels);
+			console.log('Labels for', imageName, ":", labels);0
 		}
+
+		console.log('Image Labels:', imageLabels);
+
+
 			
 		pdb.close((err) => {
 			if (err) {

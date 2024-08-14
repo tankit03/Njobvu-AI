@@ -9,10 +9,10 @@
                 <form action="/submit-review" method="POST">
                     <table class="table table-striped">
                         <thead class="thead-dark">
+                            <button type="submit" class="btn btn-primary">Check All</button>
                             <tr>
                                 <th scope="col">Image Name</th>
                                 <th scope="col">Image</th>
-                                <th scope="col">Good</th>
                                 <th scope="col">Bad</th>
                             </tr>
                         </thead>
@@ -22,22 +22,23 @@
                                 <% let labels = imageLabels[imageName]; %>
                                 <% if (labels) { %>
                                     <% labels.forEach(function(label) { %>
-                                        <tr>
-                                            <td><%= label.IName %></td>
-                                            <td>
-                                                <div style="width: <%= label.W %>px; height: <%= label.H %>px; overflow: hidden; position: relative;">
-                                                    <img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" 
-                                                         alt="<%= label.IName %>" 
-                                                         style="position: absolute; top: -<%= label.Y %>px; left: -<%= label.X %>px;">
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <input type="checkbox" name="good_<%= label.IName %>" value="good">
-                                            </td>
-                                            <td>
-                                                <input type="checkbox" name="bad_<%= label.IName %>" value="bad">
-                                            </td>
-                                        </tr>
+                                        <% if (label.CName === CName) { %>
+                                            <tr>
+                                                <td><%= label.IName %></td>
+                                                <td>
+                                                    <div style="width: auto; height: auto; overflow: hidden; position: relative;">
+                                                        <div style="width: <%= label.W %>px; height: <%= label.H %>px; overflow: hidden; position: relative;">
+                                                            <img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" 
+                                                                 alt="<%= label.IName %>" 
+                                                                 style="width: auto; height: auto; position: absolute; top: -<%= label.Y %>px; left: -<%= label.X %>px;">
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <input type="checkbox" name="bad_<%= label.IName %>" value="bad">
+                                                </td>
+                                            </tr>
+                                        <% } %>
                                     <% }); %>
                                 <% } %>
                             <% }); %>
