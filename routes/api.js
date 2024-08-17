@@ -17,6 +17,82 @@ api.post('/logout', async (req, res) => {
 	res.redirect("/");
 });
 
+api.post('/switch-class', (req, res) => {
+	console.log("Switch post request");
+    var username = req.body.username;
+    var switchClass = req.body.class;
+	var PName = req.body.PName;
+	var labelID = req.body.LabelID;
+
+    console.log("this is username:", username);
+    console.log("Received switchClasses:", switchClass);
+	console.log("Received PNname:", PName);
+	console.log("labelID:", labelID);
+
+    var public_path = __dirname.replace('routes','');
+    var main_path = public_path + 'public/projects/';
+	var db_path = main_path + username + '-' + PName + '/' + PName + '.db';
+
+	console.log(db_path);
+
+	var pdb = new sqlite3.Database(db_path, (err) => {
+		if(err){
+			return console.log('Database connection error:', err.message);
+		}
+		console.log('connected to pdb.');
+	});
+
+	pdb.allAsync = function (sql, params) {
+		var that = this;
+		return new Promise(function (resolve, reject) {
+			that.all(sql, params, function (err, row) {
+				if (err) {
+					console.log("runAsync ERROR! ", err);
+					reject(err);
+				} else {
+					resolve(row);
+				}
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	//get label information and perfrom an SQL query to match to that label
+	//then change the className for that label to match the desired
+	//then re insert into database and reload the page
+
+	const updateClassQuery = `UPDATE Labels 
+							SET CName = ? 
+							WHERE LID = ?`;
+
+	pdb.run(updateClassQuery, [switchClass, labelID], function (err) {
+		if (err) {
+			console.error("Error updating class:", err.message);
+			res.status(500).json({ error: "Failed to switch class" });
+		} else {
+			console.log(`Row(s) updated: ${this.changes}`);
+			res.json({ success: true, message: "Class switched successfully for the specific label" });
+		}
+	});
+
+	pdb.close((err) => {
+        if (err) {
+            console.error('Error closing the database connection:', err.message);
+        }
+        console.log('Database connection closed.');
+    });
+
+});
+
+app.post('/submit-review', (req, res) => {
+    const badLabels = JSON.parse(req.body.badLabels);
+
+	console.log("badLabels:", badLabels);
+
+    // Handle the bad labels here, e.g., updating the database
+});
+
 
 api.post('/login', async (req, res) => {
 	console.log("login post request");
