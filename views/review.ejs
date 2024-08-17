@@ -4,16 +4,19 @@
     <div class="container">
         <div class="Review">
             <h3>Review Images for Class: <%= CName %></h3>
-            <p>User: <%= user %></p>
+            <!-- <p id="username">User: <%= user %></p> -->
+            <input type="hidden" id="ProjectName" value="<%= PName %>">
+            <input type="hidden" id="username" value="<%= user %>">
             <div class="col-md-12">
-                <form action="/submit-review" method="POST">
+                <form id="reviewForm" action="/submit-review" method="POST">
                     <table class="table table-striped">
                         <thead class="thead-dark">
-                            <button type="submit" class="btn btn-primary">Check All</button>
+                            <button type="button" id="checkAllButton" class="btn btn-primary">Check All</button>
                             <tr>
                                 <th scope="col">Image Name</th>
                                 <th scope="col">Image</th>
                                 <th scope="col">Bad</th>
+                                <th scope="col">Switch Classes</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -25,17 +28,34 @@
                                         <% if (label.CName === CName) { %>
                                             <tr>
                                                 <td><%= label.IName %></td>
-                                                <td>
-                                                    <div style="width: auto; height: auto; overflow: hidden; position: relative;">
-                                                        <div style="width: <%= label.W %>px; height: <%= label.H %>px; overflow: hidden; position: relative;">
-                                                            <img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" 
-                                                                 alt="<%= label.IName %>" 
-                                                                 style="width: auto; height: auto; position: absolute; top: -<%= label.Y %>px; left: -<%= label.X %>px;">
-                                                        </div>
-                                                    </div>
+                                                <td> 
+                                                <div class="image-container" style="
+                                                width: 400px; 
+                                                height: 300px; 
+                                                object-fit: cover;
+                                                overflow: hidden;">  
+                                                    <img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" alt="<%= label.IName %>" class="cropped-image" style="
+                                                    width: <%= label.W %>px;
+                                                    height: <%= label.H %>px;
+                                                    object-fit: cover;"
+                                                    width="300px"
+                                                    height="400px">
+                                                    <input type="hidden" id="LabelID" class="LabelID" value="<%= label.LID %>">
+                                                </div>
                                                 </td>
                                                 <td>
-                                                    <input type="checkbox" name="bad_<%= label.IName %>" value="bad">
+                                                    <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="bad">
+                                                </td>
+                                                <td>
+                                                    <form class="SwitchForm" action="/switch-class" method="POST">
+                                                        <label for="switchClasses_<%= label.LID %>">Switch to:</label>
+                                                        <select name="switchClasses_<%= label.LID %>" class="switchClasses" data-label-id="<%= label.LID %>">
+                                                            <% classes.forEach(function(classItem){ %>
+                                                                <option value="<%= classItem.CName %>"><%= classItem.CName %></option>
+                                                            <% }); %>
+                                                        </select>
+                                                        <button type="button" class="btn btn-secondary" onclick="handleSwitch(event, '<%= label.LID %>')">Switch</button>
+                                                    </form>
                                                 </td>
                                             </tr>
                                         <% } %>
@@ -44,9 +64,67 @@
                             <% }); %>
                         </tbody>
                     </table>
-                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                    <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.getElementById('checkAllButton').addEventListener('click', function() {
+        let checkboxes = document.querySelectorAll('.badCheckbox');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.checked = true;
+        });
+    });
+
+    document.getElementById('reviewForm').addEventListener('submit', function(event) {
+        console.log('Form submitted');
+    });
+
+    async function handleSwitch(event, labelId) {
+
+        const username = document.getElementById("username").value;
+        const projectName = document.getElementById("ProjectName").value;
+        const selectElement = document.querySelector(`select[data-label-id='${labelId}']`);
+        console.log('Select element:', selectElement);
+        const selectedClass = selectElement.value;
+
+        const data = {
+            "username": username,
+            "class": selectedClass,
+            "PName": projectName,
+            "LabelID": labelId
+        };
+
+        try {
+            const response = await fetch('/switch-class', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            console.log('API response:', response);
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Class switched successfully:', result);
+                window.location.reload();
+            } else {
+                console.error('Failed to switch class:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    document.querySelectorAll('.SwitchForm').forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            handleSwitch(event, form);
+        });
+    });
+
+</script>

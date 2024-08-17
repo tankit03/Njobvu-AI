@@ -484,8 +484,10 @@ module.exports = {
 
 		console.log('Image Labels:', imageLabels);
 
+		var classes = await pdb.allAsync("SELECT * FROM `Classes`");
 
-			
+		console.log('Classes:', classes);
+
 		pdb.close((err) => {
 			if (err) {
 				console.error('Error closing database connection:', err.message);
@@ -498,10 +500,9 @@ module.exports = {
 			CName: CName,
 			images: images,
 			imageLabels: imageLabels,
-			PName: PName // Added PName to the render call
+			PName: PName, // Added PName to the render call
+			classes: classes
 		});
-
-		
 	},
     // project page
     getProjectPage: async (req, res) => {
