@@ -28,20 +28,18 @@
                                         <% if (label.CName === CName) { %>
                                             <tr>
                                                 <td><%= label.IName %></td>
-                                                <td> 
-                                                <div class="image-container" style="
-                                                width: 400px; 
-                                                height: 300px; 
-                                                object-fit: cover;
-                                                overflow: hidden;">  
-                                                    <img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" alt="<%= label.IName %>" class="cropped-image" style="
-                                                    width: <%= label.W %>px;
-                                                    height: <%= label.H %>px;
-                                                    object-fit: cover;"
-                                                    width="300px"
-                                                    height="400px">
+                                                <td>
+                                                    <div class="image-container" style="width: <%= label.W %>px; height: <%= label.H %>px; overflow: hidden;">
+                                                        <img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" 
+                                                            alt="<%= label.IName %>" 
+                                                            class="cropped-image table-image"
+                                                            style="width: auto; height: auto; 
+                                                                   position: relative; 
+                                                                   left: -<%= label.X %>px; 
+                                                                   top: -<%= label.Y %>px;"
+                                                        />
+                                                    </div>
                                                     <input type="hidden" id="LabelID" class="LabelID" value="<%= label.LID %>">
-                                                </div>
                                                 </td>
                                                 <td>
                                                     <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
@@ -70,7 +68,6 @@
         </div>
     </div>
 </div>
-
 <script>
     document.getElementById('checkAllButton').addEventListener('click', function() {
         let checkboxes = document.querySelectorAll('.badCheckbox');
