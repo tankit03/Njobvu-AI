@@ -42,26 +42,6 @@ api.post('/switch-class', (req, res) => {
 		console.log('connected to pdb.');
 	});
 
-	pdb.allAsync = function (sql, params) {
-		var that = this;
-		return new Promise(function (resolve, reject) {
-			that.all(sql, params, function (err, row) {
-				if (err) {
-					console.log("runAsync ERROR! ", err);
-					reject(err);
-				} else {
-					resolve(row);
-				}
-			});
-		}).catch(err => {
-			console.log(err);
-		});
-	};
-
-	//get label information and perfrom an SQL query to match to that label
-	//then change the className for that label to match the desired
-	//then re insert into database and reload the page
-
 	const updateClassQuery = `UPDATE Labels 
 							SET CName = ? 
 							WHERE LID = ?`;
@@ -80,18 +60,69 @@ api.post('/switch-class', (req, res) => {
         if (err) {
             console.error('Error closing the database connection:', err.message);
         }
-        console.log('Database connection closed.');
+        console.log('Database connectioooon closed.');
     });
 
 });
 
-app.post('/submit-review', (req, res) => {
-    const badLabels = JSON.parse(req.body.badLabels);
 
-	console.log("badLabels:", badLabels);
+api.post('/submit-review', (req, res) => {
 
-    // Handle the bad labels here, e.g., updating the database
+	console.log("Submit review post request");
+	var username = req.body.username;
+	var PName = req.body.PName;
+	var badlabels = req.body.badlabels;
+
+	var public_path = __dirname.replace('routes','');
+    var main_path = public_path + 'public/projects/';
+	var db_path = main_path + username + '-' + PName + '/' + PName + '.db';
+
+	console.log(db_path);
+	console.log("badlabels:", badlabels);
+
+	var pdb = new sqlite3.Database(db_path, (err) => {
+		if(err){
+			return console.log('Database connection error:', err.message);
+		}
+		console.log('connected to pdb.');
+	});
+
+	let completedQueries = 0;
+    let errors = [];
+
+	badlabels.forEach((badlabelID) => {
+
+		const deleteLabelsQuery = 'DELETE FROM Labels WHERE LID = ?';
+
+		pdb.run(deleteLabelsQuery,[badlabelID], function(err) {
+			if(err){
+				console.error("Error deleting label:", err.message);
+                errors.push({ label: badlabelID, error: err.message });
+			} else {
+				console.log(`Row(s) deleted for label ${badlabelID}: ${this.changes}`);
+			}
+
+			completedQueries++;
+
+			if(completedQueries === badlabels.length){
+				pdb.close((err) => {
+					if (err) {
+                        console.error('Error closing the database connection:', err.message);
+                        return res.status(500).json({ error: 'Error closing the database connection' });
+                    }
+					console.log('Database connection closed.');
+					if (errors.length > 0) {
+                        res.status(500).json({ success: false, errors });
+                    } else {
+                        res.json({ success: true, message: "Successfully deleted bad labels" });
+                    }
+				});
+			}
+		});
+	});
 });
+
+
 
 
 api.post('/login', async (req, res) => {

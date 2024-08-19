@@ -44,7 +44,7 @@
                                                 </div>
                                                 </td>
                                                 <td>
-                                                    <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="bad">
+                                                    <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
                                                 </td>
                                                 <td>
                                                     <form class="SwitchForm" action="/switch-class" method="POST">
@@ -64,7 +64,7 @@
                             <% }); %>
                         </tbody>
                     </table>
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="submit" class="btn btn-primary" onclick="ReviewForm(event)">Submit Review</button>
                 </form>
             </div>
         </div>
@@ -79,16 +79,11 @@
         });
     });
 
-    document.getElementById('reviewForm').addEventListener('submit', function(event) {
-        console.log('Form submitted');
-    });
-
     async function handleSwitch(event, labelId) {
 
         const username = document.getElementById("username").value;
         const projectName = document.getElementById("ProjectName").value;
         const selectElement = document.querySelector(`select[data-label-id='${labelId}']`);
-        console.log('Select element:', selectElement);
         const selectedClass = selectElement.value;
 
         const data = {
@@ -112,7 +107,7 @@
             if (response.ok) {
                 const result = await response.json();
                 console.log('Class switched successfully:', result);
-                window.location.reload();
+                location.reload();
             } else {
                 console.error('Failed to switch class:', response.statusText);
             }
@@ -126,5 +121,57 @@
             handleSwitch(event, form);
         });
     });
+
+    async function ReviewForm(event) {
+        
+        event.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const projectName = document.getElementById("ProjectName").value;
+        let badLabels = [];
+        document.querySelectorAll('.badCheckbox:checked').forEach(function(checkbox) {
+            badLabels.push(checkbox.value); 
+        });
+
+        console.log('Username:', username);
+        console.log('Project Name:', projectName);
+        console.log('Bad Labels:', badLabels);
+    
+        const data = {
+            "username": username,
+            "PName": projectName,
+            "badlabels": badLabels
+        };
+    
+        console.log('Submitting bad labels:', data);
+    
+        try {
+            const response = await fetch('/submit-review', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+    
+            console.log("Request sent to server");
+    
+            if(response.ok) {
+                console.log("Response OK");
+                const result = await response.json();
+                console.log('Review form switched successfully:', result);
+                location.reload();
+            } else {
+                console.error('Failed to submit form:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
+    document.getElementById('reviewForm').addEventListener('submit', ReviewForm);
+    
+
+   
 
 </script>
