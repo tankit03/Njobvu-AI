@@ -29,17 +29,17 @@
                                             <tr>
                                                 <td><%= label.IName %></td>
                                                 <td>
-                                                    <div class="image-container" style="width: <%= label.W %>px; height: <%= label.H %>px; overflow: hidden;">
-                                                        <img src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" 
-                                                            alt="<%= label.IName %>" 
-                                                            class="cropped-image table-image"
-                                                            style="width: auto; height: auto; 
-                                                                   position: relative; 
-                                                                   left: -<%= label.X %>px; 
-                                                                   top: -<%= label.Y %>px;"
-                                                        />
-                                                    </div>
-                                                    <input type="hidden" id="LabelID" class="LabelID" value="<%= label.LID %>">
+                                                    <img class="Image"
+                                                    src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" 
+                                                        alt="<%= label.IName %>" 
+                                                        width="400"
+                                                        height="600"
+                                                        style="object-fit: contain; 
+                                                               position: relative">
+                                                    <input type="hidden" class="LabelX" value="<%= label.X %>">
+                                                    <input type="hidden" class="LabelY" value="<%= label.Y %>">
+                                                    <input type="hidden" class="LabelWidth" value="<%= label.W %>">
+                                                    <input type="hidden" class="LabelHeight" value="<%= label.H %>">
                                                 </td>
                                                 <td>
                                                     <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
@@ -62,12 +62,56 @@
                             <% }); %>
                         </tbody>
                     </table>
+
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function() {
+                            // Get all images and their corresponding crop data
+                            const images = document.querySelectorAll("img.Image");
+
+                            console.log('Images:', images);
+
+                            images.forEach(function(img) {
+                                // Get the cropping values for the current image
+                                let OrginalX = img.parentElement.querySelector("input[class='LabelX']").value;
+                                let OrginalY = img.parentElement.querySelector("input[class='LabelY']").value;
+                                let OrginalW = img.parentElement.querySelector("input[class='LabelWidth']").value;
+                                let OrginalH = img.parentElement.querySelector("input[class='LabelHeight']").value;
+
+                                console.log('Cropping:', OrginalX, OrginalY, OrginalW, OrginalH);
+                                console.log('Image:', img);
+
+                                let originalWidth = img.naturalWidth;
+                                let originalHeight = img.naturalHeight;
+
+                                console.log('Original size:', originalWidth, originalHeight);
+
+                                let newWidth = img.clientWidth;
+                                let newHeight = img.clientHeight;
+                           
+                                let scaleX = newWidth / originalWidth;
+                                let scaleY = newHeight / originalHeight;
+                               
+                                let scaledX = OrginalX * scaleX;
+                                let scaledY = OrginalY * scaleY;
+                                let scaledW = OrginalW * scaleX;
+                                let scaledH = OrginalH * scaleY;
+
+                                
+                                img.style.clipPath = `inset(${scaledY}px ${newWidth - (scaledX + scaledW)}px ${newHeight - (scaledY + scaledH)}px ${scaledX}px)`;
+                                
+                            });
+                        });
+                    </script>
+
                     <button type="submit" class="btn btn-primary" onclick="ReviewForm(event)">Submit Review</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+
+
 <script>
     document.getElementById('checkAllButton').addEventListener('click', function() {
         let checkboxes = document.querySelectorAll('.badCheckbox');
