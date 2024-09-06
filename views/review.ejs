@@ -29,17 +29,17 @@
                                             <tr>
                                                 <td><%= label.IName %></td>
                                                 <td>
-                                                    <img class="Image"
-                                                    src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" 
-                                                        alt="<%= label.IName %>" 
-                                                        width="400"
-                                                        height="600"
-                                                        style="object-fit: contain; 
-                                                               position: relative">
+                                                    <img class="Image"type="hidden" src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" style="display: none;">
                                                     <input type="hidden" class="LabelX" value="<%= label.X %>">
                                                     <input type="hidden" class="LabelY" value="<%= label.Y %>">
                                                     <input type="hidden" class="LabelWidth" value="<%= label.W %>">
                                                     <input type="hidden" class="LabelHeight" value="<%= label.H %>">
+                                                    <canvas 
+                                                    id="cropCanvas"
+                                                    style="
+                                                    max-width: 100%;
+                                                    height: 100%;
+                                                    display: block;"></canvas>
                                                 </td>
                                                 <td>
                                                     <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
@@ -62,47 +62,6 @@
                             <% }); %>
                         </tbody>
                     </table>
-
-                    <script>
-                        document.addEventListener("DOMContentLoaded", function() {
-                            // Get all images and their corresponding crop data
-                            const images = document.querySelectorAll("img.Image");
-
-                            console.log('Images:', images);
-
-                            images.forEach(function(img) {
-                                // Get the cropping values for the current image
-                                let OrginalX = img.parentElement.querySelector("input[class='LabelX']").value;
-                                let OrginalY = img.parentElement.querySelector("input[class='LabelY']").value;
-                                let OrginalW = img.parentElement.querySelector("input[class='LabelWidth']").value;
-                                let OrginalH = img.parentElement.querySelector("input[class='LabelHeight']").value;
-
-                                console.log('Cropping:', OrginalX, OrginalY, OrginalW, OrginalH);
-                                console.log('Image:', img);
-
-                                let originalWidth = img.naturalWidth;
-                                let originalHeight = img.naturalHeight;
-
-                                console.log('Original size:', originalWidth, originalHeight);
-
-                                let newWidth = img.clientWidth;
-                                let newHeight = img.clientHeight;
-                           
-                                let scaleX = newWidth / originalWidth;
-                                let scaleY = newHeight / originalHeight;
-                               
-                                let scaledX = OrginalX * scaleX;
-                                let scaledY = OrginalY * scaleY;
-                                let scaledW = OrginalW * scaleX;
-                                let scaledH = OrginalH * scaleY;
-
-                                
-                                img.style.clipPath = `inset(${scaledY}px ${newWidth - (scaledX + scaledW)}px ${newHeight - (scaledY + scaledH)}px ${scaledX}px)`;
-                                
-                            });
-                        });
-                    </script>
-
                     <button type="submit" class="btn btn-primary" onclick="ReviewForm(event)">Submit Review</button>
                 </form>
             </div>
@@ -110,7 +69,59 @@
     </div>
 </div>
 
+<script>
 
+    document.addEventListener('DOMContentLoaded', function () {
+
+        let images = document.querySelectorAll('.Image');
+
+        images.forEach(function (imageElement, index) {
+
+            const cropX = document.querySelectorAll('.LabelX')[index].value;
+            const cropY = document.querySelectorAll('.LabelY')[index].value;
+            const cropWidth = document.querySelectorAll('.LabelWidth')[index].value;
+            const cropHeight = document.querySelectorAll('.LabelHeight')[index].value;
+
+
+            const imageData = {
+                imageUrl: imageElement.src,
+                crop: {
+                    x: parseFloat(cropX),
+                    y: parseFloat(cropY),
+                    width: parseFloat(cropWidth),
+                    height: parseFloat(cropHeight)
+                }
+            };
+
+            const canvas = document.querySelectorAll('#cropCanvas')[index];
+            const ctx = canvas.getContext('2d');
+
+            const image = new Image();
+            image.src = imageData.imageUrl;
+
+            image.onload = function(){
+
+                canvas.width = imageData.crop.width;
+                canvas.height = imageData.crop.height;
+
+                ctx.drawImage(
+                    image,
+                    imageData.crop.x,
+                    imageData.crop.y,
+                    imageData.crop.width,
+                    imageData.crop.height,
+                    0,
+                    0,
+                    imageData.crop.width,
+                    imageData.crop.height
+                );
+            }
+
+            console.log('Image Data:', imageData);
+        });
+    });
+
+</script>
 
 <script>
     document.getElementById('checkAllButton').addEventListener('click', function() {
