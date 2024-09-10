@@ -428,8 +428,6 @@ module.exports = {
 		var public_path = __dirname.replace('routes', '');
 		var db_path = public_path + 'public/projects/' + admin + '-' + PName + '/' + PName + '.db';
 	
-		console.log('Accessing database file for Review Page:', db_path);
-	
 		var pdb = new sqlite3.Database(db_path, (err) => {
 			if (err) {
 				return console.error('Database connection error:', err.message);
@@ -452,11 +450,7 @@ module.exports = {
 				console.log(err);
 			});
 		};
-		//right here is where we need to change this call to change one image into partials
-		//bc rn its just copying the base image for each label
-		
-		//instead of selecting all images we are going to need to select all labels then
-		//for each unqiue image link all labels to it - map
+
 		var images = await pdb.allAsync(`
 			SELECT Images.IName
 			FROM Images
@@ -464,29 +458,28 @@ module.exports = {
 			WHERE Labels.CName = ?
 		`, [CName]);
 
-		console.log('Hello');
-	
-		console.log('Images:', images);
+		let uniqueImages = images.filter((image, index, self) =>
+			index === self.findIndex((img) => img.IName === image.IName)
+		);
 	
 		var imageLabels = {};
-	
-		// For each unique image, select all labels and link them to the image
-		for (let i = 0; i < images.length; i++) {
-			let imageName = images[i].IName;
+
+		for (let i = 0; i < uniqueImages.length; i++) {
+
+			let imageName = uniqueImages[i].IName;
 	
 			let labels = await pdb.allAsync(`
 				SELECT * FROM Labels WHERE IName = ?
 			`, [imageName]);
 	
 			imageLabels[imageName] = labels;
-			console.log('Labels for', imageName, ":", labels);0
 		}
-
-		console.log('Image Labels:', imageLabels);
 
 		var classes = await pdb.allAsync("SELECT * FROM `Classes`");
 
-		console.log('Classes:', classes);
+		console.log('images:', uniqueImages);
+		console.log('imageLabels:', imageLabels);
+
 
 		pdb.close((err) => {
 			if (err) {
@@ -498,7 +491,7 @@ module.exports = {
 		res.render('review', {
 			user: username,
 			CName: CName,
-			images: images,
+			images: uniqueImages,
 			imageLabels: imageLabels,
 			PName: PName, // Added PName to the render call
 			classes: classes
