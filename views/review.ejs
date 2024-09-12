@@ -11,7 +11,10 @@
                 <form id="reviewForm" action="/submit-review" method="POST">
                     <table class="table table-striped">
                         <thead class="thead-dark">
-                            <button type="button" id="checkAllButton" class="btn btn-primary">Check All</button>
+                            <div style="padding-bottom: 20px;">
+                                <button type="button" id="checkAllButton" class="btn btn-success">Check All</button>
+                                <button type="button" id="uncheckAllButton" class="btn btn-danger" style="display: none;">Uncheck All</button>
+                            </div>
                             <tr>
                                 <th scope="col">Image Name</th>
                                 <th scope="col">Image</th>
@@ -23,7 +26,6 @@
                             <% images.forEach(function(image) { %>
                                 <% let imageName = image.IName; %>
                                 <% let labels = imageLabels[imageName]; %>
-                              
                                 <% if (labels) { %>
                                   <% labels.forEach(function(label) { %>
                                     <% if (label.CName === CName) { %>
@@ -58,12 +60,38 @@
                               <% }); %>
                         </tbody>
                     </table>
-                    <button type="submit" class="btn btn-primary" onclick="ReviewForm(event)">Submit Review</button>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary" onclick="ReviewForm(event)">Submit Review</button>
+                    </div>
                 </form>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <% if (currentPage > 1) { %>
+                    <button class="btn btn-primary" onclick="window.location.href = '?class=<%= CName %>&IDX=<%= IDX %>&page=<%= currentPage - 1 %>'">Previous</button>
+                <% } %>
+            </div>
+            <div class="col-auto">
+                <span>Page <%= currentPage %> of <%= totalPageCount %></span>
+            </div>
+            <div class="col-auto">
+                <% if (currentPage < totalPageCount) { %>
+                    <button class="btn btn-primary" onclick="window.location.href = '?class=<%= CName %>&IDX=<%= IDX %>&page=<%= currentPage + 1 %>'">Next</button>
+                <% } %>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+
+    const urlParams = new URLSearchParams(window.location.search);
+    console.log(urlParams);
+    const className = urlParams.get('className');
+    console.log('hello:', className);
+
+</script>
 
 <script>
     
@@ -110,10 +138,25 @@
 </script>
 
 <script>
-    document.getElementById('checkAllButton').addEventListener('click', function() {
-        let checkboxes = document.querySelectorAll('.badCheckbox');
-        checkboxes.forEach(function(checkbox) {
-            checkbox.checked = true;
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkAllButton = document.getElementById('checkAllButton');
+        const uncheckAllButton = document.getElementById('uncheckAllButton');
+        const checkboxes = document.querySelectorAll('.badCheckbox');
+
+        checkAllButton.addEventListener('click', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            checkAllButton.style.display = 'none';
+            uncheckAllButton.style.display = 'inline-block';
+        });
+
+        uncheckAllButton.addEventListener('click', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            uncheckAllButton.style.display = 'none';
+            checkAllButton.style.display = 'inline-block';
         });
     });
 
