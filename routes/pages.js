@@ -344,6 +344,7 @@ module.exports = {
 		var username = req.cookies.Username;
 		console.log('Received IDX:', req.query.IDX);
 		var IDX = parseInt(req.query.IDX, 10);
+		
 		console.log('Parsed IDX:', IDX);
 		
 		if (isNaN(IDX)) {
@@ -410,9 +411,17 @@ module.exports = {
 	},
 
 	getReviewPage: async (req, res) => {
+
+		console.log('---------------------------------getReviewPage---------------------------------');
+
 		var username = req.cookies.Username;
 		var CName = req.query.class;
 		var IDX = req.query.IDX;
+
+		var page = parseInt(req.query.page) || 1;
+		var pageSize = 10;
+		var offset = (page - 1) * pageSize;
+		
 	
 		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '" + username + "'");
 		var project = projects[IDX];
@@ -451,19 +460,26 @@ module.exports = {
 			});
 		};
 
+		var totalImages = await pdb.allAsync(`
+			SELECT COUNT(*) as count 
+			FROM Images
+			INNER JOIN Labels ON Images.IName = Labels.IName
+			WHERE Labels.CName = ?
+		`, [CName]);
+
 		var images = await pdb.allAsync(`
 			SELECT Images.IName
 			FROM Images
 			INNER JOIN Labels ON Images.IName = Labels.IName
 			WHERE Labels.CName = ?
-		`, [CName]);
+			LIMIT ? OFFSET ?
+		`, [CName, pageSize, offset]);
 
 		let uniqueImages = images.filter((image, index, self) =>
 			index === self.findIndex((img) => img.IName === image.IName)
 		);
 	
 		var imageLabels = {};
-
 		for (let i = 0; i < uniqueImages.length; i++) {
 
 			let imageName = uniqueImages[i].IName;
@@ -487,6 +503,8 @@ module.exports = {
 			}
 			console.log('Closed pdb connection.');
 		});
+
+		let totalImagesCount = Math.ceil(totalImages[0].count / pageSize);
 	
 		res.render('review', {
 			user: username,
@@ -494,7 +512,11 @@ module.exports = {
 			images: uniqueImages,
 			imageLabels: imageLabels,
 			PName: PName, // Added PName to the render call
-			classes: classes
+			classes: classes,
+			currentPage: page,
+			totalPageCount: totalImagesCount,
+			IDX: IDX
+
 		});
 	},
     // project page
