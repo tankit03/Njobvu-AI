@@ -203,16 +203,53 @@
         });
     });
 
+    document.querySelectorAll('.badCheckbox').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            updateBadLabels();
+        });
+    });
+
+    function updateBadLabels() {
+        let badLabels = JSON.parse(localStorage.getItem('badLabels')) || [];
+
+        let currentPageLabels = [];
+        document.querySelectorAll('.badCheckbox').forEach(function(checkbox) {
+            if (checkbox.checked) {
+                currentPageLabels.push(checkbox.value); // Collect all checked labels
+            } else {
+                badLabels = badLabels.filter(label => label !== checkbox.value);
+            }
+        });
+
+        badLabels = [...new Set([...badLabels, ...currentPageLabels])];
+
+        localStorage.setItem('badLabels', JSON.stringify(badLabels));
+        console.log('Bad labels:', badLabels);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        restoreCheckboxStatus();
+    });
+
+    function restoreCheckboxStatus(){
+        let badLabels = JSON.parse(localStorage.getItem('badLabels')) || [];
+        
+        document.querySelectorAll('.badCheckbox').forEach(function(checkbox) {
+            if(badLabels.includes(checkbox.value)){
+                checkbox.checked = true;
+            }
+        });
+        console.log('Restored bad labels:', badLabels);
+    }
+    
+
     async function ReviewForm(event) {
         
         event.preventDefault();
 
         const username = document.getElementById("username").value;
         const projectName = document.getElementById("ProjectName").value;
-        let badLabels = [];
-        document.querySelectorAll('.badCheckbox:checked').forEach(function(checkbox) {
-            badLabels.push(checkbox.value); 
-        });
+        let badLabels = JSON.parse(localStorage.getItem('badLabels')) || [];
 
         console.log('Username:', username);
         console.log('Project Name:', projectName);
@@ -242,6 +279,10 @@
                 const result = await response.json();
                 console.log('Review form switched successfully:', result);
                 location.reload();
+                localStorage.removeItem('badLabels');
+                console.log('Bad labels cleared');
+                location.reload();
+
             } else {
                 console.error('Failed to submit form:', response.statusText);
             }
@@ -251,8 +292,5 @@
     };
 
     document.getElementById('reviewForm').addEventListener('submit', ReviewForm);
-    
-
-   
 
 </script>

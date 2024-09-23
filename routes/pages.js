@@ -419,7 +419,7 @@ module.exports = {
 		var IDX = req.query.IDX;
 
 		var page = parseInt(req.query.page) || 1;
-		var pageSize = 10;
+		var pageSize = 100;
 		var offset = (page - 1) * pageSize;
 		
 	
@@ -516,7 +516,6 @@ module.exports = {
 			currentPage: page,
 			totalPageCount: totalImagesCount,
 			IDX: IDX
-
 		});
 	},
     // project page
