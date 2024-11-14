@@ -9,6 +9,11 @@ const { protocol } = require('socket.io-client');
 const { OPEN_CREATE } = require('sqlite3');
 const rimraf = require('../public/libraries/rimraf');
 const ffmpeg = require('ffmpeg');
+const { folder } = require('decompress-zip/lib/extractors');
+const { exec } = require('child_process');
+const path = require('path');
+const { stdout } = require('process');
+
 
 const api = express.Router();
 
@@ -1655,9 +1660,170 @@ api.post('/downloadDataset', async (req, res) => {
 	var cnames = [];
 	var results1 = await dddb.allAsync("SELECT * FROM Classes");
 	var results2 = await dddb.allAsync("SELECT * FROM Images");
+
 	for(var i = 0; i < results1.length; i++)
 	{
 		cnames.push(results1[i].CName);
+	}
+
+	//classfication
+	if(download_format == 6){
+
+		console.log("HELLOOO")
+
+		folderName = downloads_path + '/dataset';
+		folderTrain = folderName + '/train';
+		folderVal = folderName + '/val';
+
+		try {
+			if (!fs.existsSync(folderName)) {
+				fs.mkdirSync(folderName);
+			}
+			if (!fs.existsSync(folderTrain)) {
+				fs.mkdirSync(folderTrain);
+			}
+			if (!fs.existsSync(folderVal)) {
+				fs.mkdirSync(folderVal);
+			}
+			console.log("Directories created");
+		} catch (err) {
+			console.error(err);
+		}
+		
+		// Get all the image class mappings
+		
+		var imageClassMapping = await dddb.allAsync(`
+			SELECT Labels.CName, Labels.X, Labels.Y, Labels.W, Labels.H, Images.IName, Images.reviewImage, Images.validateImage
+			FROM Labels
+			JOIN Images ON Labels.IName = Images.IName
+		`);
+
+		console.log("imageClassMapping:", imageClassMapping)
+
+		const processedImages = {};
+		const croppingPromises = [];
+
+		imageClassMapping.forEach((indivdualClass) => {
+			console.log(indivdualClass.CName)
+			classFolderTrain = folderTrain + '/' + indivdualClass.CName
+			classFolderVal = folderVal + '/' + indivdualClass.CName
+
+			try {
+				if (!fs.existsSync(classFolderTrain)) {
+				  fs.mkdirSync(classFolderTrain);
+				}
+			} catch (err) {
+				console.error(err);
+			}
+			try {
+				if (!fs.existsSync(classFolderVal)) {
+				  fs.mkdirSync(classFolderVal);
+				}
+			} catch (err) {
+				console.error(err);
+			}
+
+			// math random to split into validation and training
+
+			const isValidation = Math.random() < 0.2;
+			let targetFolder = isValidation ? classFolderVal : classFolderTrain;
+			let sourceImagePath = images_path + '/' + indivdualClass.IName
+			let targetImagePath = targetFolder + '/' + path.parse(indivdualClass.IName).name + '_crop' + processedImages[indivdualClass.IName] + path.extname(indivdualClass.IName);
+
+
+			if (!processedImages[indivdualClass.IName]) {
+				processedImages[indivdualClass.IName] = 0;
+			}
+			processedImages[indivdualClass.IName]++;
+
+			const command = `python3 classifcation.py ${sourceImagePath} ${targetImagePath} ${indivdualClass.X} ${indivdualClass.Y} ${indivdualClass.W} ${indivdualClass.H}`;
+			console.log('indivdualClass num:', imageClassMapping.length)
+
+			// need this to cool all crops before archiving
+
+			const promise = new Promise((resolve, reject) => {
+				exec(command, (error, stdout, stderr) => {
+					if (error) {
+						console.error(`Error executing Python script: ${error.message}`);
+						reject(error); // Reject the promise if there’s an execution error
+					} else if (stderr) {
+						console.error(`Python error: ${stderr}`);
+						reject(new Error(stderr)); // Reject if there's a Python script error
+					} else {
+						console.log(`Python output: ${stdout}`);
+						resolve(stdout); // Resolve if execution is successful
+					}
+				});
+			});
+			croppingPromises.push(promise);
+		});
+
+		Promise.all(croppingPromises).then(() => {
+			console.log('All cropping promises resolved');
+			const folderZip = downloads_path + '/dataset.zip';
+			const output = fs.createWriteStream(folderZip);
+
+			const archive = archiver('zip', {
+				zlib: { level: 9 }
+			});
+
+			output.on('close', () => {
+				console.log(`${archive.pointer()} total bytes`);
+				console.log('archiver has been finalized and the output file descriptor has closed.');
+				dddb.close((err) => {
+					if(err){
+						console.error(err);
+					} else {
+						console.log('dddb closed successfully');
+					}
+				});
+				res.download(folderZip, (err) => {
+					if (err) {
+						console.error('Error downloading the file:', err);
+					} else {
+						console.log('File downloaded successfully');
+			
+						// Delete the zip file
+						fs.unlink(folderZip, (err) => {
+							if (err) {
+								console.error('Error deleting the zip file:', err);
+							} else {
+								console.log('Zip file deleted successfully');
+							}
+						});
+			
+						// Delete the folder
+						fs.rm(folderName, { recursive: true }, (err) => {
+							if (err) {
+								console.error('Error deleting the folder:', err);
+							} else {
+								console.log('Folder deleted successfully');
+							}
+						});
+					}
+				});
+			});
+
+			archive.on('warning', (err) => {
+				if (err.code === 'ENOENT') {
+					console.warn(err);
+				} else {
+					throw err;
+				}
+			});
+
+			archive.on('error', (err) => {
+				throw err;
+			});
+
+			archive.pipe(output);
+			archive.directory(folderName, false);
+			archive.finalize();		
+		
+		})
+		.catch((err) => {
+			console.error("Error during cropping process:", error);
+		});
 	}
 
 	// Yolo Format
