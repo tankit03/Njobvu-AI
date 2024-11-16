@@ -1719,8 +1719,6 @@ api.post('/downloadDataset', async (req, res) => {
 			JOIN Images ON Labels.IName = Images.IName
 		`);
 
-		console.log("imageClassMapping:", imageClassMapping)
-
 		const processedImages = {};
 		const croppingPromises = [];
 
@@ -1749,27 +1747,26 @@ api.post('/downloadDataset', async (req, res) => {
 			const isValidation = Math.random() < 0.2;
 			let targetFolder = isValidation ? classFolderVal : classFolderTrain;
 			let sourceImagePath = images_path + '/' + indivdualClass.IName
+
+			if (!processedImages[indivdualClass.IName]) {
+				processedImages[indivdualClass.IName] = 0;
+			  }
+			processedImages[indivdualClass.IName]++;
+
 			let targetImagePath = targetFolder + '/' + path.parse(indivdualClass.IName).name + '_crop' + processedImages[indivdualClass.IName] + path.extname(indivdualClass.IName);
+
 			const x = indivdualClass.X;
 			const y = indivdualClass.Y;
 			const w = indivdualClass.W;
 			const h = indivdualClass.H;
-
-			if (!processedImages[indivdualClass.IName]) {
-				processedImages[indivdualClass.IName] = 0;
-			}
-			processedImages[indivdualClass.IName]++;
 			
 			croppingPromises.push(cropImage(sourceImagePath, targetImagePath, indivdualClass.X, indivdualClass.Y, indivdualClass.W, indivdualClass.H));
 
-			console.log("sourceImagePath:", sourceImagePath)
-			console.log("targetImagePath:", targetImagePath)
 
 		});
 
 		await Promise.all(croppingPromises);	
 
-		console.log('All cropping promises resolved');
 		const folderZip = downloads_path + '/dataset.zip';
 		const output = fs.createWriteStream(folderZip);
 
