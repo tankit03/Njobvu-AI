@@ -40,6 +40,7 @@
     "popper.js": "^1.16.1",
     "probe-image-size": "^7.2.3",
     "req-flash": "0.0.3",
+    "sharp": "^0.33.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "sqlite3": "^5.1.7",

@@ -13,6 +13,7 @@ const { folder } = require('decompress-zip/lib/extractors');
 const { exec } = require('child_process');
 const path = require('path');
 const { stdout } = require('process');
+const sharp = require('sharp');
 
 
 const api = express.Router();
@@ -1669,6 +1670,26 @@ api.post('/downloadDataset', async (req, res) => {
 	//classfication
 	if(download_format == 6){
 
+		const cropImage = async(sourcePath, targetPath, x, y, width, height) => {
+			try{
+				const cropOptions = {
+					left: Math.floor(x),    // Ensure x is an integer
+					top: Math.floor(y),     // Ensure y is an integer
+					width: Math.floor(width), // Ensure width is an integer
+					height: Math.floor(height), // Ensure height is an integer
+				};
+				await sharp(sourcePath)
+				.extract(cropOptions) // Crop with x, y, w, h
+				.toFile(targetPath); // Save to the target path
+
+				console.log(`Image cropped successfully: ${targetPath}`)
+				
+			} catch (err) {
+				console.error(`error cropping image: ${err.message}`)
+			}
+
+		};
+
 		console.log("HELLOOO")
 
 		folderName = downloads_path + '/dataset';
@@ -1729,101 +1750,85 @@ api.post('/downloadDataset', async (req, res) => {
 			let targetFolder = isValidation ? classFolderVal : classFolderTrain;
 			let sourceImagePath = images_path + '/' + indivdualClass.IName
 			let targetImagePath = targetFolder + '/' + path.parse(indivdualClass.IName).name + '_crop' + processedImages[indivdualClass.IName] + path.extname(indivdualClass.IName);
-
+			const x = indivdualClass.X;
+			const y = indivdualClass.Y;
+			const w = indivdualClass.W;
+			const h = indivdualClass.H;
 
 			if (!processedImages[indivdualClass.IName]) {
 				processedImages[indivdualClass.IName] = 0;
 			}
 			processedImages[indivdualClass.IName]++;
+			
+			croppingPromises.push(cropImage(sourceImagePath, targetImagePath, indivdualClass.X, indivdualClass.Y, indivdualClass.W, indivdualClass.H));
 
-			const command = `python3 classifcation.py ${sourceImagePath} ${targetImagePath} ${indivdualClass.X} ${indivdualClass.Y} ${indivdualClass.W} ${indivdualClass.H}`;
-			console.log('indivdualClass num:', imageClassMapping.length)
+			console.log("sourceImagePath:", sourceImagePath)
+			console.log("targetImagePath:", targetImagePath)
 
-			// need this to cool all crops before archiving
-
-			const promise = new Promise((resolve, reject) => {
-				exec(command, (error, stdout, stderr) => {
-					if (error) {
-						console.error(`Error executing Python script: ${error.message}`);
-						reject(error); // Reject the promise if there’s an execution error
-					} else if (stderr) {
-						console.error(`Python error: ${stderr}`);
-						reject(new Error(stderr)); // Reject if there's a Python script error
-					} else {
-						console.log(`Python output: ${stdout}`);
-						resolve(stdout); // Resolve if execution is successful
-					}
-				});
-			});
-			croppingPromises.push(promise);
 		});
 
-		Promise.all(croppingPromises).then(() => {
-			console.log('All cropping promises resolved');
-			const folderZip = downloads_path + '/dataset.zip';
-			const output = fs.createWriteStream(folderZip);
+		await Promise.all(croppingPromises);	
 
-			const archive = archiver('zip', {
-				zlib: { level: 9 }
-			});
+		console.log('All cropping promises resolved');
+		const folderZip = downloads_path + '/dataset.zip';
+		const output = fs.createWriteStream(folderZip);
 
-			output.on('close', () => {
-				console.log(`${archive.pointer()} total bytes`);
-				console.log('archiver has been finalized and the output file descriptor has closed.');
-				dddb.close((err) => {
-					if(err){
-						console.error(err);
-					} else {
-						console.log('dddb closed successfully');
-					}
-				});
-				res.download(folderZip, (err) => {
-					if (err) {
-						console.error('Error downloading the file:', err);
-					} else {
-						console.log('File downloaded successfully');
-			
-						// Delete the zip file
-						fs.unlink(folderZip, (err) => {
-							if (err) {
-								console.error('Error deleting the zip file:', err);
-							} else {
-								console.log('Zip file deleted successfully');
-							}
-						});
-			
-						// Delete the folder
-						fs.rm(folderName, { recursive: true }, (err) => {
-							if (err) {
-								console.error('Error deleting the folder:', err);
-							} else {
-								console.log('Folder deleted successfully');
-							}
-						});
-					}
-				});
-			});
+		const archive = archiver('zip', {
+			zlib: { level: 9 }
+		});
 
-			archive.on('warning', (err) => {
-				if (err.code === 'ENOENT') {
-					console.warn(err);
+		output.on('close', () => {
+			console.log(`${archive.pointer()} total bytes`);
+			console.log('archiver has been finalized and the output file descriptor has closed.');
+			dddb.close((err) => {
+				if(err){
+					console.error(err);
 				} else {
-					throw err;
+					console.log('dddb closed successfully');
 				}
 			});
-
-			archive.on('error', (err) => {
-				throw err;
-			});
-
-			archive.pipe(output);
-			archive.directory(folderName, false);
-			archive.finalize();		
+			res.download(folderZip, (err) => {
+				if (err) {
+					console.error('Error downloading the file:', err);
+				} else {
+					console.log('File downloaded successfully');
 		
-		})
-		.catch((err) => {
-			console.error("Error during cropping process:", error);
+					// Delete the zip file
+					fs.unlink(folderZip, (err) => {
+						if (err) {
+							console.error('Error deleting the zip file:', err);
+						} else {
+							console.log('Zip file deleted successfully');
+						}
+					});
+		
+					// Delete the folder
+					fs.rm(folderName, { recursive: true }, (err) => {
+						if (err) {
+							console.error('Error deleting the folder:', err);
+						} else {
+							console.log('Folder deleted successfully');
+						}
+					});
+				}
+			});
 		});
+
+		archive.on('warning', (err) => {
+			if (err.code === 'ENOENT') {
+				console.warn(err);
+			} else {
+				throw err;
+			}
+		});
+
+		archive.on('error', (err) => {
+			throw err;
+		});
+
+		archive.pipe(output);
+		archive.directory(folderName, false);
+		archive.finalize();		
 	}
 
 	// Yolo Format
