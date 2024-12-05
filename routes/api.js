@@ -14,8 +14,6 @@ const { exec } = require('child_process');
 const path = require('path');
 const { stdout } = require('process');
 const sharp = require('sharp');
-
-
 const api = express.Router();
 
 api.post('/logout', async (req, res) => {
@@ -5225,6 +5223,54 @@ api.post('/deleteUser', async (req,res) =>{
 	res.clearCookie("Username");
 	return res.send({"Success": "Yes"});
 
+});
+
+api.post('/updateClass', async (req, res) => {
+    console.log("Request body:", req.body);
+	const { classId, className, classNumber, currentClassName} = req.body;
+
+	//update Class name
+
+	var IDX = parseInt(req.body.IDX),
+	PName = req.body.PName,
+	admin = req.body.Admin,
+	user = req.cookies.Username,
+	classes = req.body.classArray,
+	newName = className;
+
+	var public_path = __dirname.replace('routes',''),
+	main_path = public_path + 'public/projects/',
+	project_path = main_path + admin + '-' + PName;
+
+	//console.log("project_path: ", project_path);
+	//console.log("Database path:", project_path+'/'+PName+'.db');
+
+	console.log("currentClassName: ", currentClassName);
+
+	var db = new sqlite3.Database(project_path+'/'+PName+'.db', (err) => {
+		if (err) {
+			return console.error(err.message);
+		}
+		console.log('Connected to db.');
+	});
+
+	const sql = `UPDATE Classes SET CName = ? WHERE CName = ?`;
+    db.run(sql, [className, currentClassName], function (err) {
+        if (err) {
+            console.error("Error running SQL query:", err.message);
+            return res.status(500).send("SQL query error");
+        }
+        console.log(`Row(s) updated: ${this.changes}`);
+        res.status(200).send(`Row(s) updated: ${this.changes}`);
+    });
+
+    db.close((err) => {
+        if (err) {
+            console.error("Error closing database:", err.message);
+        } else {
+            console.log("db closed successfully");
+        }
+    });
 });
 
 
