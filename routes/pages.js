@@ -2,6 +2,7 @@
 // Main - Routes
 
 const { reject, filter } = require("bluebird");
+const { use } = require("./api");
 
 ////////////////////////////////////////////////////////
 module.exports = {
@@ -15,6 +16,26 @@ module.exports = {
             title: 'login',
             logged: req.query.logged
         });
+	},
+
+	getProjectSettingsPage: async (req, res) => {
+		var username = req.cookies.Username;
+		var IDX = req.query.IDX;
+
+		console.log("username: ", username);
+		console.log("getProjectSettingsPage");
+
+		try{
+			res.render('settings/projSettings', {
+				title: 'projSettings',
+				logged: req.query.logged,
+				user: username,
+				IDX: IDX
+			});
+		} catch (error) {
+			console.error('Error rendering projSettings:', error);
+			res.status(500).send('Error loading page');
+		}
 	},
 
     // Signup page
