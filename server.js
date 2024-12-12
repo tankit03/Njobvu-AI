@@ -168,6 +168,7 @@ const {
     getTrainingPage,
 	getYoloPage,
 	getUserPage,
+    getProjectSettingsPage,
   get404Page,
   getValidationHomePage,
   getValidationProjectPage,
@@ -198,6 +199,7 @@ app.use("/",api);
 ////////////////////////////////////////////////////////
 
 // get
+
 app.get('/', getLoginPage);
 app.get('/signup', getSignupPage);
 app.get('/home', getHomePage);
@@ -206,6 +208,7 @@ app.get('/annotate', getAnnotatePage);
 app.get('/review', getReviewPage);
 app.get('/project', getProjectPage);
 app.get('/config', getConfigPage);
+app.get('/config/projSettings', getProjectSettingsPage);
 app.get('/download', getDownloadPage);
 app.get('/labeling', getLabelingPage);
 app.get('/stats', getStatsPage);
