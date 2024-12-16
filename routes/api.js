@@ -1088,6 +1088,8 @@ api.post('/updateLabels', async (req, res) => {
 api.post('/updateProject', async (req, res) => {
 	console.log("updateProject");
 
+	console.log(req.body);
+
 	// get url
 	var PName = req.body.PName,
 		admin = req.body.Admin,
@@ -1107,7 +1109,7 @@ api.post('/updateProject', async (req, res) => {
 		"', AutoSave = '"+auto_save+
 		"' WHERE PName = '" + PName + "' AND Admin = '" + admin + "'");
 	
-	return res.redirect('/config?IDX='+IDX);
+	return res.redirect('/config/projSettings?IDX='+IDX);
 });
 
 
@@ -1312,7 +1314,7 @@ api.post('/addClasses', async (req, res) => {
 	});
 
 	if (validation) return res.redirect('/configV?IDX='+IDX);
-	return res.redirect('/config?IDX='+IDX);
+	return res.redirect('/config/classSettings?IDX='+IDX);
 });
 
 

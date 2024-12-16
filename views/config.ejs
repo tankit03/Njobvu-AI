@@ -1,5 +1,6 @@
 <%- include('includes/header') %>
-<%- include('includes/navbar') %>
+<%- include('includes/navbar', { activePage }) %>
+<%- include('includes/configNav', { activePage }) %>
 <script>
 	console.log("<%= acc.includes(user)%>");
 	if("<%= acc.includes(user)%>" == "false")
@@ -9,18 +10,15 @@
 	console.log("DAdmin: <%= DAdmin.includes('benny')%>")
 </script>
 <div id="config">
-	<div class="col-md-12">
-		<h1 style="text-align: center;"><%= PName %></h1>
-	</div>
-
-	<div class="sidebar">
-		<ul>
-			<li>
-				<a href="/config/projSettings?IDX=<%= IDX %>">Project Configurations</a>
-			</li>
-		</ul>
-	</div>
-
+	<!-- <div>
+		<div class="sidebar">
+			<ul>
+				<li>
+					<a class="nav-link" href="/config/projSettings?IDX=<%= IDX %>" style="border-radius: 0">Project Configurations</a>
+				</li>
+			</ul>
+		</div>
+	</div> -->
 	<div class="container">
 		<div class="col-md-12">
 			<div class="card">
@@ -65,7 +63,6 @@
 				</div>
 			</div>
 		</div>
-		
 		<div class="col-md-12">
 			<div class="card">
 				<div class="card-header">
@@ -73,7 +70,6 @@
 				</div>
 				<div class="card-body">
 					<p class="card-text">
-			
 						<form class="delete-class-form" action ="/deleteClass" method="POST" enctype="multipart/form-data" id="deleteClassForm">
 							<div class="form-group row">
 								<div class="col-md-10 mr-0 ml-0 row justify-content-md-center padding" >
