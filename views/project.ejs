@@ -1,5 +1,5 @@
 <%- include('includes/header') %>
-<%- include('includes/navbar') %>
+<%- include('includes/navbar', { activePage }) %>
 <script>
 	if("<%= access.includes(user)%>" == "false")
 	{
@@ -11,7 +11,6 @@
 		<h1 style="text-align: center;"><%= PName %></h1>
 	</div>
 	<div class="form-group col-md-2">
-		<button type="button" class="btn btn-primary" style="float: right; margin-left: 15px" onclick="annotatePage(<%= IDX %>)">Annotate</button>
 		<label for="page">Page:</label>
 		<input type="number" id="page" name="page" min="1" max="<%=pages%>" value="<%=Number(current)%>" style="width: 25%;">
 

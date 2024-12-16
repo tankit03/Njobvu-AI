@@ -169,6 +169,9 @@ const {
 	getYoloPage,
 	getUserPage,
     getProjectSettingsPage,
+    getClassSettingsPage,
+    getAccessSettingsPage,
+    getImageSettingsPage,
   get404Page,
   getValidationHomePage,
   getValidationProjectPage,
@@ -209,6 +212,9 @@ app.get('/review', getReviewPage);
 app.get('/project', getProjectPage);
 app.get('/config', getConfigPage);
 app.get('/config/projSettings', getProjectSettingsPage);
+app.get('/config/classSettings', getClassSettingsPage);
+app.get('/config/accessSettings', getAccessSettingsPage);
+app.get('/config/imageSettings', getImageSettingsPage);
 app.get('/download', getDownloadPage);
 app.get('/labeling', getLabelingPage);
 app.get('/stats', getStatsPage);
