@@ -1,0 +1,136 @@
+<%- include('../includes/header') %>
+<%- include('../includes/navbar', { activePage: 'Configuration' }) %>
+<%- include('../includes/configNav', { activePage }) %>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Class Settings</h1>
+            <p>
+                This page allows you to update your current classes, delete classes, or add new classes to the Njobvu AI platform. 
+            </p>
+            <hr>
+        </div>
+    </div>
+    <div>
+        <h3> Add New Class</h3>
+        <p>
+            Add a new class to this existing project.
+        </p>
+        <form class="row" action ="/addClasses" method="POST" enctype="multipart/form-data" id="addClassesForm">
+            <input type="hidden" name="PName" value="<%= PName %>">
+            <input type="hidden" name="Admin" value="<%= Admin %>">
+            <input type="hidden" name="IDX" value="<%= IDX %>">
+            <div class="col-auto">
+              <input name="input_classes" type="text" class="form-control" id="input_classes" placeholder="cat,dog,large mouse" required>
+            </div>
+            <div class="col-auto">
+                <% if(user == Admin) {%>
+                    <button type="submit" class="btn btn-primary mb-3">Add</button>
+                <%}else {%>
+                    <a href="#" role="button" class="btn btn-danger disabled" value="Add">Add</a>
+                <%}%>
+            </div>
+        </form>
+        <hr>
+        <div>
+            <h3>Update Class Information</h3>
+            <p>
+                Update the class information for this existing project.
+            </p>
+            
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.getElementById("addClassesForm").addEventListener("submit", async function(event){
+        
+        event.preventDefault()
+
+        let form = $("#addClassesForm")
+        let url = form.attr('action')
+
+        let submittedClass = form.find('input[name="input_classes"]').val();
+
+        console.log("this is the sub value: ", submittedClass);
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: form.serialize(),
+            success: function(data) {
+                // Add success alert to the page
+                const alertDiv = `
+                  <div class="alert alert-success" role="alert">
+                    The class <strong>${submittedClass}</strong> has been submitted
+                  </div>
+                `;
+                $("#addClassesForm").after(alertDiv);
+                setTimeout(() => {
+                  $(".alert-success").fadeOut("slow", function() {
+                    $(this).remove();
+                  });
+                }, 3000);
+            },
+            error: function (data) {
+                const alertDiv = `
+                <div class="alert alert-danger" role="alert">
+                    Error occurred while submitting the form.
+                </div>
+                `;
+                $("#addClassesForm").after(alertDiv);
+                setTimeout(() => {
+                  $(".alert-danger").fadeOut("slow", function() {
+                    $(this).remove();
+                  });
+                }, 3000);
+            }
+        })
+    })
+</script>
+
+
+
+        <!-- <h3>Update Class Information</h3> -->
+            <!-- <div class="form-group col">
+                <form class="row g-3">
+                <% for(var i=0; i<classes.length; i++) {%>
+                        <div class="col-auto align-self-end">
+                          <input type="color" class="form-control-color align-self-end" id="exampleColorInput" value="<%= colors[i].value %>" title="Choose your color">
+                        </div>
+                        <div class="col-auto">
+                          <input type="text" class="form-control" id="currentCName" value="<%= classes[i].CName %>">
+                        </div>
+                        <div class="col align-self-end">
+                          <button type="submit" class="btn btn btn-danger mb-3">Delete Class</button>
+                        </div>
+                    </form>
+                <% } %>    
+            </div> -->
+
+            <!-- <div class="form-group col">
+                <div class="row-md-10 mr-0 ml-0 row justify-content-md-center padding" >
+                    <% for(var i=0; i<classes.length; i++) {%>		
+                        <input type="hidden" name="CName" value="<%= classes[i].CName %>" data-id="updateButton<%=i%>">	
+                        <input type="color" class=" form-control-color" id="exampleColorInput" value="<%= colors[i].value %>" title="Choose your color">						
+                        <button 
+                            contenteditable="true"
+                            id="updateButton<%=i%>" 
+                            type="button" 
+                            value="<%=classes[i].CName%>" 
+                            class="col-sx-3 mr-1 ml-1 pt-0 pb-0 btn class-selection" 
+                            style="background-color: <%= colors[i].value %>; border-radius: 0; border: 5px solid <%= colors[i].value %>">
+                            <span contenteditable="false"><%= i+1 %>: </span><%= classes[i].CName %>
+                        </button>
+                    <% } %>
+                </div>		
+                <div class="col-md-2 text-right">
+                    <% if(user == Admin) {%>
+                        <input type="submit" class="btn btn-danger" value="Delete" style="border-radius: 0">
+                    <%}else {%>
+                        <a href="#" role="button" class="btn btn-danger disabled" value="Delete" style="border-radius: 0">Delete</a>
+                    <%}%>
+                </div>	
+            </div> -->
