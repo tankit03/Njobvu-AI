@@ -2,6 +2,8 @@
 // Main - Routes
 
 const { reject, filter } = require("bluebird");
+const { use } = require("./api");
+const { act } = require("@react-three/fiber");
 
 ////////////////////////////////////////////////////////
 module.exports = {
@@ -16,6 +18,273 @@ module.exports = {
             logged: req.query.logged
         });
 	},
+
+	getProjectSettingsPage: async (req, res) => {
+		var user = req.cookies.Username;
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"'");
+		var IDX = req.query.IDX;
+
+		if(IDX == undefined)
+		{
+			IDX = 0;
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		if(user == undefined)
+		{
+			return res.redirect('/');
+		}
+
+		if(IDX >= projects.length){
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		var PName = projects[IDX].PName;
+		var admin = projects[IDX].Admin;
+
+		var results1 = await db.getAsync("SELECT * FROM `Projects` WHERE PName = '" + PName + "' AND Admin = '" + admin + "'");
+
+
+		console.log("username: ", user);
+		console.log("getProjectSettingsPage");
+
+		try{
+			res.render('settings/projSettings', {
+				title: 'projSettings',
+				logged: req.query.logged,
+				user: user,
+				PName: PName,
+				Admin: admin,
+				PDescription: results1.PDescription,
+				IDX: IDX,
+				activePage: 'projSettings'
+			});
+		} catch (error) {
+			console.error('Error rendering projSettings:', error);
+			res.status(500).send('Error loading page');
+		}
+	},
+
+	getClassSettingsPage: async (req, res) => {
+		var IDX = req.query.IDX;
+		if(IDX == undefined)
+		{
+			IDX = 0;
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		var user = req.cookies.Username;
+		if(user == undefined)
+		{
+			return res.redirect('/');
+		}
+
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"'");
+		if(IDX >= projects.length){
+			valid = 1;
+			return res.redirect('/home');
+		}
+		
+		var PName = projects[IDX].PName;
+		var admin = projects[IDX].Admin;
+
+		var public_path = __dirname.replace('routes',''),
+			main_path = public_path + 'public/projects/',
+			project_path = main_path + admin + '-' + PName,
+			path = project_path + '/' + PName + '.db';
+
+		var cfdb = new sqlite3.Database(path, (err) => {
+			if (err) {
+				return console.error(err.message);
+			}
+			console.log('Connected to cfdb.');
+		});
+
+		cfdb.allAsync = function (sql) {
+			var that = this;
+			return new Promise(function (resolve, reject) {
+				that.all(sql, function (err, row) {
+					if (err)
+					{
+						console.log("runAsync ERROR! ", err);
+						reject(err);
+					}
+					else
+						resolve(row);
+				});
+			}).catch(err => {
+				console.log(err)
+			});
+		};		
+		
+		var results2 = await cfdb.allAsync("SELECT * FROM `Classes`");
+
+		cfdb.close(function(err){
+			if(err)
+			{
+				console.error(err);
+			}
+			else{
+				console.log("cfdb closed successfully");
+			}
+		});
+
+		var colors = [];
+		var i = 0;
+		while(colors.length < results2.length)
+		{
+			if(i >= colorsJSON.length)
+			{
+				i = 0;
+			}
+			colors.push(colorsJSON[i]);
+			i++;
+		}
+
+		try{
+			res.render('settings/classSettings', {
+				title: 'classSettings',
+				logged: req.query.logged,
+				user: user,
+				PName: PName,
+				Admin: admin,
+				IDX: IDX,
+				classes: results2,
+				colors: colors,
+				activePage: 'classSettings'
+
+			});
+		}
+		catch (error) {
+			console.error('Error rendering classSettings:', error);
+			res.status(500).send('Error loading page');
+		}
+	},
+
+	getAccessSettingsPage: async (req, res) => {
+		var user = req.cookies.Username;
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"'");
+		var IDX = req.query.IDX;
+
+		console.log("idx: ", IDX);
+
+		if(IDX == undefined)
+		{
+			IDX = 0;
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		if(user == undefined)
+		{
+			return res.redirect('/');
+		}
+
+		if(IDX >= projects.length){
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		try{
+			res.render('settings/accessSettings', {
+				title: 'accessSettings',
+				logged: req.query.logged,
+				user: user,
+				IDX: IDX,
+				activePage: 'accessSettings'
+			});
+		}
+		catch (error) {
+			console.error('Error rendering accessSettings:', error);
+			res.status(500).send('Error loading page');
+		}
+	},
+
+	getAccessSettingsPage: async (req, res) => {
+		var user = req.cookies.Username;
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"'");
+		var IDX = req.query.IDX;
+
+		console.log("idx: ", IDX);
+
+		if(IDX == undefined)
+		{
+			IDX = 0;
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		if(user == undefined)
+		{
+			return res.redirect('/');
+		}
+
+		if(IDX >= projects.length){
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		try{
+			res.render('settings/accessSettings', {
+				title: 'accessSettings',
+				logged: req.query.logged,
+				user: user,
+				IDX: IDX,
+				activePage: 'accessSettings'
+			});
+		}
+		catch (error) {
+			console.error('Error rendering accessSettings:', error);
+			res.status(500).send('Error loading page');
+		}
+	},
+
+	getImageSettingsPage: async (req, res) => {
+		var user = req.cookies.Username;
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"'");
+		var IDX = req.query.IDX;
+
+		if(IDX == undefined)
+		{
+			IDX = 0;
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		if(user == undefined)
+		{
+			return res.redirect('/');
+		}
+
+		if(IDX >= projects.length){
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		var PName = projects[IDX].PName;
+		var admin = projects[IDX].Admin;
+
+		try{
+			res.render('settings/imagesSettings', {
+				title: 'imageSettings',
+				logged: req.query.logged,
+				user: user,
+				PName: PName,
+				Admin: admin,
+				IDX: IDX,
+				activePage: 'imageSettings'
+			});
+		}
+		catch (error) {
+			console.error('Error rendering imageSettings:', error);
+			res.status(500).send('Error loading page');
+		}
+	},
+
+
 
     // Signup page
     getSignupPage: async (req,res) => {
@@ -406,7 +675,9 @@ module.exports = {
 			db: req.query.db,
 			PName: PName,
 			classes: Classes,
-			IDX: IDX 
+			IDX: IDX,
+			activePage: 'Annotate' 
+
 		});
 	},
 
@@ -515,7 +786,8 @@ module.exports = {
 			classes: classes,
 			currentPage: page,
 			totalPageCount: totalImagesCount,
-			IDX: IDX
+			IDX: IDX,
+			activePage: 'Annotate'
 		});
 	},
     // project page
@@ -639,7 +911,8 @@ module.exports = {
             current: page,
             pages: Math.ceil(results2['COUNT(*)']/perPage),
             perPage: perPage,
-            logged: req.query.logged
+            logged: req.query.logged,
+			activePage: 'project'
         });
     },
 
@@ -920,7 +1193,8 @@ module.exports = {
 			sortFilter: sortFilter,
 			imageClass: imageClass,
 			projectClasses: Classes,
-			imageConf: imageConf
+			imageConf: imageConf,
+			activePage: 'ProjectV'
         });
     },
 
@@ -1087,8 +1361,13 @@ module.exports = {
 
 		var colors = [];
 		var i = 0;
+
+		console.log(colors);
+		console.log("this is colors", colorsJSON);
+
 		while(colors.length < results2.length)
 		{
+			
 			if(i >= colorsJSON.length)
 			{
 				i = 0;
@@ -1126,7 +1405,8 @@ module.exports = {
 			classes: results2,
 			colors: colors,
             logged: req.query.logged,
-			mergeProjects: mergeProjects
+			mergeProjects: mergeProjects,
+			activePage: 'Configuration'
         });
     },
 
@@ -1330,7 +1610,8 @@ getValidationConfigPage: async (req, res) => {
 		classes: results2,
 		colors: colors,
 		logged: req.query.logged,
-		mergeProjects: mergeProjects
+		mergeProjects: mergeProjects,
+		activePage: 'ConfigurationV'
 	});
 },
 
@@ -1498,7 +1779,9 @@ getValidationConfigPage: async (req, res) => {
 			scripts: scripts,
 			weights: weights,
 			has_scripts: has_scripts,
-            logged: req.query.logged
+            logged: req.query.logged,
+			activePage: 'Download'
+
         });
 	},
 	
@@ -2011,6 +2294,7 @@ getValidationConfigPage: async (req, res) => {
         
 		var colors = [];
 		var i = 0;
+
 		while(colors.length < Classes.length)
 		{
 			if(i >= colorsJSON.length)
@@ -2344,7 +2628,8 @@ getValidationConfigPage: async (req, res) => {
 			run_status: run_status,
 			run_paths: run_paths,
 			log_contents: log_contents,
-            logged: req.query.logged
+            logged: req.query.logged,
+			activePage: 'Training'
         });
     },
 
@@ -2634,7 +2919,8 @@ getValidationConfigPage: async (req, res) => {
 			run_status: run_status,
 			run_paths: run_paths,
 			log_contents: log_contents,
-            logged: req.query.logged
+            logged: req.query.logged,
+			activePage: 'Yolo'
         });
     },
 
@@ -2765,7 +3051,8 @@ getValidationConfigPage: async (req, res) => {
 			counts: counts,
 			icounts: icounts,
 			complete: complete,
-            logged: req.query.logged
+            logged: req.query.logged,
+			activePage: 'Stats'
         });
     },
 
@@ -2896,7 +3183,8 @@ getValidationConfigPage: async (req, res) => {
 			counts: counts,
 			icounts: icounts,
 			complete: complete,
-            logged: req.query.logged
+            logged: req.query.logged,
+			activePage: 'StatsV'
         });
     },
 
