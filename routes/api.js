@@ -2879,9 +2879,9 @@ api.post('/import', async(req,res) => {
 api.post('/mergeTest', async(req,res) => {
 	console.log("\nmergeTest");
 
-	const {exec} = require('child_process')
-	const rmdir = util.promisify(fs.rmdir)
-	const readdir = util.promisify(glob)
+	// const {exec} = require('child_process')
+	// const rmdir = util.promisify(fs.rmdir)
+	// const readdir = util.promisify(glob)
 	//get form variables
 	var upload_images = req.files.upload_project,
 		project_name = req.body.PName,
@@ -5237,25 +5237,23 @@ api.post('/deleteUser', async (req,res) =>{
 
 api.post('/updateClass', async (req, res) => {
     console.log("Request body:", req.body);
-	const { classId, className, classNumber, currentClassName} = req.body;
-
+	
+	const className = req.body.currentClassName
+ 	const updateClassName = req.body.updatedValue;
 	//update Class name
 
 	var IDX = parseInt(req.body.IDX),
 	PName = req.body.PName,
 	admin = req.body.Admin,
-	user = req.cookies.Username,
-	classes = req.body.classArray,
-	newName = className;
-
+	user = req.cookies.Username
+	
 	var public_path = __dirname.replace('routes',''),
 	main_path = public_path + 'public/projects/',
-	project_path = main_path + admin + '-' + PName;
+	project_path = main_path + user + '-' + PName;
 
-	//console.log("project_path: ", project_path);
-	//console.log("Database path:", project_path+'/'+PName+'.db');
-
-	console.log("currentClassName: ", currentClassName);
+	// console.log("project_path: ", project_path);
+	// console.log("Current Class Name:", className);
+    // console.log("Updated Class Name:", updateClassName);
 
 	var db = new sqlite3.Database(project_path+'/'+PName+'.db', (err) => {
 		if (err) {
@@ -5265,12 +5263,15 @@ api.post('/updateClass', async (req, res) => {
 	});
 
 	const sql = `UPDATE Classes SET CName = ? WHERE CName = ?`;
-    db.run(sql, [className, currentClassName], function (err) {
+    db.run(sql, [updateClassName, className], function (err) {
         if (err) {
             console.error("Error running SQL query:", err.message);
             return res.status(500).send("SQL query error");
         }
+		
         console.log(`Row(s) updated: ${this.changes}`);
+        console.log(`Last Query: ${sql}`);
+        console.log(`Parameters: [${updateClassName}, ${className}]`);
         res.status(200).send(`Row(s) updated: ${this.changes}`);
     });
 
@@ -5286,15 +5287,15 @@ api.post('/updateClass', async (req, res) => {
 
 
 api.post('/deleteClass', async (req, res) => {
-	console.log("deleteClass");
+	console.log("body", req.body);
 	   	
 	var IDX = parseInt(req.body.IDX),
 		PName = req.body.PName,
 		admin = req.body.Admin,
 		user = req.cookies.Username,
-		classes = req.body.classArray;
+		classes = req.body['classArray[]'];
 
-		console.log("IDX: ", IDX)
+		console.log("classes: ", classes);
 	// set paths
 	var public_path = __dirname.replace('routes',''),
 		main_path = public_path + 'public/projects/',

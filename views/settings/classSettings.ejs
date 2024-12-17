@@ -17,7 +17,7 @@
         <p>
             Add a new class to this existing project.
         </p>
-        <form class="row" action ="/addClasses" method="POST" enctype="multipart/form-data" id="addClassesForm">
+        <form class="row" action="/addClasses" method="POST" enctype="multipart/form-data" id="addClassesForm">
             <input type="hidden" name="PName" value="<%= PName %>">
             <input type="hidden" name="Admin" value="<%= Admin %>">
             <input type="hidden" name="IDX" value="<%= IDX %>">
@@ -38,16 +38,98 @@
             <p>
                 Update the class information for this existing project.
             </p>
-            
+            <form class="row" action="/updateClass" method="POST" enctype="multipart/form-data" id="updateClassForm">
+                <input type="hidden" name="PName" value="<%= PName %>">
+                <input type="hidden" name="Admin" value="<%= Admin %>">
+                <input type="hidden" name="IDX" value="<%= IDX %>">
+                <% for(var i=0; i<classes.length; i++) {%>
+                    <div class="col-auto mr-4 mb-4">
+                        <input class="form-check-input self-align-center" type="checkbox" value="<%=classes[i].CName%>" id="checkClass">
+                        <input name="input_updateClass" type="text" class="form-control" style="outline: 2px solid <%= colors[i].value %>"id="input_updateClass" value="<%=classes[i].CName%>"  required>
+                    </div>
+                <% } %>
+            </form>
         </div>
+        <hr>
+        <h3>Delete Class</h3>
+            <p>
+                delete by selecting the class information above for this existing project.
+            </p>
+            <button type="button" id="deleteButton" class="btn btn-danger">Delete Selected</button>
+
+
 
     </div>
 </div>
 
 <script>
+    document.querySelectorAll("#updateClassForm input[name='input_updateClass']")
+
+    .forEach(input => {
+        const originalValue = input.value;
+
+        input.addEventListener("blur", async function(event){
+
+            const updatedValue = this.value
+
+            console.log("haha")
+            console.log("orginal", originalValue);
+            console.log("update", updatedValue);
+
+    
+            if(updatedValue !== originalValue){
+                $.ajax({
+                    type: "POST",
+                    url: '/updateClass',
+                    data: {
+                        currentClassName: originalValue,
+                        updatedValue: updatedValue,
+                        PName: "<%= PName %>",
+                        Admin :"<%= Admin %>"
+                    }
+                })
+            }
+        })
+    })
+</script>
+
+
+<script>
+    document.getElementById("deleteButton").addEventListener("click", async function(event){
+        const checkedBoxes = [];
+        document.querySelectorAll("#updateClassForm input[type='checkbox']:checked").forEach((checkbox) => {
+            const className = checkbox.getAttribute("value");
+            checkedBoxes.push(className);
+        })
+        console.log("checkedBoxes", checkedBoxes);
+
+        if(checkedBoxes.length == 0){
+            alert("Please select a class to delete");
+        }
+        else if(confirm("Are you sure you want to delete the selected classes?")){
+            $.ajax({
+                type: "POST",
+                url: '/deleteClass',
+                data: {
+                    classArray: checkedBoxes,
+                    PName: "<%= PName %>",
+                    Admin :"<%= Admin %>",
+                    IDX: "<%= IDX %>"
+                },
+                success: function(data) {
+                    location.reload();
+                },
+                error: function (data) {
+                    alert("Error occurred while deleting the classes");
+                }
+            })
+        }
+    });
+
+</script>
+
+<!-- <script>
     document.getElementById("addClassesForm").addEventListener("submit", async function(event){
-        
-        event.preventDefault()
 
         let form = $("#addClassesForm")
         let url = form.attr('action')
@@ -68,6 +150,19 @@
                   </div>
                 `;
                 $("#addClassesForm").after(alertDiv);
+
+                const newInput = `
+                    <div class="row-auto mr-4 mb-4">
+                        <input name="input_updateClass" type="text" 
+                            class="form-control" 
+                            style="outline: 2px solid #ccc" 
+                            id="input_updateClass" 
+                            value="${submittedClass}" 
+                            required>
+                    </div>
+                `;
+                $("#updateClassForm").append(newInput);
+
                 setTimeout(() => {
                   $(".alert-success").fadeOut("slow", function() {
                     $(this).remove();
@@ -89,7 +184,7 @@
             }
         })
     })
-</script>
+</script> -->
 
 
 
