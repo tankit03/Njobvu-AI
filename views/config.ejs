@@ -237,6 +237,9 @@
 				<div class="card-body">
 					<p class="card-text">
 						<form class="add-User-form" action="/mergeTest" method="POST" enctype="multipart/form-data" id="mergeForm">
+							<input type="hidden" name="PName" value="<%= PName %>">
+							<input type="hidden" name="Admin" value="<%= Admin %>">
+							<input type="hidden" name="IDX" value="<%= IDX %>">
 							<div class="form-group row">
 								<label class="col-md-4 col-form-label" for="upload_project">Upload Project (.zip)</label>
 								<div class="col-md">
@@ -546,7 +549,7 @@
 	});
 </script>
 
-<!-- <script>
+<script>
 
 	document.forms['mergeForm'].addEventListener('submit', (event) => {
 		event.preventDefault();
@@ -608,7 +611,7 @@
 		console.log(formData);
 	});
 
-</script> -->
+</script>
 
 <script>
 

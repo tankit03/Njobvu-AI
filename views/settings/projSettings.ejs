@@ -38,12 +38,19 @@
         <hr>
     </div>
     <div class="mb-3">
-        <h3>Merge Projects</h3>
-        <p>Merge this project with another project.</p>
+        <h3>
+            Merge Projects
+        </h3>
+        <p>
+            Merge this project with another project.
+        </p>
         <form action="/mergeTest" method="POST" enctype="multipart/form-data" id="mergeForm">
             <div class="mb-3">
-                <label for="upload_project" class="form-label">Upload Project (.zip)</label>
+                <!-- <label for="upload_project" class="form-label">Upload Project (.zip)</label> -->
                 <input id="upload_project" name="upload_project" type="file" class="form-control" required>
+            </div>
+            <div>
+                <label for="progress" id="progress"></label>
             </div>
             <div>
                 <% if(user == Admin) { %>

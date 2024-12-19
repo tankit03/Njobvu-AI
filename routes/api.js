@@ -3427,7 +3427,7 @@ api.post('/mergeTest', async(req,res) => {
 				// get incoming labels
 				var results6 = await nmdb.allAsync("SELECT * FROM Labels");
 
-				var results7 = await mergeDB.allAsync("SELECT * FROM Validation");
+				var results7 = await nmdb.allAsync("SELECT * FROM Validation");
 				var new_valids = [];
 				for(var i = 0; i < results7.length; i++)
 				{
