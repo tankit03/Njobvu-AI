@@ -2383,7 +2383,7 @@ getValidationConfigPage: async (req, res) => {
     getTrainingPage: async (req, res) => {
         console.log("getTrainingPage");
 	   
-		const readdir = util.promisify(glob)
+		const readdir = util.promisify(fs.readdir)
 		const readFile = util.promisify(fs.readFile)
 		
 		// get URL variables
@@ -2658,7 +2658,7 @@ getValidationConfigPage: async (req, res) => {
     getYoloPage: async (req, res) => {
         console.log("getYoloPage");
 	   
-		const readdir = util.promisify(glob)
+		const readdir = util.promisify(fs.readdir)
 		const readFile = util.promisify(fs.readFile)
 		
 		// get URL variables
