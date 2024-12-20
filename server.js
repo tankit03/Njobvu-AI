@@ -172,6 +172,7 @@ const {
     getClassSettingsPage,
     getAccessSettingsPage,
     getImageSettingsPage,
+    getMergeSettingsPage,
   get404Page,
   getValidationHomePage,
   getValidationProjectPage,
@@ -215,6 +216,7 @@ app.get('/config/projSettings', getProjectSettingsPage);
 app.get('/config/classSettings', getClassSettingsPage);
 app.get('/config/accessSettings', getAccessSettingsPage);
 app.get('/config/imageSettings', getImageSettingsPage);
+app.get('/config/mergeSettings', getMergeSettingsPage);
 app.get('/download', getDownloadPage);
 app.get('/labeling', getLabelingPage);
 app.get('/stats', getStatsPage);

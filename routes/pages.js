@@ -2,7 +2,7 @@
 // Main - Routes
 
 const { reject, filter } = require("bluebird");
-const { use } = require("./api");
+const { use, merge } = require("./api");
 const { act } = require("@react-three/fiber");
 
 ////////////////////////////////////////////////////////
@@ -165,11 +165,10 @@ module.exports = {
 	},
 
 	getAccessSettingsPage: async (req, res) => {
+
 		var user = req.cookies.Username;
 		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"'");
 		var IDX = req.query.IDX;
-
-		console.log("idx: ", IDX);
 
 		if(IDX == undefined)
 		{
@@ -188,44 +187,16 @@ module.exports = {
 			return res.redirect('/home');
 		}
 
-		try{
-			res.render('settings/accessSettings', {
-				title: 'accessSettings',
-				logged: req.query.logged,
-				user: user,
-				IDX: IDX,
-				activePage: 'accessSettings'
-			});
-		}
-		catch (error) {
-			console.error('Error rendering accessSettings:', error);
-			res.status(500).send('Error loading page');
-		}
-	},
+		var PName = projects[IDX].PName;
+		var admin = projects[IDX].Admin;
 
-	getAccessSettingsPage: async (req, res) => {
-		var user = req.cookies.Username;
-		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"'");
-		var IDX = req.query.IDX;
+		var results3 = await db.allAsync("SELECT * FROM `Access` WHERE PName= '" + PName + "' AND Admin = '"+ admin + "' AND Username != '"+user+"'");
 
-		console.log("idx: ", IDX);
-
-		if(IDX == undefined)
-		{
-			IDX = 0;
-			valid = 1;
-			return res.redirect('/home');
-		}
-
-		if(user == undefined)
-		{
-			return res.redirect('/');
-		}
-
-		if(IDX >= projects.length){
-			valid = 1;
-			return res.redirect('/home');
-		}
+		var access = [];
+        for(var i = 0; i < results3.length; i++)
+        {
+            access.push(results3[i].Username);
+        }
 
 		try{
 			res.render('settings/accessSettings', {
@@ -233,6 +204,9 @@ module.exports = {
 				logged: req.query.logged,
 				user: user,
 				IDX: IDX,
+				access: access,
+				Admin: admin,
+				PName: PName,
 				activePage: 'accessSettings'
 			});
 		}
@@ -284,6 +258,52 @@ module.exports = {
 		}
 	},
 
+	getMergeSettingsPage: async (req, res) => {
+
+		var user = req.cookies.Username;
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"'");
+		var IDX = req.query.IDX;
+
+		if(IDX == undefined)
+		{
+			IDX = 0;
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		if(user == undefined)
+		{
+			return res.redirect('/');
+		}
+
+		if(IDX >= projects.length){
+			valid = 1;
+			return res.redirect('/home');
+		}
+
+		var PName = projects[IDX].PName;
+		var admin = projects[IDX].Admin;
+		var mergeProjects = await db.allAsync("SELECT * FROM Access WHERE Username = '"+user+"' AND NOT PName = '"+PName+"'");
+
+		console.log("username: ", user);
+		console.log("getMergeSettingsPage");
+
+		try{
+			res.render('settings/mergeSettings', {
+				title: 'mergeSettings',
+				logged: req.query.logged,
+				user: user,
+				PName: PName,
+				Admin: admin,
+				IDX: IDX,
+				activePage: 'mergeSettings',
+				mergeProjects: mergeProjects
+			});
+		} catch (error) {
+			console.error('Error rendering projSettings:', error);
+			res.status(500).send('Error loading page');
+		}
+	},
 
 
     // Signup page

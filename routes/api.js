@@ -4004,7 +4004,7 @@ api.post('/addUser', async(req,res) => {
 		}
 	}
 	if(validation) return res.redirect('/configV?IDX='+IDX);
-	return res.redirect('/config?IDX='+IDX);
+	return res.redirect('/config/accessSettings?IDX='+IDX);
 });
 
 
@@ -4023,7 +4023,7 @@ api.post('/removeAccess', async(req,res) => {
 	await db.runAsync("DELETE FROM Access WHERE PName = '" + PName + "' AND Username = '" + OldUser + "' AND Admin = '" + Admin + "'");
 
 	if(validation) return res.redirect('/configV?IDX='+IDX);
-	return res.redirect('/config?IDX='+IDX);
+	return res.redirect('/config/accessSettings?IDX='+IDX);
 });
 
 
