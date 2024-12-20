@@ -806,6 +806,7 @@ module.exports = {
 			classes: classes,
 			currentPage: page,
 			totalPageCount: totalImagesCount,
+			selectedClass: req.query.class,
 			IDX: IDX,
 			activePage: 'Annotate'
 		});
