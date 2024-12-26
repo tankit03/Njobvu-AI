@@ -14,29 +14,61 @@
     </div>
     <div>
         <h3>Update Project Information</h3>
-        <form class="update-project-form" action ="/updateProject" method="POST" enctype="multipart/form-data" id="updateProjectForm">
+        <form
+            class="update-project-form"
+            action="/updateProject"
+            method="POST"
+            enctype="multipart/form-data"
+            id="updateProjectForm"
+        >
+            <!-- Hidden Fields -->
             <input type="hidden" name="PName" value="<%= PName %>">
             <input type="hidden" name="Admin" value="<%= Admin %>">
             <input type="hidden" name="IDX" value="<%= IDX %>">
+    
+            <!-- Update Project Title -->
             <div class="mb-3">
-                <p for="update-project-name" class="form-label">Update Project Title:</p>
-                <input class="form-control" id="update-project-name" placeholder="<%= PName %>">
+                <label for="update-project-name" class="form-label">Update Project Title:</label>
+                <input
+                    class="form-control"
+                    id="update-project-name"
+                    name="project_name"
+                    placeholder="<%= PName %>"
+                    value="<%= PName %>" <!-- Pre-fill with the current project name -->
+                >
             </div>
+    
+            <!-- Update Project Description -->
             <div class="mb-3">
-                <p for="Update-project-description" class="form-label">Update Project Description:</p>
-                <!-- <textarea class="form-control" id="Update-project-description" rows="3"><%= PDescription %></textarea> -->
-                <textarea name="project_description" class="form-control" id="Update-project-description" rows="3" required><%= PDescription %></textarea>
+                <label for="Update-project-description" class="form-label">Update Project Description:</label>
+                <textarea
+                    name="project_description"
+                    class="form-control"
+                    id="Update-project-description"
+                    rows="3"
+                    required
+                ><%= PDescription %></textarea>
             </div>
+    
+            <!-- Submit Button -->
             <div>
-                <% if(user == Admin) {%>
-                    <button class="btn btn-primary" type="submit">Save Update's</button>
-                <%}else {%>
-                    <a href="#" role="button" class="btn btn-primary disabled" value="Delete Project" style="border-radius: 0">Save</a>
-                <%}%>
+                <% if (user == Admin) { %>
+                    <button class="btn btn-primary" type="submit">Save Updates</button>
+                <% } else { %>
+                    <a
+                        href="#"
+                        role="button"
+                        class="btn btn-primary disabled"
+                        style="border-radius: 0"
+                    >
+                        Save
+                    </a>
+                <% } %>
             </div>
         </form>
         <hr>
     </div>
+     
     <div>
         <h3>Delete Project</h3>
         <form action="/deleteProject" method="post" id="submit-delete-project">
