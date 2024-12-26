@@ -2,7 +2,7 @@
 <%- include('../includes/navbar', { activePage: 'Configuration' }) %>
 <%- include('../includes/configNav', { activePage }) %>
 
-<div class="container">
+<div class="container  pb-5">
     <div class="row">
         <div class="col-md-12">
             <h1>Class Settings</h1>
@@ -17,7 +17,7 @@
         <p>
             Add a new class to this existing project.
         </p>
-        <form class="row" action ="/addClasses" method="POST" enctype="multipart/form-data" id="addClassesForm">
+        <form class="row" action="/addClasses" method="POST" enctype="multipart/form-data" id="addClassesForm">
             <input type="hidden" name="PName" value="<%= PName %>">
             <input type="hidden" name="Admin" value="<%= Admin %>">
             <input type="hidden" name="IDX" value="<%= IDX %>">
@@ -38,99 +38,160 @@
             <p>
                 Update the class information for this existing project.
             </p>
-            
+            <form class="row" action="/updateClass" method="POST" enctype="multipart/form-data" id="updateClassForm">
+                <input type="hidden" name="PName" value="<%= PName %>">
+                <input type="hidden" name="Admin" value="<%= Admin %>">
+                <input type="hidden" name="IDX" value="<%= IDX %>">
+                <% for(var i=0; i<classes.length; i++) {%>
+                    <div class="col-auto mr-4 mb-4">
+                        <input class="form-check-input self-align-center" type="checkbox" value="<%=classes[i].CName%>" id="checkClass-<%= i %>">
+                        <input name="input_updateClass" type="text" class="form-control" style="outline: 2px solid <%= colors[i].value %>" id="input_updateClass-<%= i %>" value="<%=classes[i].CName%>"  required>
+                    </div>
+                <% } %>
+            </form>
         </div>
+        <hr>
+        <h3>Delete Class</h3>
+            <p>
+                delete by selecting the class information above for this existing project.
+            </p>
+            <button type="button" id="deleteButton" class="btn btn-danger">Delete Selected</button>
 
     </div>
 </div>
 
 <script>
-    document.getElementById("addClassesForm").addEventListener("submit", async function(event){
-        
-        event.preventDefault()
+    document.querySelectorAll("#updateClassForm input[name='input_updateClass']")
+    .forEach(input => {
+        const originalValue = input.value;
 
-        let form = $("#addClassesForm")
-        let url = form.attr('action')
+        // Handle blur event
+        input.addEventListener("blur", async function(event) {
+            const updatedValue = this.value;
+            const inputElement = this; // Capture the input element reference
 
-        let submittedClass = form.find('input[name="input_classes"]').val();
+            if (updatedValue !== originalValue) {
+                console.log("Updating class name...");
+                $.ajax({
+                    type: "POST",
+                    url: '/updateClass',
+                    data: {
+                        currentClassName: originalValue,
+                        updatedValue: updatedValue,
+                        PName: "<%= PName %>",
+                        Admin: "<%= Admin %>"
+                    },
+                    success: function(response) {
+                        console.log(response); 
 
-        console.log("this is the sub value: ", submittedClass);
-
-        $.ajax({
-            type: "POST",
-            url: url,
-            data: form.serialize(),
-            success: function(data) {
-                // Add success alert to the page
-                const alertDiv = `
-                  <div class="alert alert-success" role="alert">
-                    The class <strong>${submittedClass}</strong> has been submitted
-                  </div>
-                `;
-                $("#addClassesForm").after(alertDiv);
-                setTimeout(() => {
-                  $(".alert-success").fadeOut("slow", function() {
-                    $(this).remove();
-                  });
-                }, 3000);
-            },
-            error: function (data) {
-                const alertDiv = `
-                <div class="alert alert-danger" role="alert">
-                    Error occurred while submitting the form.
-                </div>
-                `;
-                $("#addClassesForm").after(alertDiv);
-                setTimeout(() => {
-                  $(".alert-danger").fadeOut("slow", function() {
-                    $(this).remove();
-                  });
-                }, 3000);
+                        const checkbox = inputElement.closest(".col-auto").querySelector("input[type='checkbox']");
+                        checkbox.value = updatedValue; 
+                    },
+                    error: function(error) {
+                        console.error("Error updating class name:", error);
+                    }
+                });
             }
-        })
-    })
+        });
+
+        // Handle Enter key press
+        input.addEventListener("keydown", function(event) {
+            const inputElement = this; // Capture the input element reference
+
+            if (event.key === "Enter") {
+                event.preventDefault();
+
+                const updatedValue = this.value;
+
+                if (updatedValue !== originalValue) {
+                    console.log("Updating class name...");
+                    $.ajax({
+                        type: "POST",
+                        url: '/updateClass',
+                        data: {
+                            currentClassName: originalValue,
+                            updatedValue: updatedValue,
+                            PName: "<%= PName %>",
+                            Admin: "<%= Admin %>"
+                        },
+                        success: function(response) {
+                            console.log(response); // Log success response
+
+                            // Use the captured input element reference
+                            const checkbox = inputElement.closest(".col-auto").querySelector("input[type='checkbox']");
+                            checkbox.value = updatedValue; // Update the checkbox value dynamically
+                            const alertDiv = `<div class="alert alert-success" role="alert">
+                                            Class ${originalValue} updated to ${updatedValue} successfully!
+                                            </div>`;
+                            
+                            document.getElementById("updateClassForm").insertAdjacentHTML("afterend", alertDiv);
+
+                        },
+                        error: function(error) {
+                            console.error("Error updating class name:", error);
+                            const alertDiv = `<div class="alert alert-danger" role="alert">
+                                            Error updating class ${originalValue} to ${updatedValue}!
+                                            </div>`;
+                                    
+                            document.getElementById("updateClassForm").insertAdjacentHTML("afterend", alertDiv);
+                            
+                        }
+                    });
+                }
+                input.blur(); // Mimic losing focus
+            }
+        });
+    });
+
 </script>
 
 
+<script>
+    document.getElementById("deleteButton").addEventListener("click", async function(event){
+        const checkedBoxes = [];
+        document.querySelectorAll("#updateClassForm input[type='checkbox']:checked").forEach((checkbox) => {
+            const className = checkbox.getAttribute("value");
+            checkedBoxes.push(className);
+        })
+        
+        const classesLength = "<%= classes.length %>";
 
-        <!-- <h3>Update Class Information</h3> -->
-            <!-- <div class="form-group col">
-                <form class="row g-3">
-                <% for(var i=0; i<classes.length; i++) {%>
-                        <div class="col-auto align-self-end">
-                          <input type="color" class="form-control-color align-self-end" id="exampleColorInput" value="<%= colors[i].value %>" title="Choose your color">
-                        </div>
-                        <div class="col-auto">
-                          <input type="text" class="form-control" id="currentCName" value="<%= classes[i].CName %>">
-                        </div>
-                        <div class="col align-self-end">
-                          <button type="submit" class="btn btn btn-danger mb-3">Delete Class</button>
-                        </div>
-                    </form>
-                <% } %>    
-            </div> -->
+        if(classesLength == 1){
+            const alertDiv = `<div class="alert alert-danger" role="alert">
+                                Cannot delete the last class in the project!
+                              </div>`;
+        
+            document.getElementById("updateClassForm").insertAdjacentHTML("afterend", alertDiv);
+        }
+        else if(classesLength == checkedBoxes.length){
+            const alertDiv = `<div class="alert alert-danger" role="alert">
+                                Cannot delete all classes in the project!
+                              </div>`;
+        
+            document.getElementById("updateClassForm").insertAdjacentHTML("afterend", alertDiv);
+        }
+        else if(checkedBoxes.length == 0){
+            alert("Please select a class to delete");
+        }
+        else if(confirm("Are you sure you want to delete the selected classes?")){
+            $.ajax({
+                type: "POST",
+                url: '/deleteClass',
+                data: {
+                    classArray: checkedBoxes,
+                    PName: "<%= PName %>",
+                    Admin :"<%= Admin %>",
+                    IDX: "<%= IDX %>"
+                },
+                success: function(data) {
+                    location.reload();
+                },
+                error: function (data) {
+                    alert("Error occurred while deleting the classes");
+                }
+            })
+        }
+    });
 
-            <!-- <div class="form-group col">
-                <div class="row-md-10 mr-0 ml-0 row justify-content-md-center padding" >
-                    <% for(var i=0; i<classes.length; i++) {%>		
-                        <input type="hidden" name="CName" value="<%= classes[i].CName %>" data-id="updateButton<%=i%>">	
-                        <input type="color" class=" form-control-color" id="exampleColorInput" value="<%= colors[i].value %>" title="Choose your color">						
-                        <button 
-                            contenteditable="true"
-                            id="updateButton<%=i%>" 
-                            type="button" 
-                            value="<%=classes[i].CName%>" 
-                            class="col-sx-3 mr-1 ml-1 pt-0 pb-0 btn class-selection" 
-                            style="background-color: <%= colors[i].value %>; border-radius: 0; border: 5px solid <%= colors[i].value %>">
-                            <span contenteditable="false"><%= i+1 %>: </span><%= classes[i].CName %>
-                        </button>
-                    <% } %>
-                </div>		
-                <div class="col-md-2 text-right">
-                    <% if(user == Admin) {%>
-                        <input type="submit" class="btn btn-danger" value="Delete" style="border-radius: 0">
-                    <%}else {%>
-                        <a href="#" role="button" class="btn btn-danger disabled" value="Delete" style="border-radius: 0">Delete</a>
-                    <%}%>
-                </div>	
-            </div> -->
+</script>
+

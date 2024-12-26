@@ -3,7 +3,7 @@
 <div id="review">
     <div class="container">
         <div class="Review">
-            <h3>Review Images for Class: <%= CName %></h3>
+            
             <!-- <p id="username">User: <%= user %></p> -->
             <input type="hidden" id="ProjectName" value="<%= PName %>">
             <input type="hidden" id="username" value="<%= user %>">
@@ -11,10 +11,20 @@
                 <form id="reviewForm" action="/submit-review" method="POST">
                     <table class="table table-striped">
                         <thead class="thead-dark">
-                            <div style="padding-bottom: 20px;">
+                            <h3 class="justify-content-start">
+                                Review Images for Class: <%= CName %>
+                            </h3>
+                            <select class="form-select justify-content-start" aria-label="Default select example" onchange="window.location.href=this.value;">
+                                <% for(var i=0; i<classes.length; i++) { %>
+                                    <option value="/review?class=<%= classes[i]['CName'] %>&IDX=0" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
+                                        <%= classes[i]['CName'] %>
+                                    </option>
+                                <% } %>
+                            </select>  
+                            <div class="d-flex justify-content-end" style="padding-bottom: 20px; padding-top: 20px;">
                                 <button type="button" id="checkAllButton" class="btn btn-success">Check All</button>
                                 <button type="button" id="uncheckAllButton" class="btn btn-danger" style="display: none;">Uncheck All</button>
-                            </div>
+                            </div>                        
                             <tr>
                                 <th scope="col">Image Name</th>
                                 <th scope="col">Image</th>
