@@ -50,7 +50,9 @@
 								<input id = "PName<%=i%>" type="hidden" name="PName" value="<%= projects[i][0].PName %>">
 								<input id = "Admin<%=i%>" type="hidden" name="Admin" value="<%= projects[i][0].Admin %>">
 								<input id = "PDescription<%=i%>" type="hidden" name="PDescription" value="<%= projects[i][0].PDescription %>">
-								<button id = "downloadbtn<%=i%>" name="form_action"  id="form-download" value="download" class="btn btn-primary">Download Project</button>
+								<button id="downloadbtn<%=i%>" name="form_action" value="download" class="btn btn-primary" title="Download Project">
+									<i class="fas fa-download"></i>
+								</button>																							
 							</form>
 						</td>
 						<td class="text-right"><button id="changeValidbtn<%=i%>" type="submit" class="btn btn-primary" onclick="changeValidation('<%= projects[i][0].PName %>', '<%= projects[i][0].Admin %>')">Disable Validation</button></td>
