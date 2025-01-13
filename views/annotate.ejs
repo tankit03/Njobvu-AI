@@ -4,26 +4,34 @@
 <div id="annotate">
     <div class="container">
         <div class="Annotate">
-            <h3>Annotate Project: <span style="color: black;"><%= PName %> </span></h3>
-            <h3>Classes:</h3>
-            <div class="col-md-12">
-                <table class="table table-striped">
+            <h3>Annotate Project: <span style="color: black;"><%= PName %></span></h3>
+            <div class="col-md-12 text-center">
+                <table class="table table-striped text-center" style="margin: 0 auto; width: 80%;">
                     <thead class="thead-dark">
                         <tr>
                             <th scope="col">Class Name</th>
+                            <th class="text-center" scope="col">Number of Labels</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <% classes.forEach(function(classItem) { %>
-                            <tr>
-                                <td>
-                                    <a href="/review?class=<%= encodeURIComponent(classItem.CName) %>&IDX=<%= IDX %>"><%= classItem.CName %></a>
-                                </td>
-                            </tr>
-                        <% }); %>
+                        <% for (var i = 0; i < classes.length; i++) { %>
+                        <tr>
+                            <!-- Class Name as clickable link -->
+                            <td scope="row">
+                                <a href="/review?class=<%= encodeURIComponent(classes[i].CName) %>&IDX=<%= IDX %>">
+                                    <%= classes[i].CName %>
+                                </a>
+                            </td>
+                            <!-- Display icounts -->
+                            <td class="text-center" style="text-align: center;"><%= icounts[i] %></td>
+                        </tr>
+                        <% } %>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
+
+<%- include('includes/footer') %>
+

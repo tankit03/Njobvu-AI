@@ -17,7 +17,9 @@
   },
   "homepage": "https://github.com/madebymaze/express-server#readme",
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2",
     "@mapbox/node-pre-gyp": "^1.0.11",
+    "@react-three/fiber": "^8.17.12",
     "archiver": "^7.0.1",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.7.2",
