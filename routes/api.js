@@ -532,6 +532,7 @@ api.post('/createP', async (req, res) => {
 	}
 	else if(upload_video){
 		var video_path = images_path + '/' +upload_video.name; // $LABELING_TOOL_PATH/public/projects/{project_name}/{zip_file_name}
+		frame_rate *= 30;
 
 		await upload_video.mv(video_path);
 		console.log("File Uploaded", upload_video.name);

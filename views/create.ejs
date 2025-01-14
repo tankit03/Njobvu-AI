@@ -78,10 +78,11 @@
 			}
 
 			const upload_bootstrap = document.getElementById('upload_bootstrap');
-			if(document.getElementById('bootstrap_check').checked){
+			/*if(document.getElementById('bootstrap_check').checked){
 				const filesB = upload_bootstrap.files[0];
 				formData.append('upload_bootstrap', new Blob([filesB]));
 			}
+			*/
 			formData.append('project_name', document.getElementById("project_name").value);
 			formData.append('input_classes', document.getElementById("input_classes").value);
 
@@ -90,7 +91,7 @@
 			request.upload.addEventListener('progress', function (e) {
 				var file1Size = $('#upload_images')[0].files[0].size;
 
-				if(document.getElementById('bootstrap_check').checked){
+				/* if(document.getElementById('bootstrap_check').checked){
 					console.log('Checked!!!!!');
 					var file2Size = $('#upload_bootstrap')[0].files[0].size;
 					if (e.loaded <= (file1Size + file2Size)) {
@@ -108,8 +109,9 @@
 						
 					}	
 				}
+				*/
 
-				else{
+				
 					if (e.loaded <= file1Size) {
 						var percent = Math.round(e.loaded / file1Size * 100);
 						console.log(percent);
@@ -124,7 +126,7 @@
 						// window.location.reload();
 						
 					}	
-				}
+			
 
 			}, true);   
 
