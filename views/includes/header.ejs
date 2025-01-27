@@ -40,7 +40,7 @@
 				</form>
 				<a class="navbar-brand" href="/user" style="left: 100%; float: right;">User: <%= user%></a>
                 <% if (activePage !== null) { %>
-                    <ul class="nav">
+                    <ul class="nav nav-tabs" style="border-bottom: 0px; margin-left: 10px;">
                         <li class="nav-item">
                             <a class="nav-link <%= activePage === 'project' ? 'active' : '' %>" href="/project?IDX=<%= IDX %>&page=1&perPage=10" style="border-radius: 0">Label</a>
                         </li>
