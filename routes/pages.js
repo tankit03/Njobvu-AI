@@ -2124,7 +2124,8 @@ getValidationConfigPage: async (req, res) => {
             rev_image: results4[0].reviewImage,
             list_counter: list_counter,
             AutoSave: results5["AutoSave"],
-            logged: req.query.logged
+            logged: req.query.logged,
+			activePage: 'project'
         });
 	}
     },
