@@ -460,7 +460,9 @@ module.exports = {
             pages: Math.ceil(results1.length/perPage),
             perPage: perPage,
             logged: req.query.logged,
-            needs_review: review_counter
+            needs_review: review_counter,
+			activePage: null,
+			IDX: null
         });
     },
 
