@@ -5272,26 +5272,29 @@ api.post('/updateClass', async (req, res) => {
 		console.log('Connected to db.');
 	});
 
-	const sql = `UPDATE Classes SET CName = ? WHERE CName = ?`;
-    db.run(sql, [updateClassName, className], function (err) {
-        if (err) {
-            console.error("Error running SQL query:", err.message);
-            return res.status(500).send("SQL query error");
-        }
-		
-        console.log(`Row(s) updated: ${this.changes}`);
-        console.log(`Last Query: ${sql}`);
-        console.log(`Parameters: [${updateClassName}, ${className}]`);
-        res.status(200).send(`Row(s) updated: ${this.changes}`);
-    });
+	const updateLabels = `UPDATE Labels SET CName = ? WHERE CName = ?`;
+	const updateValidation = `UPDATE Validation SET CName = ? WHERE CName = ?`;
+	const updateClasses = `UPDATE Classes SET CName = ? WHERE CName = ?`;
 
-    db.close((err) => {
-        if (err) {
-            console.error("Error closing database:", err.message);
-        } else {
-            console.log("db closed successfully");
-        }
-    });
+	db.run(updateLabels, [updateClassName, className], function (err) {
+		if (err) {
+			console.error("Error updating Labels:", err.message);
+			return res.status(500).send("Error updating Labels");
+		}
+		db.run(updateValidation, [updateClassName, className], function (err) {
+			if (err) {
+				console.error("Error updating Validation:", err.message);
+				return res.status(500).send("Error updating Validation");
+			}
+			db.run(updateClasses, [updateClassName, className], function (err) {
+				if (err) {
+					console.error("Error updating Classes:", err.message);
+					return res.status(500).send("Error updating Classes");
+				}
+				res.status(200).send("Class name updated successfully.");
+			});
+		});
+	});
 });
 
 
