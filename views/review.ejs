@@ -16,7 +16,7 @@
                             </h3>
                             <select class="form-select justify-content-start" aria-label="Default select example" onchange="window.location.href=this.value;">
                                 <% for(var i=0; i<classes.length; i++) { %>
-                                    <option value="/review?class=<%= classes[i]['CName'] %>&IDX=0" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
+                                    <option value="/review?class=<%= classes[i]['CName'] %>&IDX=<%= IDX %>" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
                                         <%= classes[i]['CName'] %>
                                     </option>
                                 <% } %>
