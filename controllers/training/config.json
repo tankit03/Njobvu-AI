@@ -1,8 +1,8 @@
 {
-	"port": 8081,
-	"hostname": "http://localhost",
+	"port": 8443,
+	"hostname": "http://njobvu.ceoas.oregonstate.edu",
 	"default_python_path": "/usr/bin/python",
 	"default_yolo_path": "",
-	"ssl_key_path": "",
-	"ssl_cert_path": ""
+	"ssl_key_path": "/etc/letsencrypt/live/njobvu/privkey.pem",
+	"ssl_cert_path": "/etc/letsencrypt/live/njobvu/cert.pem"
 }

@@ -42,25 +42,22 @@
                 <% if (activePage !== null) { %>
                     <ul class="nav nav-tabs" style="border-bottom: 0px; margin-left: 10px;">
                         <li class="nav-item">
-                            <a class="nav-link <%= activePage === 'project' ? 'active' : '' %>" href="/project?IDX=<%= IDX %>&page=1&perPage=10" style="border-radius: 0">Label</a>
+                            <a class="nav-link <%= activePage === 'project' ? 'active' : '' %>" href="/project?IDX=<%= IDX %>&page=1&perPage=10" style="border-radius: 0"><font color="<%= activePage === 'project' ? '#000000' : '#FFFFFF' %>">Label</font></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <%= activePage === 'Annotate' ? 'active' : '' %>" href="/annotate?IDX=<%= IDX %>" style="border-radius: 0">Annotate</a>
+                            <a class="nav-link <%= activePage === 'Annotate' ? 'active' : '' %>" href="/annotate?IDX=<%= IDX %>" style="border-radius: 0"><font color="<%= activePage === 'Annotate' ? '#000000' : '#FFFFFF' %>">Annotate</font></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <%= activePage === 'Stats' ? 'active' : '' %>" href="/stats?IDX=<%= IDX %>" style="border-radius: 0">Stats</a>
+                            <a class="nav-link <%= activePage === 'Stats' ? 'active' : '' %>" href="/stats?IDX=<%= IDX %>" style="border-radius: 0"><font color="<%= activePage === 'Stats' ? '#000000' : '#FFFFFF' %>">Stats</font></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <%= activePage === 'projSettings' ? 'active' : '' %>" href="/config/projSettings?IDX=<%= IDX %>" style="border-radius: 0">Configuration</a>
+                            <a class="nav-link <%= activePage === 'projSettings' ? 'active' : '' %>" href="/config/projSettings?IDX=<%= IDX %>" style="border-radius: 0"><font color="<%= activePage === 'projSettings' ? '#000000' : '#FFFFFF' %>">Configuration</font></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <%= activePage === 'Download' ? 'active' : '' %>" href="/download?IDX=<%= IDX %>" style="border-radius: 0">Download</a>
+                            <a class="nav-link <%= activePage === 'Download' ? 'active' : '' %>" href="/download?IDX=<%= IDX %>" style="border-radius: 0"><font color="<%= activePage === 'Download' ? '#000000' : '#FFFFFF' %>">Download</font></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link <%= activePage === 'Training' ? 'active' : '' %>" href="/training?IDX=<%= IDX %>" style="border-radius: 0">Training</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <%= activePage === 'Yolo' ? 'active' : '' %>" href="/yolo?IDX=<%= IDX %>" style="border-radius: 0">Yolo</a>
+                            <a class="nav-link <%= activePage === 'Processing' ? 'active' : '' %>" href="/processing?IDX=<%= IDX %>" style="border-radius: 0"><font color="<%= activePage === 'Processing' ? '#000000' : '#FFFFFF' %>">Processing</font></a>
                         </li>
                     </ul>
                 <% } %>

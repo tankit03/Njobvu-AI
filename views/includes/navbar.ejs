@@ -16,11 +16,14 @@
             <a class="nav-link <%= activePage === 'Download' ? 'active' : '' %>" href="/download?IDX=<%= IDX %>" style="border-radius: 0">Download</a>
         </li>
         <li class="nav-item">
+            <a class="nav-link <%= activePage === 'Processing' ? 'active' : '' %>" href="/processing?IDX=<%= IDX %>" style="border-radius: 0"><font color="<%= activePage === 'Processing' ? '#000000' : '#FFFFFF' %>">Processing</font></a>
+        </li>
+        <!-- <li class="nav-item">
             <a class="nav-link <%= activePage === 'training' ? 'active' : '' %>" href="/training?IDX=<%= IDX %>" style="border-radius: 0">Training</a>
         </li>
         <li class="nav-item">
             <a class="nav-link <%= activePage === 'Yolo' ? 'active' : '' %>" href="/yolo?IDX=<%= IDX %>" style="border-radius: 0">Yolo2</a>
-        </li>
+        </li> -->
     </ul>
 </div>
 
