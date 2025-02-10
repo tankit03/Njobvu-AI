@@ -166,6 +166,10 @@ const {
 	getLabelingPage,
 	getStatsPage,
     getTrainingPage,
+    getProcessingPage,
+    getYolo3SettingsPage,
+    getYoloXSettingsPage,
+    getServerInfoPage,
 	getYoloPage,
 	getUserPage,
     getProjectSettingsPage,
@@ -221,7 +225,11 @@ app.get('/download', getDownloadPage);
 app.get('/labeling', getLabelingPage);
 app.get('/stats', getStatsPage);
 app.get('/training', getTrainingPage);
+app.get('/processing', getProcessingPage);
 app.get('/yolo', getYoloPage);
+app.get('/yolo/yolov3Settings', getYolo3SettingsPage);
+app.get('/yolo/yolovXSettings', getYoloXSettingsPage);
+app.get('/yolo/serverInfo', getServerInfoPage);
 app.get('/user', getUserPage);
 app.get('/homeV', getValidationHomePage);
 app.get('/projectV', getValidationProjectPage);

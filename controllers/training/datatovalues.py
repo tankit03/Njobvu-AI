@@ -37,6 +37,7 @@ import getopt
 import sys
 import subprocess
 import unicodedata
+import shutil
 
 directory_path = os.path.dirname(os.path.realpath(__file__)) + '/'
 data_path = ""
@@ -49,6 +50,11 @@ batch = ""
 subdiv = ""
 width = ""
 height = ""
+yolo_version = 3
+epochs = 100
+imgsz = 640
+device = "cpu"
+adv_options = ""
 python_path = ""
 python_script = ""
 percentage = ""
@@ -59,10 +65,10 @@ python_options = ""
 argumentList = sys.argv[1:]
 
 # Options
-options = "d:i:n:p:l:y:w:b:s:x:t:h"
+options = "d:f:i:n:p:l:f:w:b:s:x:y:v:e:I:D:o:h"
 
 # Long options
-long_options = ["Data Path", "Images Path", "Name Path", "Percentage", "Log Path", "Darknet Path", "Weight Path", "Batch", "Subdivision", "Width", "Height", "Help"]
+long_options = ["Data Path", "Images Path", "Name Path", "Percentage", "Log Path", "Darknet Path", "Weight Path", "Batch", "Subdivision", "Width", "Height", "YOLO Version", "EPOCHS", "Image Size", "Device", "Advanced Options", "Help"]
 
 #########################################################
 # Help Information - NOT USED					#
@@ -77,8 +83,16 @@ def showHelpInfo(err):
 	print("")
 	print ("  -d\tSet the path of the folder cotaining the images and their text file annotations.")
 	print ("  -n\tSet the path of the names file that contains the classes.")
+	print ("  -f\tSet the darknet/ultralytics folder path.")
 	print ("  -b\tSet the number of batches.")
 	print ("  -s\tSet the number of sub-divisions")
+	print ("  -x\tSet the width value")
+	print ("  -y\tSet the height value")
+	print ("  -v\tSet the YOLO version number")
+	print ("  -e\tSet the EPOCH value (default 100)")
+	print ("  -I\tSet the Image Size value (default 640)")
+	print ("  -D\tSet the Device value (cpu, gpu#, mps)")
+	print ("  -o\tAdvanced YOLO Options (patience=2 seed=3 etc)")
 	print ("  -h\tHelp message.")
 	print("")
 	print("")
@@ -193,6 +207,8 @@ def createConfig(data_path, batch, subdiv, width, height):
 				line = line.replace('<width>', str(width))
 			elif word == '<height>':
 				line = line.replace('<height>', str(height))
+			elif word == '<yolo_version>':
+				line = line.replace('<yolo_version>', int(yolo_version))
 		f.write(line)
 	########################################
 	print("")
@@ -238,7 +254,7 @@ try:
 			percentage = currentValue
 		elif currentArgument in ("-l", "--log"):
 			log_file = currentValue
-		elif currentArgument in ("-y", "--darknet_path"):
+		elif currentArgument in ("-f", "--darknet_folder"):
 			darknet_path = currentValue
 		elif currentArgument in ("-w", "--weight_path"):
 			weight_path = currentValue
@@ -248,8 +264,18 @@ try:
 			subdiv = currentValue
 		elif currentArgument in ("-x", "--width"):
 			width = currentValue
-		elif currentArgument in ("-t", "--height"):
+		elif currentArgument in ("-y", "--height"):
 			height = currentValue
+		elif currentArgument in ("-e", "--epochs"):
+			epochs = currentValue
+		elif currentArgument in ("-I", "--imgsz"):
+			imgsz = currentValue
+		elif currentArgument in ("-D", "--device"):
+			device = currentValue
+		elif currentArgument in ("-o", "--adv_options"):
+			adv_options = currentValue
+		elif currentArgument in ("-v", "--yolo_version"):
+			yolo_version = int(currentValue)
 #Generate Train.txt
 	# genTraintxt(data_path)
 
@@ -260,7 +286,9 @@ else:
 	if data_path == "":
 		err = "You need more options to run the tool"
 		showHelpInfo(err)
-	elif image_path == "":
+
+if yolo_version == 3:
+	if image_path == "":
 		err = "You need more options to run the tool"
 		showHelpInfo(err)
 	elif batch == "":
@@ -269,22 +297,46 @@ else:
 	elif subdiv == "":
 		err = "You need more options to run the tool"
 		showHelpInfo(err)
+	print("Darknet Version of YOLO Requested:")
+	#Generates a train.txt file with all filenames
+	genTraintxt(data_path, image_path, percentage)
+	#Generates the appropriate configuration Files needed to run Darknet
+	createConfig(data_path, batch, subdiv, width, height)
 
-#Generates a train.txt file with all filenames
-genTraintxt(data_path, image_path, percentage)
-#Generates the appropriate configuration Files needed to run Darknet
-createConfig(data_path, batch, subdiv, width, height)
+	#Command to start running darknet using the training files
+	objData = data_path + '/obj.data'
+	objCfg = data_path + '/obj.cfg'
 
-#Command to start running darknet using the training files
-objData = data_path + '/obj.data'
-objCfg = data_path + '/obj.cfg'
+	cmd = "cd " + darknet_path + "; ./darknet detector train " + objData + " " + objCfg + " " + weight_path + " -dont_show 2>&1 > " + log_file
+	print(cmd)
 
-cmd = "cd " + darknet_path + "; ./darknet detector train " + objData + " " + objCfg + " " + weight_path + " -dont_show 2>&1 > " + log_file
-print("cd " + darknet_path + "; ./darknet detector train " + objData + " " + objCfg + " " + weight_path + " -dont_show")
+	# process_code,process_output,process_err,process_mix = call_command(cmd)
+	call_command(cmd)
+
+elif yolo_version == 5:
+	print("Ultralytics Version of YOLO Requested:")
+
+	#Command to start running ultralytics using the training files
+	cmd = darknet_path + " detect train data=" + name_path + " project=" + data_path + " epochs=" + epochs + " imgsz=" + imgsz + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
+	print(cmd)
+
+	# process_code,process_output,process_err,process_mix = call_command(cmd)
+	call_command(cmd)
+
+	destination_dir = data_path 
+	source_dir = data_path + "/train/weights"
+	files = os.listdir(source_dir)
+	for file_name in files:
+		source_path = os.path.join(source_dir, file_name)
+		destination_path = os.path.join(destination_dir, file_name)
+		shutil.move(source_path, destination_path)
+
+	source_dir = data_path + "/train"
+	files = os.listdir(source_dir)
+	for file_name in files:
+		source_path = os.path.join(source_dir, file_name)
+		destination_path = os.path.join(destination_dir, file_name)
+		shutil.move(source_path, destination_path)
 
 
-# process_code,process_output,process_err,process_mix = call_command(cmd)
-call_command(cmd)
-
-	
 
