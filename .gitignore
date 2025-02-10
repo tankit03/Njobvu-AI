@@ -1,3 +1,13 @@
 node_modules
 public/projects/*
 db/*
+.bash_history
+.bashrc
+.cache/
+.config/
+.lesshst
+.npm/
+.nv/
+.nvm/
+.sqlite_history
+.viminfo
