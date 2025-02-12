@@ -177,12 +177,13 @@ const {
     getAccessSettingsPage,
     getImageSettingsPage,
     getMergeSettingsPage,
+    getServerStatsPage,
   get404Page,
   getValidationHomePage,
   getValidationProjectPage,
   getValidationLabelingPage,
   getValidationConfigPage,
-  getValidationStatsPage
+  getValidationStatsPage,
 } = require('./routes/pages');
 // configure middlewares
 // set
@@ -229,15 +230,17 @@ app.get('/processing', getProcessingPage);
 app.get('/yolo', getYoloPage);
 app.get('/yolo/yolov3Settings', getYolo3SettingsPage);
 app.get('/yolo/yolovXSettings', getYoloXSettingsPage);
-app.get('/yolo/serverInfo', getServerInfoPage);
 app.get('/user', getUserPage);
+app.get('/servstats', getServerStatsPage);
 app.get('/homeV', getValidationHomePage);
 app.get('/projectV', getValidationProjectPage);
 app.get('/labelingV', getValidationLabelingPage);
 app.get('/configV', getValidationConfigPage);
 app.get('/statsV', getValidationStatsPage);
+app.get('/api/gpuinfo',)
 // everything else -> 404
 app.get('*', get404Page);
+
 
 ////////////////////////////////////////////////////////
 // Start Server:

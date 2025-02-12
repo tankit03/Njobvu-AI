@@ -16,14 +16,6 @@ const { stdout } = require('process');
 const sharp = require('sharp');
 const api = express.Router();
 
-
-// api.get('/config', (req, res) => {
-// 	const idx = req.query.IDX;
-// 	res.render('config', { IDX: idx });
-
-// });
-
-
 api.post('/logout', async (req, res) => {
 	res.clearCookie("Username");
 	res.redirect("/");
