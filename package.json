@@ -50,6 +50,7 @@
     "tiff-to-png": "^2.0.2",
     "unzip": "^0.1.11",
     "unzip-stream": "^0.3.4",
-    "unzipper": "^0.12.3"
+    "unzipper": "^0.12.3",
+    "xml2js": "^0.6.2"
   }
 }
