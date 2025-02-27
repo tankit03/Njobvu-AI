@@ -40,7 +40,8 @@
                                   <% labels.forEach(function(label) { %>
                                     <% if (label.CName === CName) { %>
                                       <tr>
-                                        <td><%= label.IName %></td>
+                                        <td><a href="http://localhost:8443/labeling?IDX=<%=IDX%>&IName=<%= label.IName %>"/><%= label.IName %></td>
+                                            
                                         <td>
                                           <img class="Image" src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" style="display: none;">
                                           <input type="hidden" class="LabelX" value="<%= label.X %>">
