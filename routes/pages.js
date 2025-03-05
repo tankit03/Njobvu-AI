@@ -731,14 +731,16 @@ module.exports = {
 		var classes = [];
 		var counts = [];
 		var icounts = [];
-		var lcounts = 0;
-		for (var i = 0; i < results2.length; i++) {
-			var results3 = await sdb.getAsync("SELECT COUNT(*) FROM Labels Where CName = '" + results2[i].CName + "'");
-			classes.push(results2[i].CName);
-			counts.push(results3["COUNT(*)"]);
-			var results4 = await sdb.allAsync("SELECT DISTINCT IName FROM Labels WHERE CName = '" + results2[i].CName + "'");
-			icounts.push(results4.length);
-		}
+		var lcounts = {};
+
+		for (var i = 0; i < Classes.length; i++) {
+
+			let countQuery = await sdb.getAsync("SELECT COUNT(*) FROM Labels WHERE CName = '" + results2[i].CName + "'");
+
+			const valueLabel = countQuery["COUNT(*)"];
+			lcounts[Classes[i].CName] = valueLabel;
+		  }
+
 
 		var acc = await db.allAsync("SELECT * FROM `Access` WHERE PName = '" + PName + "' AND Admin = '" + admin + "'");
 		var access = [];
@@ -760,7 +762,9 @@ module.exports = {
 				console.log("sdb closed successfully");
 			}
 		});
-		console.log(icounts, counts)
+		// console.log(icounts, counts);
+
+		
 		res.render('annotate', {
 			title: 'annotate',
 			user: username,
@@ -769,10 +773,8 @@ module.exports = {
 			PName: PName,
 			classes: Classes,
 			IDX: IDX,
-			activePage: 'Annotate',
-			icounts: icounts,
-
-
+			lcounts: lcounts,
+			activePage: 'Annotate'
 
 		});
 	},
@@ -884,6 +886,7 @@ module.exports = {
 			totalPageCount: totalImagesCount,
 			selectedClass: req.query.class,
 			IDX: IDX,
+			admin: admin,
 			activePage: 'Annotate'
 		});
 	},
