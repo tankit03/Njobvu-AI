@@ -1,5 +1,5 @@
 <%- include('includes/header', { activePage }) %>
-<%- include('includes/navbar', { activePage }) %>
+
 <div id="review">
     <div class="container">
         <div class="Review">
@@ -26,9 +26,9 @@
                                 <button type="button" id="uncheckAllButton" class="btn btn-danger" style="display: none;">Uncheck All</button>
                             </div>                        
                             <tr>
+                                <th scope="col">checkbox</th>
                                 <th scope="col">Image Name</th>
                                 <th scope="col">Image</th>
-                                <th scope="col">Bad</th>
                                 <th scope="col">Switch Classes</th>
                             </tr>
                         </thead>
@@ -40,8 +40,10 @@
                                   <% labels.forEach(function(label) { %>
                                     <% if (label.CName === CName) { %>
                                       <tr>
+                                        <td>
+                                            <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
+                                        </td>
                                         <td><a href="http://localhost:8443/labeling?IDX=<%=IDX%>&IName=<%= label.IName %>"/><%= label.IName %></td>
-                                            
                                         <td>
                                           <img class="Image" src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" style="display: none;">
                                           <input type="hidden" class="LabelX" value="<%= label.X %>">
@@ -51,18 +53,16 @@
                                           <canvas id="cropCanvas" style="max-width: 100%; height: 100%; display: block;"></canvas>
                                         </td>
                                         <td>
-                                          <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
-                                        </td>
-                                        <td>
-                                          <form class="SwitchForm" action="/switch-class" method="POST">
+                                            <button class="btn btn-danger" data-admin="<%= admin %>" data-pname="<%= PName %>" data-lid="<%= label.LID %>"> Delete</button>
+                                            <form class="SwitchForm" action="/switch-class" method="POST">
                                             <label for="switchClasses_<%= label.LID %>">Switch to:</label>
                                             <select name="switchClasses_<%= label.LID %>" class="switchClasses" data-label-id="<%= label.LID %>">
-                                              <% classes.forEach(function(classItem){ %>
+                                                <% classes.forEach(function(classItem){ %>
                                                 <option value="<%= classItem.CName %>"><%= classItem.CName %></option>
-                                              <% }); %>
+                                                <% }); %>
                                             </select>
                                             <button type="button" class="btn btn-secondary" onclick="handleSwitch(event, '<%= label.LID %>')">Switch</button>
-                                          </form>
+                                            </form>
                                         </td>
                                       </tr>
                                     <% } %>
@@ -97,6 +97,40 @@
 
 <script>
 
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".btn-danger").forEach(button => {
+            button.addEventListener("click", async function (event) {
+                event.preventDefault(); // Prevent the default form submission
+    
+                const Admin = this.dataset.admin;
+                const PName = this.dataset.pname;
+                const Lid = this.dataset.lid;
+    
+                try {
+                    const response = await fetch(`/deleteBadLabels/${Admin}/${PName}/${Lid}`, {
+                        method: 'DELETE'
+                    });
+    
+                    if (!response.ok) {
+                        throw new Error("Failed to delete item");
+                    }
+    
+                    console.log("Item deleted successfully");
+    
+                    // Remove the deleted row from the DOM
+                    const row = this.closest('tr');
+                    row.parentNode.removeChild(row);
+    
+                } catch (error) {
+                    console.error("Error deleting item: ", error);
+                }
+            });
+        });
+    });
+</script>
+
+<script>
+
     const urlParams = new URLSearchParams(window.location.search);
     console.log(urlParams);
     const className = urlParams.get('className');
@@ -108,7 +142,6 @@
     
     document.addEventListener('DOMContentLoaded', function () {
         let images = document.querySelectorAll('.Image');
-
 
         images.forEach(function (imageElement, index) {
             
@@ -285,7 +318,7 @@
     
             console.log("Request sent to server");
     
-            if(response.ok) {
+            if(response.ok) {3
                 console.log("Response OK");
                 const result = await response.json();
                 console.log('Review form switched successfully:', result);
