@@ -185,6 +185,7 @@ const {
   getValidationConfigPage,
   getValidationStatsPage,
 } = require('./routes/pages');
+
 // configure middlewares
 // set
 app.set('port', process.env.port || port); // set express to use this port
@@ -237,7 +238,7 @@ app.get('/projectV', getValidationProjectPage);
 app.get('/labelingV', getValidationLabelingPage);
 app.get('/configV', getValidationConfigPage);
 app.get('/statsV', getValidationStatsPage);
-app.get('/api/gpuinfo',)
+app.get('/api/gpuinfo',);
 // everything else -> 404
 app.get('*', get404Page);
 
