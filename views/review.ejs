@@ -3,8 +3,6 @@
 <div id="review">
     <div class="container">
         <div class="Review">
-            
-            <!-- <p id="username">User: <%= user %></p> -->
             <input type="hidden" id="ProjectName" value="<%= PName %>">
             <input type="hidden" id="username" value="<%= user %>">
             <div class="col-md-12">
@@ -15,16 +13,16 @@
                                 Review Images for Class: <%= CName %>
                             </h3>
                             <select class="form-select justify-content-start" aria-label="Default select example" onchange="window.location.href=this.value;">
-                                <% for(var i=0; i<classes.length; i++) { %>
-                                    <option value="/review?class=<%= classes[i]['CName'] %>&IDX=<%= IDX %>" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
-                                        <%= classes[i]['CName'] %>
+                                <% classes.forEach(function(classItem) { %>
+                                    <option value="/review?class=<%= classItem.CName %>&IDX=<%= IDX %>" <%= (selectedClass === classItem.CName) ? 'selected' : '' %>>
+                                        <%= classItem.CName %>
                                     </option>
-                                <% } %>
-                            </select>  
+                                <% }); %>
+                            </select>
                             <div class="d-flex justify-content-end" style="padding-bottom: 20px; padding-top: 20px;">
                                 <button type="button" id="checkAllButton" class="btn btn-success">Check All</button>
                                 <button type="button" id="uncheckAllButton" class="btn btn-danger" style="display: none;">Uncheck All</button>
-                            </div>                        
+                            </div>
                             <tr>
                                 <th scope="col">checkbox</th>
                                 <th scope="col">Image Name</th>
@@ -37,42 +35,54 @@
                                 <% let imageName = image.IName; %>
                                 <% let labels = imageLabels[imageName]; %>
                                 <% if (labels) { %>
-                                  <% labels.forEach(function(label) { %>
-                                    <% if (label.CName === CName) { %>
-                                      <tr>
-                                        <td>
-                                            <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
-                                        </td>
-                                        <td><a href="http://localhost:8443/labeling?IDX=<%=IDX%>&IName=<%= label.IName %>"/><%= label.IName %></td>
-                                        <td>
-                                          <img class="Image" src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" style="display: none;">
-                                          <input type="hidden" class="LabelX" value="<%= label.X %>">
-                                          <input type="hidden" class="LabelY" value="<%= label.Y %>">
-                                          <input type="hidden" class="LabelWidth" value="<%= label.W %>">
-                                          <input type="hidden" class="LabelHeight" value="<%= label.H %>">
-                                          <canvas id="cropCanvas" style="max-width: 100%; height: 100%; display: block;"></canvas>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-danger" data-admin="<%= admin %>" data-pname="<%= PName %>" data-lid="<%= label.LID %>"> Delete</button>
-                                            <form class="SwitchForm" action="/switch-class" method="POST">
-                                            <label for="switchClasses_<%= label.LID %>">Switch to:</label>
-                                            <select name="switchClasses_<%= label.LID %>" class="switchClasses" data-label-id="<%= label.LID %>">
-                                                <% classes.forEach(function(classItem){ %>
-                                                <option value="<%= classItem.CName %>"><%= classItem.CName %></option>
-                                                <% }); %>
-                                            </select>
-                                            <button type="button" class="btn btn-secondary" onclick="handleSwitch(event, '<%= label.LID %>')">Switch</button>
-                                            </form>
-                                        </td>
-                                      </tr>
-                                    <% } %>
-                                  <% }); %>
+                                    <% labels.forEach(function(label) { %>
+                                        <% if (label.CName === CName) { %>
+                                            <tr>
+                                                <td>
+                                                    <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
+                                                </td>
+                                                <td><a href="http://localhost:8443/labeling?IDX=<%=IDX%>&IName=<%= label.IName %>"/><%= label.IName %></td>
+                                                <td>
+                                                    <img class="Image" src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" style="display: none;">
+                                                    <input type="hidden" class="LabelX" value="<%= label.X %>">
+                                                    <input type="hidden" class="LabelY" value="<%= label.Y %>">
+                                                    <input type="hidden" class="LabelWidth" value="<%= label.W %>">
+                                                    <input type="hidden" class="LabelHeight" value="<%= label.H %>">
+                                                    <canvas id="cropCanvas" style="max-width: 100%; height: 100%; display: block;"></canvas>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-danger delete-button" data-admin="<%= admin %>" data-pname="<%= PName %>" data-lid="<%= label.LID %>"> Delete</button>
+                                                    <form class="SwitchForm" action="/switch-class" method="POST">
+                                                        <label for="switchClasses_<%= label.LID %>">Switch to:</label>
+                                                        <select name="switchClasses_<%= label.LID %>" class="switchClasses" data-label-id="<%= label.LID %>">
+                                                            <% classes.forEach(function(classItem){ %>
+                                                                <option value="<%= classItem.CName %>"><%= classItem.CName %></option>
+                                                            <% }); %>
+                                                        </select>
+                                                        <button type="button" class="btn btn-secondary" onclick="handleSwitch(event, '<%= label.LID %>')">Switch</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <% } %>
+                                    <% }); %>
                                 <% } %>
-                              <% }); %>
+                            <% }); %>
                         </tbody>
                     </table>
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-primary" onclick="ReviewForm(event)">Submit Review</button>
+                    <div class="d-flex justify-content-end align-items-center">
+                        <div class="mr-2">
+                            <select id="switchLabels" class="form-select me-3" aria-label="Default select example">
+                                <% for(var i=0; i<classes.length; i++) { %>
+                                    <option value="<%= classes[i]['CName'] %>" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
+                                        <%= classes[i]['CName'] %>
+                                    </option>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div>
+                            <button id="submitSwitch" type="button" class="btn btn-primary">Switch Labels</button>
+                            <button id="deleteLabels" type="submit" class="btn btn-danger" onclick="ReviewForm(event)">Delete Labels</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -96,55 +106,123 @@
 </div>
 
 <script>
-
     document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll(".btn-danger").forEach(button => {
+        document.querySelectorAll(".delete-button").forEach(button => {
             button.addEventListener("click", async function (event) {
                 event.preventDefault(); // Prevent the default form submission
-    
+
                 const Admin = this.dataset.admin;
                 const PName = this.dataset.pname;
                 const Lid = this.dataset.lid;
-    
+
                 try {
                     const response = await fetch(`/deleteBadLabels/${Admin}/${PName}/${Lid}`, {
                         method: 'DELETE'
                     });
-    
+
                     if (!response.ok) {
                         throw new Error("Failed to delete item");
                     }
-    
+
                     console.log("Item deleted successfully");
-    
+
                     // Remove the deleted row from the DOM
                     const row = this.closest('tr');
                     row.parentNode.removeChild(row);
-    
+
                 } catch (error) {
                     console.error("Error deleting item: ", error);
                 }
             });
         });
+
+        document.getElementById("checkAllButton").addEventListener("click", function() {
+            document.querySelectorAll(".badCheckbox").forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            document.getElementById("checkAllButton").style.display = 'none';
+            document.getElementById("uncheckAllButton").style.display = 'inline-block';
+        });
+
+        document.getElementById("uncheckAllButton").addEventListener("click", function() {
+            document.querySelectorAll(".badCheckbox").forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            document.getElementById("uncheckAllButton").style.display = 'none';
+            document.getElementById("checkAllButton").style.display = 'inline-block';
+        });
     });
 </script>
 
 <script>
+    document.getElementById("submitSwitch").addEventListener("click", async function(){
+        event.preventDefault();
 
+        let selectedLabels = [];
+        let currentClass = '<%= CName %>';
+        let Admin = '<%= admin %>';
+        let PName = '<%= PName %>';
+
+        document.querySelectorAll(".badCheckbox:checked").forEach((checkbox) => {
+            selectedLabels.push(checkbox.value);
+        });      
+        let selectedClass = document.querySelector('#switchLabels').value;
+
+        if(selectedLabels.length === 0){
+            alert("Please select at least one label to switch");
+            return;
+        } else if(selectedClass === currentClass){
+            alert("Please select a different class to switch to");
+            return;
+        }
+
+        const data = {
+            selectedLabels: selectedLabels,
+            selectedClass: selectedClass,
+            currentClass: currentClass,
+            Admin: Admin,
+            PName: PName
+        }
+
+        const url = '/api/switchLabels';        
+
+        try{
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                location.reload();
+                console.log('Labels switched successfully:', result);
+            } else {
+                console.error('Failed to switch labels:', response.statusText);
+            }
+
+        } catch (error){
+            console.error("Error feteching data:  ", error);
+
+        }
+
+    });
+</script>
+
+<script>
     const urlParams = new URLSearchParams(window.location.search);
     console.log(urlParams);
     const className = urlParams.get('className');
     console.log('hello:', className);
-
 </script>
 
 <script>
-    
     document.addEventListener('DOMContentLoaded', function () {
         let images = document.querySelectorAll('.Image');
 
         images.forEach(function (imageElement, index) {
-            
             const cropX = document.querySelectorAll('.LabelX')[index].value;
             const cropY = document.querySelectorAll('.LabelY')[index].value;
             const cropWidth = document.querySelectorAll('.LabelWidth')[index].value;
@@ -205,7 +283,6 @@
     });
 
     async function handleSwitch(event, labelId) {
-
         const username = document.getElementById("username").value;
         const projectName = document.getElementById("ProjectName").value;
         const selectElement = document.querySelector(`select[data-label-id='${labelId}']`);
@@ -285,10 +362,8 @@
         });
         console.log('Restored bad labels:', badLabels);
     }
-    
 
     async function ReviewForm(event) {
-        
         event.preventDefault();
 
         const username = document.getElementById("username").value;
@@ -298,15 +373,15 @@
         console.log('Username:', username);
         console.log('Project Name:', projectName);
         console.log('Bad Labels:', badLabels);
-    
+
         const data = {
             "username": username,
             "PName": projectName,
             "badlabels": badLabels
         };
-    
+
         console.log('Submitting bad labels:', data);
-    
+
         try {
             const response = await fetch('/submit-review', {
                 method: 'POST',
@@ -315,10 +390,10 @@
                 },
                 body: JSON.stringify(data)
             });
-    
+
             console.log("Request sent to server");
-    
-            if(response.ok) {3
+
+            if(response.ok) {
                 console.log("Response OK");
                 const result = await response.json();
                 console.log('Review form switched successfully:', result);
@@ -336,5 +411,4 @@
     };
 
     document.getElementById('reviewForm').addEventListener('submit', ReviewForm);
-
 </script>
