@@ -11,4 +11,5 @@ db/*
 .nvm/
 .sqlite_history
 .viminfo
-controllers/training/config.json
+config.json
+tmp/
