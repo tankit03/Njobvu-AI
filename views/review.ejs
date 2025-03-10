@@ -19,9 +19,30 @@
                                     </option>
                                 <% }); %>
                             </select>
-                            <div class="d-flex justify-content-end" style="padding-bottom: 20px; padding-top: 20px;">
-                                <button type="button" id="checkAllButton" class="btn btn-success">Check All</button>
-                                <button type="button" id="uncheckAllButton" class="btn btn-danger" style="display: none;">Uncheck All</button>
+                            <div style="padding-bottom: 20px; padding-top: 20px;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <button type="button" id="checkAllButton" class="btn btn-success">Check All</button>
+                                        <button type="button" id="uncheckAllButton" class="btn btn-danger" style="display: none;">Uncheck All</button>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="mr-2">
+                                            <select id="switchLabels" class="form-select me-3" aria-label="Default select example">
+                                                <% for(var i=0; i<classes.length; i++) { %>
+                                                    <option value="<%= classes[i]['CName'] %>" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
+                                                        <%= classes[i]['CName'] %>
+                                                    </option>
+                                                <% } %>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <button id="submitSwitch" type="button" class="btn btn-primary">Switch Labels</button>
+                                            <button id="deleteLabels" type="submit" class="btn btn-danger" onclick="ReviewForm(event)">Delete Labels</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                                </div>
                             </div>
                             <tr>
                                 <th scope="col">checkbox</th>
@@ -69,21 +90,6 @@
                             <% }); %>
                         </tbody>
                     </table>
-                    <div class="d-flex justify-content-end align-items-center">
-                        <div class="mr-2">
-                            <select id="switchLabels" class="form-select me-3" aria-label="Default select example">
-                                <% for(var i=0; i<classes.length; i++) { %>
-                                    <option value="<%= classes[i]['CName'] %>" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
-                                        <%= classes[i]['CName'] %>
-                                    </option>
-                                <% } %>
-                            </select>
-                        </div>
-                        <div>
-                            <button id="submitSwitch" type="button" class="btn btn-primary">Switch Labels</button>
-                            <button id="deleteLabels" type="submit" class="btn btn-danger" onclick="ReviewForm(event)">Delete Labels</button>
-                        </div>
-                    </div>
                 </form>
             </div>
         </div>
