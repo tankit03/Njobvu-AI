@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////
 
 //Read in config
-global.configFile = require('./controllers/training/config.json');
+global.configFile = require('./config.json');
 //console.log(configFile)
 //console.log("default_python_Path: ", configFile.default_python_path);
 //console.log("ssl_key_path: ", configFile.ssl_key_path);
