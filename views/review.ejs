@@ -1,96 +1,93 @@
 <%- include('includes/header', { activePage }) %>
-
 <div id="review">
     <div class="container">
         <div class="Review">
             <input type="hidden" id="ProjectName" value="<%= PName %>">
             <input type="hidden" id="username" value="<%= user %>">
             <div class="col-md-12">
-                <form id="reviewForm" action="/submit-review" method="POST">
-                    <table class="table table-striped">
-                        <thead class="thead-dark">
-                            <h3 class="justify-content-start">
-                                Review Images for Class: <%= CName %>
-                            </h3>
-                            <select class="form-select justify-content-start" aria-label="Default select example" onchange="window.location.href=this.value;">
-                                <% classes.forEach(function(classItem) { %>
-                                    <option value="/review?class=<%= classItem.CName %>&IDX=<%= IDX %>" <%= (selectedClass === classItem.CName) ? 'selected' : '' %>>
-                                        <%= classItem.CName %>
-                                    </option>
-                                <% }); %>
-                            </select>
-                            <div style="padding-bottom: 20px; padding-top: 20px;">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <button type="button" id="checkAllButton" class="btn btn-success">Check All</button>
-                                        <button type="button" id="uncheckAllButton" class="btn btn-danger" style="display: none;">Uncheck All</button>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="mr-2">
-                                            <select id="switchLabels" class="form-select me-3" aria-label="Default select example">
-                                                <% for(var i=0; i<classes.length; i++) { %>
-                                                    <option value="<%= classes[i]['CName'] %>" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
-                                                        <%= classes[i]['CName'] %>
-                                                    </option>
-                                                <% } %>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <button id="submitSwitch" type="button" class="btn btn-primary">Switch Labels</button>
-                                            <button id="deleteLabels" type="submit" class="btn btn-danger" onclick="ReviewForm(event)">Delete Labels</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                                </div>
-                            </div>
-                            <tr>
-                                <th scope="col">checkbox</th>
-                                <th scope="col">Image Name</th>
-                                <th scope="col">Image</th>
-                                <th scope="col">Switch Classes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% images.forEach(function(image) { %>
-                                <% let imageName = image.IName; %>
-                                <% let labels = imageLabels[imageName]; %>
-                                <% if (labels) { %>
-                                    <% labels.forEach(function(label) { %>
-                                        <% if (label.CName === CName) { %>
-                                            <tr>
-                                                <td>
-                                                    <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
-                                                </td>
-                                                <td><a href="/labeling?IDX=<%=IDX%>&IName=<%= label.IName %>"/><%= label.IName %></td>
-                                                <td>
-                                                    <img class="Image" src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" style="display: none;">
-                                                    <input type="hidden" class="LabelX" value="<%= label.X %>">
-                                                    <input type="hidden" class="LabelY" value="<%= label.Y %>">
-                                                    <input type="hidden" class="LabelWidth" value="<%= label.W %>">
-                                                    <input type="hidden" class="LabelHeight" value="<%= label.H %>">
-                                                    <canvas id="cropCanvas" style="max-width: 100%; height: 100%; display: block;"></canvas>
-                                                </td>
-                                                <td>
-                                                    <button type="button" class="btn btn-danger delete-button" data-admin="<%= admin %>" data-pname="<%= PName %>" data-lid="<%= label.LID %>"> Delete</button>
-                                                    <form class="SwitchForm" action="/switch-class" method="POST">
-                                                        <label for="switchClasses_<%= label.LID %>">Switch to:</label>
-                                                        <select name="switchClasses_<%= label.LID %>" class="switchClasses" data-label-id="<%= label.LID %>">
-                                                            <% classes.forEach(function(classItem){ %>
-                                                                <option value="<%= classItem.CName %>"><%= classItem.CName %></option>
-                                                            <% }); %>
-                                                        </select>
-                                                        <button type="button" class="btn btn-secondary" onclick="handleSwitch(event, '<%= label.LID %>')">Switch</button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        <% } %>
-                                    <% }); %>
-                                <% } %>
+                <table class="table table-striped">
+                    <thead class="thead-dark">
+                        <h3 class="justify-content-start">
+                            Review Images for Class: <%= CName %>
+                        </h3>
+                        <select class="form-select justify-content-start" aria-label="Default select example" onchange="window.location.href=this.value;">
+                            <% classes.forEach(function(classItem) { %>
+                                <option value="/review?class=<%= classItem.CName %>&IDX=<%= IDX %>" <%= (selectedClass === classItem.CName) ? 'selected' : '' %>>
+                                    <%= classItem.CName %>
+                                </option>
                             <% }); %>
-                        </tbody>
-                    </table>
-                </form>
+                        </select>
+                        <div style="padding-bottom: 20px; padding-top: 20px;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button type="button" id="checkAllButton" class="btn btn-success">Check All</button>
+                                    <button type="button" id="uncheckAllButton" class="btn btn-danger" style="display: none;">Uncheck All</button>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div class="mr-2">
+                                        <select id="switchLabels" class="form-select me-3" aria-label="Default select example">
+                                            <% for(var i=0; i<classes.length; i++) { %>
+                                                <option value="<%= classes[i]['CName'] %>" <%= (selectedClass === classes[i]['CName']) ? 'selected' : '' %>>
+                                                    <%= classes[i]['CName'] %>
+                                                </option>
+                                            <% } %>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <button id="submitSwitch" type="button" class="btn btn-primary">Switch Labels</button>
+                                        <button id="deleteLabels" type="submit" class="btn btn-danger">Delete Labels</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+                        <tr>
+                            <th scope="col">checkbox</th>
+                            <th scope="col">Image Name</th>
+                            <th scope="col">Image</th>
+                            <th scope="col">Switch Classes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% images.forEach(function(image) { %>
+                            <% let imageName = image.IName; %>
+                            <% let labels = imageLabels[imageName]; %>
+                            <% if (labels) { %>
+                                <% labels.forEach(function(label) { %>
+                                    <% if (label.CName === CName) { %>
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>" value="<%= label.LID %>">
+                                            </td>
+                                            <td><a href="http://localhost:8443/labeling?IDX=<%=IDX%>&IName=<%= label.IName %>"/><%= label.IName %></td>
+                                            <td>
+                                                <img class="Image" src="/projects/<%= user %>-<%= PName %>/images/<%= label.IName %>" style="display: none;">
+                                                <input type="hidden" class="LabelX" value="<%= label.X %>">
+                                                <input type="hidden" class="LabelY" value="<%= label.Y %>">
+                                                <input type="hidden" class="LabelWidth" value="<%= label.W %>">
+                                                <input type="hidden" class="LabelHeight" value="<%= label.H %>">
+                                                <canvas id="cropCanvas" style="max-width: 100%; height: 100%; display: block; cursor: pointer;" data-toggle="modal" data-target="#myModal"></canvas>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-danger delete-button" data-admin="<%= admin %>" data-pname="<%= PName %>" data-lid="<%= label.LID %>"> Delete</button>
+                                                <form class="SwitchForm" action="/switch-class" method="POST">
+                                                    <label for="switchClasses_<%= label.LID %>">Switch to:</label>
+                                                    <select name="switchClasses_<%= label.LID %>" class="switchClasses" data-label-id="<%= label.LID %>">
+                                                        <% classes.forEach(function(classItem){ %>
+                                                            <option value="<%= classItem.CName %>"><%= classItem.CName %></option>
+                                                        <% }); %>
+                                                    </select>
+                                                    <button type="button" class="btn btn-secondary" onclick="handleSwitch(event, '<%= label.LID %>')">Switch</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <% } %>
+                                <% }); %>
+                            <% } %>
+                        <% }); %>
+                    </tbody>
+                </table>
             </div>
         </div>
         <div class="row justify-content-center">
@@ -108,8 +105,24 @@
                 <% } %>
             </div>
         </div>
+        <div class="modal fade custom-modal" id="myModel" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="imageModalLabel">Image Preview</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <img id="expandedImg" style="width:100%"/>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -213,8 +226,57 @@
             console.error("Error feteching data:  ", error);
 
         }
-
     });
+
+    document.getElementById("deleteLabels").addEventListener("click", async function(){
+        event.preventDefault();
+  
+        let selectedLabels = [];
+        let currentClass = '<%= CName %>';
+        let Admin = '<%= admin %>';
+        let PName = '<%= PName %>';
+
+
+        document.querySelectorAll(".badCheckbox:checked").forEach((checkbox) => {
+            selectedLabels.push(checkbox.value);
+        });      
+    
+        if(selectedLabels.length === 0){
+            alert("Please select at least one label to switch");
+            return;
+        } 
+
+        console.log('Selected Labels:', selectedLabels);
+
+        
+
+        try {
+            const response = await fetch(`/deleteBadLabels/${Admin}/${PName}/${selectedLabels}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to delete item");
+            }
+
+            console.log('API response:', response);
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Class switched successfully:', result);
+                location.reload();
+            } else {
+                console.error('Failed to switch class:', response.statusText);
+            }
+
+        } catch (error) {
+            console.error("Error deleting item: ", error);
+        }
+    });
+
 </script>
 
 <script>
@@ -261,6 +323,13 @@
                     imageData.crop.height
                 );
             };
+            canvas.addEventListener("click", function(){
+                $('#myModel').modal('show');
+                const modalImage = document.getElementById("expandedImg");
+                modalImage.src = canvas.toDataURL(); 
+                const modalName = document.getElementById("imageModalLabel");
+                modalName.innerHTML = imageData.imageUrl.split('/').pop();
+            });            
         });
     });
 </script>
@@ -368,53 +437,4 @@
         });
         console.log('Restored bad labels:', badLabels);
     }
-
-    async function ReviewForm(event) {
-        event.preventDefault();
-
-        const username = document.getElementById("username").value;
-        const projectName = document.getElementById("ProjectName").value;
-        let badLabels = JSON.parse(localStorage.getItem('badLabels')) || [];
-
-        console.log('Username:', username);
-        console.log('Project Name:', projectName);
-        console.log('Bad Labels:', badLabels);
-
-        const data = {
-            "username": username,
-            "PName": projectName,
-            "badlabels": badLabels
-        };
-
-        console.log('Submitting bad labels:', data);
-
-        try {
-            const response = await fetch('/submit-review', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            console.log("Request sent to server");
-
-            if(response.ok) {
-                console.log("Response OK");
-                const result = await response.json();
-                console.log('Review form switched successfully:', result);
-                location.reload();
-                localStorage.removeItem('badLabels');
-                console.log('Bad labels cleared');
-                location.reload();
-
-            } else {
-                console.error('Failed to submit form:', response.statusText);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    };
-
-    document.getElementById('reviewForm').addEventListener('submit', ReviewForm);
 </script>
