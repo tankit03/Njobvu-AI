@@ -72,61 +72,61 @@ api.post('/switch-class', (req, res) => {
 });
 
 
-api.post('/submit-review', (req, res) => {
+// api.post('/submit-review', (req, res) => {
 
-	console.log("Submit review post request");
-	var username = req.body.username;
-	var PName = req.body.PName;
-	var badlabels = req.body.badlabels;
+// 	console.log("Submit review post request");
+// 	var username = req.body.username;
+// 	var PName = req.body.PName;
+// 	var badlabels = req.body.badlabels;
 
-	var public_path = __dirname.replace('routes','');
-    var main_path = public_path + 'public/projects/';
-	var db_path = main_path + username + '-' + PName + '/' + PName + '.db';
+// 	var public_path = __dirname.replace('routes','');
+//     var main_path = public_path + 'public/projects/';
+// 	var db_path = main_path + username + '-' + PName + '/' + PName + '.db';
 
-	console.log(db_path);
-	console.log("badlabels:", badlabels);
+// 	console.log(db_path);
+// 	console.log("badlabels:", badlabels);
 
-	var pdb = new sqlite3.Database(db_path, (err) => {
-		if(err){
-			return console.log('Database connection error:', err.message);
-		}
-		console.log('connected to pdb.');
-	});
+// 	var pdb = new sqlite3.Database(db_path, (err) => {
+// 		if(err){
+// 			return console.log('Database connection error:', err.message);
+// 		}
+// 		console.log('connected to pdb.');
+// 	});
 
-	let completedQueries = 0;
-    let errors = [];
+// 	let completedQueries = 0;
+//     let errors = [];
 
-	badlabels.forEach((badlabelID) => {
+// 	badlabels.forEach((badlabelID) => {
 
-		const deleteLabelsQuery = 'DELETE FROM Labels WHERE LID = ?';
+// 		const deleteLabelsQuery = 'DELETE FROM Labels WHERE LID = ?';
 
-		pdb.run(deleteLabelsQuery,[badlabelID], function(err) {
-			if(err){
-				console.error("Error deleting label:", err.message);
-                errors.push({ label: badlabelID, error: err.message });
-			} else {
-				console.log(`Row(s) deleted for label ${badlabelID}: ${this.changes}`);
-			}
+// 		pdb.run(deleteLabelsQuery,[badlabelID], function(err) {
+// 			if(err){
+// 				console.error("Error deleting label:", err.message);
+//                 errors.push({ label: badlabelID, error: err.message });
+// 			} else {
+// 				console.log(`Row(s) deleted for label ${badlabelID}: ${this.changes}`);
+// 			}
 
-			completedQueries++;
+// 			completedQueries++;
 
-			if(completedQueries === badlabels.length){
-				pdb.close((err) => {
-					if (err) {
-                        console.error('Error closing the database connection:', err.message);
-                        return res.status(500).json({ error: 'Error closing the database connection' });
-                    }
-					console.log('Database connection closed.');
-					if (errors.length > 0) {
-                        res.status(500).json({ success: false, errors });
-                    } else {
-                        res.json({ success: true, message: "Successfully deleted bad labels" });
-                    }
-				});
-			}
-		});
-	});
-});
+// 			if(completedQueries === badlabels.length){
+// 				pdb.close((err) => {
+// 					if (err) {
+//                         console.error('Error closing the database connection:', err.message);
+//                         return res.status(500).json({ error: 'Error closing the database connection' });
+//                     }
+// 					console.log('Database connection closed.');
+// 					if (errors.length > 0) {
+//                         res.status(500).json({ success: false, errors });
+//                     } else {
+//                         res.json({ success: true, message: "Successfully deleted bad labels" });
+//                     }
+// 				});
+// 			}
+// 		});
+// 	});
+// });
 
 
 
@@ -6214,7 +6214,7 @@ api.delete('/deleteBadLabels/:Admin/:PName/:Lid', async (req, res) => {
     try {
         const Admin = req.params.Admin;
         const PName = req.params.PName;
-        const Lid = req.params.Lid;
+        const Lid = req.params.Lid.split(',');
 
         console.log("Admin: ", Admin);	
         console.log("PName: ", PName);
@@ -6230,14 +6230,18 @@ api.delete('/deleteBadLabels/:Admin/:PName/:Lid', async (req, res) => {
 
         const db = new sqlite3.Database(dbPath, (err) => {
             if (err) {
-				console.log("hello");
                 console.error(err.message);
                 return res.status(500).send('Database connection error');
             }
             console.log(`Connected to ${PName} database`);
         });
 
-        db.run('DELETE FROM Labels WHERE LID = ?', [Lid], function (err) {
+		console.log("Lid:", Lid);
+		const placeholders = Lid.map(() => '?').join(',');
+		console.log("placeholders", placeholders);
+        const sql = `DELETE FROM Labels WHERE LID IN (${placeholders})`;
+
+        db.run(sql, Lid, function (err) {
             if (err) {
                 console.error(err.message);
                 return res.status(500).send('Internal server error');
