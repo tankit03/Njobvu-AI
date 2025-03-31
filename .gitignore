@@ -12,3 +12,4 @@ db/
 .sqlite_history
 .viminfo
 tmp/
+config.json
