@@ -1,6 +1,5 @@
 node_modules
 public/projects/*
-db/*
 .bash_history
 .bashrc
 .cache/
