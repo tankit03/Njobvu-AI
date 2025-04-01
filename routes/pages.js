@@ -346,7 +346,7 @@ module.exports = {
 
 		if (projects.length > 0) {
 			for (var i = 0; i < projects.length; i++) {
-				var Proj = await db.getAsync("SELECT * FROM `Projects` WHERE PName = '" + projects[i].PName + "' AND Admin = '" + projects[i].Admin + "' AND Validate = '" + Number(0) + "'");
+				var Proj = await db.getAsync("SELECT * FROM `Projects` WHERE PName = '" + projects[i].PName + "' AND Admin = '" + projects[i].Admin + "'");
 
 				//[Project, IDX, Review, NumberOfImages, %labeled]
 				if (Proj != null) {
