@@ -148,12 +148,14 @@ global.db.execAsync = function (sql) {
 	});
 }
 const fileUpload = require('express-fileupload');
+
 // api
 const api = require('./routes/api');
 
 // console.log(typeof(Storage));
 // pages
 const {
+    getClassificationPage,
     getLoginPage,
     getSignupPage,
     getHomePage,
@@ -194,14 +196,15 @@ app.set('view engine', 'ejs'); // configure template engine
 
 // use
 app.use(express.urlencoded({ extended: false }));
+// app.use(fileUpload({
+//     useTempFiles: true,
+//     tempFileDir: './tmp/', 
+// }));
+app.use(fileUpload());
 app.use(express.json()); // parse form data client
 app.use(express.static(path.join(__dirname, 'public'))); // configure express to use public folder
 app.use(cookieParser());
 //app.use(session({secret:"Secret Code Don't Tell Anyone", cookie: { maxAge: 30 * 1000 }})); // configure fileupload
-app.use(upload({
-    useTempFiles: true,
-    tempFileDir: "./tmp/"
-}));
 app.use("/",api);
 
 ////////////////////////////////////////////////////////
@@ -238,6 +241,7 @@ app.get('/projectV', getValidationProjectPage);
 app.get('/labelingV', getValidationLabelingPage);
 app.get('/configV', getValidationConfigPage);
 app.get('/statsV', getValidationStatsPage);
+app.get('/createClassification', getClassificationPage);
 app.get('/api/gpuinfo',);
 // everything else -> 404
 app.get('*', get404Page);

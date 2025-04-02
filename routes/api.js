@@ -15,7 +15,83 @@ const path = require('path');
 const { stdout } = require('process');
 const sharp = require('sharp');
 const api = express.Router();
+const new_file_path = require("path");
+const unzipper = require('unzipper');
 
+async function unzipFile(zipFilePath, outputDir) {
+    try {
+        const zip = new StreamZip.async({ file: zipFilePath });
+        
+        await zip.extract(null, outputDir);
+        
+        await zip.close();
+        
+        const macosxPath = `${outputDir}/__MACOSX`;
+        if (fs.existsSync(macosxPath)) {
+            console.log("Removing __MACOSX folder");
+            await new Promise((resolve, reject) => {
+                rimraf(macosxPath, (err) => {
+                    if (err) {
+                        console.error("Error removing __MACOSX folder:", err);
+                        reject(err);
+                    } else {
+                        console.log("__MACOSX folder removed successfully");
+                        resolve();
+                    }
+                });
+            });
+        }
+        
+        console.log("Deleting original zip file:", zipFilePath);
+        // Convert fs.unlink to a promise and await it
+        await new Promise((resolve, reject) => {
+            fs.unlink(zipFilePath, (err) => {
+                if (err) {
+                    console.error("Error deleting zip file:", err);
+                    reject(err);
+                } else {
+                    console.log("Zip file deleted successfully");
+                    resolve();
+                }
+            });
+        });
+        
+        console.log("All unzip operations completed successfully");
+        
+    } catch (error) {
+        console.error("Error in unzipFile:", error);
+        throw error;
+    }
+}
+
+async function pythonScript(inputDir, outputDir, runType){
+
+	console.log("running functions");
+	console.log("this is the input dir:", inputDir);
+	console.log("this is the outpuy dir:", outputDir);
+
+	const pyScript = path.join(__dirname, '../controllers/imports/import_options.py');
+	const command = `python3 ${pyScript} -i ${inputDir} -o ${outputDir} -r ${runType}`;
+
+	console.log("python", pyScript);
+	console.log("command", command);
+
+	return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+            if(error) {
+                console.error(`Error running python script: ${error.message}`);
+                reject(error);
+                return;
+            }
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                // Note: stderr might contain warnings but not fatal errors
+            }
+            console.log(`stdout: ${stdout}`);
+            resolve(stdout);
+        });
+    });
+}
 
 
 api.post('/logout', async (req, res) => {
@@ -228,6 +304,119 @@ api.post('/signup', async (req, res) => {
 	return res.redirect('/');
 });
 
+api.post('/api/createC', async (req, res) => {
+	console.log("create Classification");
+
+	if(!req.files || !req.files.upload_images){
+		return res.status(400).send("No file uploaded.")
+	}
+
+	username = req.cookies.Username;
+	project_name = req.body.projectName;
+
+	console.log("username:", username);
+	console.log("project name:", project_name);
+
+	var public_path = __dirname.replace('routes',''),
+		main_path = public_path + 'public/projects/',
+		project_path = main_path + username + "-" + project_name
+
+	if(!fs.existsSync(main_path)){
+		fs.mkdirSync(main_path);
+	}
+
+	if(!fs.existsSync(project_path)) {
+		fs.mkdirSync(project_path);
+	}
+
+	const uploadedFile = req.files.upload_images;
+	const targetPath = `${project_path}/${uploadedFile.name}`;
+	
+
+	//moves file into the target path
+	// Also unzips the zipped file in the target path through the unzipFile() functions
+
+	try {
+		await new Promise((resolve, reject) => {
+			uploadedFile.mv(targetPath, (err) => {
+				if (err) {
+					console.error("Error moving file:", err);
+					reject(new Error("Failed to move file."));
+				} else {
+					console.log("File moved to path:", targetPath);
+					resolve();
+				}
+			});
+		});
+	
+		if (!fs.existsSync(targetPath)) {
+			console.error(`File not found at path: ${targetPath}`);
+			return res.status(400).send("Uploaded file not found.");
+		}
+		
+		await unzipFile(targetPath, project_path);
+
+		const extractedFiles = fs.readdirSync(project_path);
+
+		console.log("this is the extractedFiles:", extractedFiles);
+
+		const inputDir = project_path + '/' + extractedFiles[0];
+		const runType = "class"
+		
+		console.log("this is target path:", inputDir);
+
+		await pythonScript(inputDir, project_path, runType);
+
+		fs.rm(inputDir, { recursive: true }, (err) => {
+			if (err) {
+				console.error('Error deleting the folder:', err);
+			} else {
+				console.log('Folder deleted successfully');
+			}
+		});
+
+		try {
+			// Attempt to insert the record
+			await db.runAsync("INSERT INTO Access (Username, PName, Admin) VALUES ('"+username+"', '"+project_name+"', '"+username+"')");
+
+			const project_description = "none";
+			const auto_save = 1;
+
+			await db.allAsync("INSERT INTO Projects (PName, PDescription, AutoSave, Admin) VALUES ('" + project_name + "', '" + project_description + "', '" + auto_save +"', '" + username + "')");
+			
+			// If execution reaches here, the operation succeeded
+			console.log(`Successfully granted access to ${username} for project ${project_name}`);
+			
+			return res.status(200).json({
+				success: true,
+				message: "Access permission granted successfully"
+			});
+		} catch (error) {
+			// Log the error for debugging
+			console.error("Database error while granting access:", error);
+			
+			// Check for specific error types
+			if (error.message && error.message.includes("UNIQUE constraint failed")) {
+				return res.status(409).json({
+					success: false,
+					message: "User already has access to this project",
+					error: error.message
+				});
+			} else {
+				// Generic error response
+				return res.status(500).json({
+					success: false,
+					message: "Failed to grant project access",
+					error: error.message
+				});
+			}
+		}
+	} catch (error) {
+		console.error('Error:', error.message);
+		return res.status(500).send(error.message);
+	}
+});
+
 api.post('/createP', async (req, res) => {
 
 	console.log("addProject");
@@ -374,6 +563,8 @@ api.post('/createP', async (req, res) => {
 	await cdb.runAsync("CREATE TABLE Labels (LID INTEGER PRIMARY KEY, CName VARCHAR NOT NULL, X INTEGER NOT NULL, Y INTEGER NOT NULL, W INTEGER NOT NULL, H INTEGER NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(CName) REFERENCES Classes(CName), FOREIGN KEY(IName) REFERENCES Images(IName))");
 	await cdb.runAsync("CREATE TABLE Validation (Confidence INTEGER NOT NULL, LID INTEGER NOT NULL PRIMARY KEY, CName VARCHAR NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(LID) REFERENCES Labels(LID), FOREIGN KEY(IName) REFERENCES Images(IName), FOREIGN KEY(CName) REFERENCES Classes(CName))"); //tp1
 
+	console.log("save", auto_save);
+	console.log("project des", project_description);
 
 	var results1 = await db.allAsync("INSERT INTO Projects (PName, PDescription, AutoSave, Admin) VALUES ('" + project_name + "', '" + project_description + "', '" + auto_save +"', '" + username + "')");
 
