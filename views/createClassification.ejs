@@ -1,0 +1,82 @@
+<%- include('includes/header', {activePage: null}) %>
+<div id="classification">
+    <div class="container">
+        <div class="contact">
+            <%- include('includes/createNav', {activePage}) %>
+            <h3>Add New Classification Project</h3>
+            <form id="ClassificationForm" enctype="multipart/form-data">
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="project-name">Project Name</label>
+                        <input id = "project_name" name="project_name" type="text" class="form-control" id="project-name" placeholder="Project Name" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="upload-images">
+							Upload Images or Videos (.zip or .mp4/.avi/.mov)
+						</label>
+						<input id="upload_images" name="upload_images" type="file" class="form-control-file" id="upload-images" accept=".zip" required>
+                    </div>
+                </div>
+                <div class="col text-center">
+                    <input id="Createbtn" type="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 30">
+                </div>
+            </form>
+        </div>  
+    </div>
+</div>
+
+<script>
+
+    async function postData(url, data) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: data,
+            });
+
+            if (response.ok) {
+                const result = await response.json(); 
+                console.log('Success:', result);
+                window.location.replace("/home");
+            } else {
+                console.error('Error:', response.status, response.statusText);
+                alert("Error: " + response.statusText);
+            }
+
+        } catch (error) {
+            console.error("Error:", error.message);
+        }
+    }
+
+    document.getElementById('ClassificationForm').addEventListener("submit", function(e){
+        e.preventDefault();
+
+
+        var projectName = document.getElementById("project_name").value;
+        var PNames = "<%= PNames %>".split()
+
+        if(projectName.includes('/') || projectName.includes('@') || projectName.includes("\\") || projectName.includes('.') || projectName.includes("'") || projectName.includes(" "))
+		{
+			alert("Invalid Project Name!\n Project Name Cannot Contain: /@.\\' or 'spaces'")
+		}
+		else if(PNames.includes(projectName))
+		{
+			alert("That Project Name Already Exists!")
+		}else{
+            var input = document.querySelector('input[type="file"]');    
+            var data = new FormData();
+            const url = '/api/createC';
+    
+            data.append('upload_images', input.files[0]);
+            data.append('projectName', projectName);
+    
+            console.log("this is data: ", data);
+    
+            postData(url, data);
+
+        }
+    });
+    
+
+
+</script>
