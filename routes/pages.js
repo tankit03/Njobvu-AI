@@ -1951,6 +1951,7 @@ module.exports = {
 
 		if (curr_class == null) {
 			curr_class = results1[0].CName;
+
 		}
 
 		for (var i = 0; i < acc.length; i++) {

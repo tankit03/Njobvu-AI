@@ -77,9 +77,23 @@ def create_project(db_name, txt_file, nj_path, class_label, img_dir, classificat
     else:
         unique_classes.add(class_label)
 
-    os.makedirs(os.path.join(project_path, 'bootstrap'))
-    os.makedirs(os.path.join(project_path, 'images'))
-    os.makedirs(os.path.join(project_path, 'Training'))
+    os.makedirs(os.path.join(project_path, 'images'), exist_ok=True)
+    os.makedirs(os.path.join(project_path, 'bootstrap'), exist_ok=True)
+    
+    # Create training directory and its subdirectories
+    training_path = os.path.join(project_path, 'training')
+    os.makedirs(training_path, exist_ok=True)
+    os.makedirs(os.path.join(training_path, 'logs'), exist_ok=True)
+    os.makedirs(os.path.join(training_path, 'weights'), exist_ok=True)
+    os.makedirs(os.path.join(training_path, 'python'), exist_ok=True)
+    
+    # Create empty path files
+    with open(os.path.join(training_path, 'Paths.txt'), 'w') as f:
+        pass  # Create empty file
+    
+    with open(os.path.join(training_path, 'darknetPaths.txt'), 'w') as f:
+        pass
+
 
     if classification == '':
         for img_name in os.listdir(img_dir):

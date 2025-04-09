@@ -18,6 +18,79 @@ const api = express.Router();
 const new_file_path = require("path");
 const unzipper = require('unzipper');
 
+async function cleanDirectory(directory) {
+    try {
+      // Clean the directory path itself first
+      const dirName = path.basename(directory);
+      const parentDir = path.dirname(directory);
+      const cleanedDirName = dirName.trim().replace(/[ 0+]/g, '_');
+      
+      // If directory name needs cleaning, rename it first
+      let currentDirectory = directory;
+      if (dirName !== cleanedDirName) {
+        const newDirPath = path.join(parentDir, cleanedDirName);
+        await fs.promises.rename(directory, newDirPath);
+        currentDirectory = newDirPath;
+        console.log(`Renamed directory: ${directory} -> ${newDirPath}`);
+      }
+      
+      const files = await fs.promises.readdir(currentDirectory);
+      console.log(`Cleaning directory: ${currentDirectory}`);
+      
+      for (const file of files) {
+        const filePath = path.join(currentDirectory, file);
+        const stats = await fs.promises.stat(filePath);
+        
+        // Process subdirectories 
+        if (stats.isDirectory()) {
+          // Skip processing the __MACOSX directory as it's handled separately in unzipFile
+          if (file === "__MACOSX") continue;
+          
+          // Clean subdirectory name first
+          if (file !== file.trim() || file.includes(' ') || file.includes('0') || file.includes('+')) {
+            const newDirName = file.trim().replace(/[ 0+]/g, '_');
+            const newDirPath = path.join(currentDirectory, newDirName);
+            await fs.promises.rename(filePath, newDirPath);
+            console.log(`Renamed subdirectory: ${file} -> ${newDirName}`);
+            
+            // Handle subdirectories - clean them recursively
+            await cleanDirectory(newDirPath);
+          } else {
+            // Handle subdirectories - clean them recursively
+            await cleanDirectory(filePath);
+          }
+          continue;
+        }
+        
+        // Remove unwanted system files
+        if (file === '.DS_Store' || 
+            file === '._.DS_Store' || 
+            file.startsWith('._') || 
+            file === 'Thumbs.db' || 
+            file === 'desktop.ini') {
+          await fs.promises.unlink(filePath);
+          console.log(`Removed system file: ${filePath}`);
+          continue;
+        }
+        
+        // Clean filename: Remove trailing/leading spaces and replace spaces, 0s and + with _
+        if (file !== file.trim() || file.includes(' ') || file.includes('0') || file.includes('+')) {
+          const newFileName = file.trim().replace(/[ 0+]/g, '_');
+          const newFilePath = path.join(currentDirectory, newFileName);
+          
+          await fs.promises.rename(filePath, newFilePath);
+          console.log(`Renamed: ${file} -> ${newFileName}`);
+        }
+      }
+      
+      console.log(`Directory cleaned: ${currentDirectory}`);
+      return currentDirectory; // Return potentially new directory path
+    } catch (error) {
+      console.error(`Error cleaning directory ${directory}:`, error);
+      throw error;
+    }
+}
+
 async function unzipFile(zipFilePath, outputDir) {
     try {
         const zip = new StreamZip.async({ file: zipFilePath });
@@ -41,6 +114,8 @@ async function unzipFile(zipFilePath, outputDir) {
                 });
             });
         }
+
+		await cleanDirectory(outputDir);
         
         console.log("Deleting original zip file:", zipFilePath);
         // Convert fs.unlink to a promise and await it
@@ -305,117 +380,140 @@ api.post('/signup', async (req, res) => {
 });
 
 api.post('/api/createC', async (req, res) => {
-	console.log("create Classification");
+    console.log("create Classification");
 
-	if(!req.files || !req.files.upload_images){
-		return res.status(400).send("No file uploaded.")
-	}
+    // Validate file upload and required fields
+    if (!req.files || !req.files.upload_images) {
+        return res.status(400).send("No file uploaded.");
+    }
+    if (!req.body.projectName) {
+        return res.status(400).send("Project name not provided.");
+    }
+    if (!req.cookies.Username) {
+        return res.status(400).send("Username cookie not found.");
+    }
 
-	username = req.cookies.Username;
-	project_name = req.body.projectName;
 
-	console.log("username:", username);
-	console.log("project name:", project_name);
 
-	var public_path = __dirname.replace('routes',''),
-		main_path = public_path + 'public/projects/',
-		project_path = main_path + username + "-" + project_name
+    let username = req.cookies.Username;
+    let project_name = req.body.projectName;
 
-	if(!fs.existsSync(main_path)){
-		fs.mkdirSync(main_path);
-	}
+    console.log("username:", username);
+    console.log("project name:", project_name);
 
-	if(!fs.existsSync(project_path)) {
-		fs.mkdirSync(project_path);
-	}
+    let public_path = __dirname.replace('routes',''),
+        main_path = public_path + 'public/projects/',
+        project_path = main_path + username + "-" + project_name;
 
-	const uploadedFile = req.files.upload_images;
-	const targetPath = `${project_path}/${uploadedFile.name}`;
-	
+    // Create main and project directories
+    try {
+        if (!fs.existsSync(main_path)) {
+            fs.mkdirSync(main_path);
+        }
+        if (!fs.existsSync(project_path)) {
+            fs.mkdirSync(project_path);
+        }
+    } catch (err) {
+        console.error("Error creating directories:", err);
+        return res.status(500).send("Error creating directories.");
+    }
 
-	//moves file into the target path
-	// Also unzips the zipped file in the target path through the unzipFile() functions
+    const uploadedFile = req.files.upload_images;
+    const targetPath = `${project_path}/${uploadedFile.name.trim().replace(/[ 0+]/g, '_')}`;
 
-	try {
-		await new Promise((resolve, reject) => {
-			uploadedFile.mv(targetPath, (err) => {
-				if (err) {
-					console.error("Error moving file:", err);
-					reject(new Error("Failed to move file."));
-				} else {
-					console.log("File moved to path:", targetPath);
-					resolve();
-				}
-			});
-		});
-	
-		if (!fs.existsSync(targetPath)) {
-			console.error(`File not found at path: ${targetPath}`);
-			return res.status(400).send("Uploaded file not found.");
-		}
-		
-		await unzipFile(targetPath, project_path);
+    // Move file to target path
+    try {
+        await new Promise((resolve, reject) => {
+            uploadedFile.mv(targetPath, (err) => {
+                if (err) {
+                    console.error("Error moving file:", err);
+                    reject(new Error("Failed to move file."));
+                } else {
+                    console.log("File moved to path:", targetPath);
+                    resolve();
+                }
+            });
+        });
 
-		const extractedFiles = fs.readdirSync(project_path);
+        if (!fs.existsSync(targetPath)) {
+            console.error(`File not found at path: ${targetPath}`);
+            return res.status(400).send("Uploaded file not found.");
+        }
+    } catch (error) {
+        console.error("Error during file move:", error);
+        return res.status(500).send(error.message);
+    }
 
-		console.log("this is the extractedFiles:", extractedFiles);
+    // Unzip the uploaded file and handle errors
+    try {
+        await unzipFile(targetPath, project_path);
+    } catch (error) {
+        console.error("Error during unzip process:", error);
+        return res.status(500).send("Error unzipping file: " + error.message);
+    }
 
-		const inputDir = project_path + '/' + extractedFiles[0];
-		const runType = "class"
-		
-		console.log("this is target path:", inputDir);
+    // Retrieve the extracted files and set up input directory for Python script
+    let extractedFiles;
+    try {
+        extractedFiles = fs.readdirSync(project_path);
+        console.log("Extracted files:", extractedFiles);
+    } catch (error) {
+        console.error("Error reading project path:", error);
+        return res.status(500).send("Error reading project directory: " + error.message);
+    }
 
-		await pythonScript(inputDir, project_path, runType);
+    const inputDir = project_path + '/' + extractedFiles[0];
+    const runType = "class";
+    console.log("Using input directory:", inputDir);
 
-		fs.rm(inputDir, { recursive: true }, (err) => {
-			if (err) {
-				console.error('Error deleting the folder:', err);
-			} else {
-				console.log('Folder deleted successfully');
-			}
-		});
+    // Run the Python script and handle errors
+    try {
+        await pythonScript(inputDir, project_path, runType);
+    } catch (error) {
+        console.error("Error running python script:", error);
+        return res.status(500).send("Error processing file with python script: " + error.message);
+    }
 
-		try {
-			// Attempt to insert the record
-			await db.runAsync("INSERT INTO Access (Username, PName, Admin) VALUES ('"+username+"', '"+project_name+"', '"+username+"')");
+    // Delete temporary input folder; use promise-based fs method for better error handling.
+    try {
+        await fs.promises.rm(inputDir, { recursive: true });
+        console.log('Folder deleted successfully');
+    } catch (err) {
+        console.error('Error deleting the folder:', err);
+        // Proceed without blocking the final response if cleanup fails
+    }
 
-			const project_description = "none";
-			const auto_save = 1;
+    // Insert data into the database and handle any errors
+    try {
+		await db.runAsync("INSERT INTO Access (Username, PName, Admin) VALUES ('"+username+"', '"+project_name+"', '"+username+"')");
+        const project_description = "none";
+        const auto_save = 1;
+		await db.allAsync("INSERT INTO Projects (PName, PDescription, AutoSave, Admin) VALUES ('" + project_name + "', '" + project_description + "', '" + auto_save +"', '" + username + "')");
 
-			await db.allAsync("INSERT INTO Projects (PName, PDescription, AutoSave, Admin) VALUES ('" + project_name + "', '" + project_description + "', '" + auto_save +"', '" + username + "')");
-			
-			// If execution reaches here, the operation succeeded
-			console.log(`Successfully granted access to ${username} for project ${project_name}`);
-			
-			return res.status(200).json({
-				success: true,
-				message: "Access permission granted successfully"
-			});
-		} catch (error) {
-			// Log the error for debugging
-			console.error("Database error while granting access:", error);
-			
-			// Check for specific error types
-			if (error.message && error.message.includes("UNIQUE constraint failed")) {
-				return res.status(409).json({
-					success: false,
-					message: "User already has access to this project",
-					error: error.message
-				});
-			} else {
-				// Generic error response
-				return res.status(500).json({
-					success: false,
-					message: "Failed to grant project access",
-					error: error.message
-				});
-			}
-		}
-	} catch (error) {
-		console.error('Error:', error.message);
-		return res.status(500).send(error.message);
-	}
+        console.log(`Successfully granted access to ${username} for project ${project_name}`);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Access permission granted successfully"
+        });
+    } catch (error) {
+        console.error("Database error while granting access:", error);
+        if (error.message && error.message.includes("UNIQUE constraint failed")) {
+            return res.status(409).json({
+                success: false,
+                message: "User already has access to this project",
+                error: error.message
+            });
+        } else {
+            return res.status(500).json({
+                success: false,
+                message: "Failed to grant project access",
+                error: error.message
+            });
+        }
+    }
 });
+
 
 api.post('/createP', async (req, res) => {
 
