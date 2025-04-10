@@ -9,6 +9,7 @@ input_dir = ''
 output = ''
 weights_file = ''
 classification_dir = ''
+db_name = ''
 
 
 def help():
@@ -24,7 +25,7 @@ def help():
     print('\t\tExample run for inference [import_options.py -i input_dir -o output -w weights_file.pt -r inf]')
     print('\t\tinput should be a directory of images used for inference and the weights file should be the weights file related to your project')
 
-def classification_plus_import(input_dir, output):
+def classification_plus_import(db_name, input_dir, output):
     with open('labels.txt', 'w') as f:
         #for each directory of imgs under a class, we are going to get each img, open it get all the data and write that too labels file
         if os.path.exists(input_dir):
@@ -41,7 +42,7 @@ def classification_plus_import(input_dir, output):
                  
     script_dir = os.path.dirname(os.path.abspath(__file__))
     import_nj_script = os.path.join(script_dir, "importNJ.py")
-    command = f'python3 {import_nj_script} -n new -i {input_dir} -t labels.txt -p {output} -z {output} -C yes'
+    command = f'python3 {import_nj_script} -n new -i {input_dir} -t labels.txt -p {output} -z {output} -C yes -d {db_name}'
     os.system(command)
 
 
@@ -125,10 +126,13 @@ for i in range(1, len(sys.argv)):
     elif sys.argv[i] == '-o':
         output = sys.argv[i+1]
 
+    elif sys.argv[i] == '-d':
+        db_name = sys.argv[i+1]
+
     elif sys.argv[i] == '-r':
         runs = sys.argv[i+1]
         if runs == 'class':
-            classification_plus_import(input_dir, output)
+            classification_plus_import(db_name, input_dir, output)
         elif runs == 'inf':
             inference_plus_import(input_dir, output, weights_file)
         elif runs == 'ci':

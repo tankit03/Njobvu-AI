@@ -139,14 +139,15 @@ async function unzipFile(zipFilePath, outputDir) {
     }
 }
 
-async function pythonScript(inputDir, outputDir, runType){
+async function pythonScript(inputDir, outputDir, runType, db_name){
 
 	console.log("running functions");
 	console.log("this is the input dir:", inputDir);
 	console.log("this is the outpuy dir:", outputDir);
+	console.log("this is the project db name:", db_name);
 
 	const pyScript = path.join(__dirname, '../controllers/imports/import_options.py');
-	const command = `python3 ${pyScript} -i ${inputDir} -o ${outputDir} -r ${runType}`;
+	const command = `python3 ${pyScript} -i ${inputDir} -o ${outputDir} -d ${db_name} -r ${runType}`;
 
 	console.log("python", pyScript);
 	console.log("command", command);
@@ -160,7 +161,7 @@ async function pythonScript(inputDir, outputDir, runType){
             }
             if (stderr) {
                 console.error(`stderr: ${stderr}`);
-                // Note: stderr might contain warnings but not fatal errors
+                return;
             }
             console.log(`stdout: ${stdout}`);
             resolve(stdout);
@@ -397,6 +398,7 @@ api.post('/api/createC', async (req, res) => {
 
     let username = req.cookies.Username;
     let project_name = req.body.projectName;
+	let db_name = project_name;
 
     console.log("username:", username);
     console.log("project name:", project_name);
@@ -468,7 +470,7 @@ api.post('/api/createC', async (req, res) => {
 
     // Run the Python script and handle errors
     try {
-        await pythonScript(inputDir, project_path, runType);
+        await pythonScript(inputDir, project_path, runType, db_name);
     } catch (error) {
         console.error("Error running python script:", error);
         return res.status(500).send("Error processing file with python script: " + error.message);
@@ -480,6 +482,7 @@ api.post('/api/createC', async (req, res) => {
         console.log('Folder deleted successfully');
     } catch (err) {
         console.error('Error deleting the folder:', err);
+		return res.status(500).send("Error deleting temporary folder: " + err.message);
         // Proceed without blocking the final response if cleanup fails
     }
 

@@ -184,18 +184,20 @@ if __name__ == '__main__':
             classification = sys.argv[i+1]
         elif sys.argv[i] == '-z':
             zip_name = sys.argv[i+1]
+        elif sys.argv[i] == '-d':
+            db_name = sys.argv[i+1]
 
     #Creating new Project
     if nj_decision == "new":
 
-        print(f"db_name:{db_name}")
+    #     print(f"db_name:{db_name}")
     
-    # Extract just the project name without username prefix
-        basename = os.path.basename(nj_path)
-        if '-' in basename:
-            db_name = basename.split('-', 1)[1]  # Get everything after the first dash
-        else:
-            db_name = basename
+    # # Extract just the project name without username prefix
+    #     basename = os.path.basename(nj_path)
+    #     if '-' in basename:
+    #         db_name = basename.split('-', 1)[1]  # Get everything after the first dash
+    #     else:
+    #         db_name = basename
             
         print(f"Using database name: {db_name}")
         create_project(db_name, txt_file, nj_path, class_label, img_dir, classification)
