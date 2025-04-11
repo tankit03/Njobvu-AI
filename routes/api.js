@@ -393,12 +393,14 @@ api.post('/api/createC', async (req, res) => {
     if (!req.cookies.Username) {
         return res.status(400).send("Username cookie not found.");
     }
-
-
+	if(!req.files.upload_bootstrap) {
+		return res.status(400).send("No weight's file upload. ");
+	}
 
     let username = req.cookies.Username;
     let project_name = req.body.projectName;
 	let db_name = project_name;
+
 
     console.log("username:", username);
     console.log("project name:", project_name);
@@ -421,7 +423,9 @@ api.post('/api/createC', async (req, res) => {
     }
 
     const uploadedFile = req.files.upload_images;
+	const uploadedWeight = req.files.upload_bootstrap;
     const targetPath = `${project_path}/${uploadedFile.name.trim().replace(/[ 0+]/g, '_')}`;
+	const targetPathWeight = `${project_path}/${uploadedWeight.name.trim().replace(/[ 0+]/g, '_')}`;
 
     // Move file to target path
     try {
@@ -439,6 +443,28 @@ api.post('/api/createC', async (req, res) => {
 
         if (!fs.existsSync(targetPath)) {
             console.error(`File not found at path: ${targetPath}`);
+            return res.status(400).send("Uploaded file not found.");
+        }
+    } catch (error) {
+        console.error("Error during file move:", error);
+        return res.status(500).send(error.message);
+    }
+
+	try {
+        await new Promise((resolve, reject) => {
+            uploadedWeight.mv(targetPathWeight, (err) => {
+                if (err) {
+                    console.error("Error moving file:", err);
+                    reject(new Error("Failed to move file."));
+                } else {
+                    console.log("File moved to path:", targetPathWeight);
+                    resolve();
+                }
+            });
+        });
+
+        if (!fs.existsSync(targetPathWeight)) {
+            console.error(`File not found at path: ${targetPathWeight}`);
             return res.status(400).send("Uploaded file not found.");
         }
     } catch (error) {

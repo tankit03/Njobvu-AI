@@ -70,6 +70,8 @@ module.exports = {
 		}
 	},
 
+
+
 	getClassSettingsPage: async (req, res) => {
 		var IDX = req.query.IDX;
 		if (IDX == undefined) {
@@ -604,6 +606,26 @@ module.exports = {
 			logged: req.query.logged,
 			PNames: PNames,
 			activePage: "Classification"
+		});
+	},
+
+	getClassInferencePage: async (req, res) => {
+
+		username = req.cookies.Username;
+
+		var projects = await db.allAsync("SELECT * FROM Access WHERE Admin = '" + username + "'");
+		var PNames = []
+		for (var i = 0; i < projects.length; i++) {
+			PNames.push(projects[i].PName)
+		}
+		console.log("getClassInferencePage");
+
+		res.render('createClassInference', {
+			title: 'createClassInference',
+			user: username,
+			logged: req.query.logged,
+			PNames: PNames,
+			activePage: "classInference"
 		});
 	},
 

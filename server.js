@@ -155,6 +155,7 @@ const api = require('./routes/api');
 // console.log(typeof(Storage));
 // pages
 const {
+    getClassInferencePage,
     getClassificationPage,
     getLoginPage,
     getSignupPage,
@@ -242,6 +243,7 @@ app.get('/labelingV', getValidationLabelingPage);
 app.get('/configV', getValidationConfigPage);
 app.get('/statsV', getValidationStatsPage);
 app.get('/createClassification', getClassificationPage);
+app.get('/classInference', getClassInferencePage);
 app.get('/api/gpuinfo',);
 // everything else -> 404
 app.get('*', get404Page);

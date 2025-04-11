@@ -1,9 +1,9 @@
 <%- include('includes/header', {activePage: null}) %>
-<div id="classification">
+<div id="classInference">
     <div class="container">
         <div class="contact">
             <%- include('includes/createNav', {activePage}) %>
-            <h3>Add New Classification Project</h3>
+            <h3>Run Inference + Create Classification</h3>
             <form id="ClassificationForm" enctype="multipart/form-data">
                 <div class="form-row">
                     <div class="form-group col-md-6">
@@ -17,11 +17,15 @@
 						<input id="upload_images" name="upload_images" type="file" class="form-control-file" id="upload-images" accept=".zip" required>
                     </div>
                 </div>
+                <div class="form-group col-md-6">
+                    <label for="upload-bootstrap">Upload (.data + .cfg + .weights).zip</label>
+                    <input id="upload_bootstrap" name="upload_bootstrap" type="file" class="form-control-file" id="upload-bootstrap" required>
+                </div>  
                 <div class="col text-center">
                     <input id="Createbtn" type="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 30">
                 </div>
             </form>
-        </div>  
+        </div>
     </div>
 </div>
 
@@ -63,12 +67,15 @@
 		{
 			alert("That Project Name Already Exists!")
 		}else{
-            var input = document.querySelector('input[type="file"]');    
+            var input = document.querySelector('input[type="file"]');
+            var input2 = document.querySelector('input[type="file"][name="upload_bootstrap"]');
             var data = new FormData();
             const url = '/api/createC';
     
             data.append('upload_images', input.files[0]);
+            data.append('upload_bootstrap', input2.files[0]);
             data.append('projectName', projectName);
+
     
             console.log("this is data: ", data);
     
