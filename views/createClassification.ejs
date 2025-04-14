@@ -39,12 +39,14 @@
                 console.log('Success:', result);
                 window.location.replace("/home");
             } else {
-                console.error('Error:', response.status, response.statusText);
-                alert("Error: " + response.statusText);
+                const errorMessage = await response.text();
+                console.error('Error:', response.status, errorMessage);
+                alert("Error: " + errorMessage); 
             }
 
         } catch (error) {
             console.error("Error:", error.message);
+            alert("Fetch failed: " + error.message);
         }
     }
 
