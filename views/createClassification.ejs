@@ -19,7 +19,9 @@
                 </div>
                 <div class="col text-center">
                     <input id="Createbtn" type="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 30">
+                    <div id="statusMessage" style="display: none;">Uploading, please wait...</div>
                 </div>
+                
             </form>
         </div>  
     </div>
@@ -28,6 +30,12 @@
 <script>
 
     async function postData(url, data) {
+
+        // Show the status message
+        const statusMessage = document.getElementById('statusMessage');
+        statusMessage.style.display = 'block';
+
+
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -48,6 +56,9 @@
             console.error("Error:", error.message);
             alert("Fetch failed: " + error.message);
         }
+        // Hide the status message
+        statusMessage.style.display = 'none';
+
     }
 
     document.getElementById('ClassificationForm').addEventListener("submit", function(e){
