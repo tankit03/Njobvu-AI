@@ -35,7 +35,7 @@ async function cleanDirectory(directory) {
       }
       
       const files = await fs.promises.readdir(currentDirectory);
-      console.log(`Cleaning directory: ${currentDirectory}`);
+    //   console.log(`Cleaning directory: ${currentDirectory}`);
       
       for (const file of files) {
         const filePath = path.join(currentDirectory, file);
@@ -43,7 +43,7 @@ async function cleanDirectory(directory) {
         
         // Process subdirectories 
         if (stats.isDirectory()) {
-          // Skip processing the __MACOSX directory as it's handled separately in unzipFile
+          
           if (file === "__MACOSX") continue;
           
           // Clean subdirectory name first
@@ -51,7 +51,7 @@ async function cleanDirectory(directory) {
             const newDirName = file.trim().replace(/[ 0+]/g, '_');
             const newDirPath = path.join(currentDirectory, newDirName);
             await fs.promises.rename(filePath, newDirPath);
-            console.log(`Renamed subdirectory: ${file} -> ${newDirName}`);
+            // console.log(`Renamed subdirectory: ${file} -> ${newDirName}`);
             
             // Handle subdirectories - clean them recursively
             await cleanDirectory(newDirPath);
@@ -69,7 +69,7 @@ async function cleanDirectory(directory) {
             file === 'Thumbs.db' || 
             file === 'desktop.ini') {
           await fs.promises.unlink(filePath);
-          console.log(`Removed system file: ${filePath}`);
+        //   console.log(`Removed system file: ${filePath}`);
           continue;
         }
         
@@ -79,12 +79,12 @@ async function cleanDirectory(directory) {
           const newFilePath = path.join(currentDirectory, newFileName);
           
           await fs.promises.rename(filePath, newFilePath);
-          console.log(`Renamed: ${file} -> ${newFileName}`);
         }
       }
       
-      console.log(`Directory cleaned: ${currentDirectory}`);
-      return currentDirectory; // Return potentially new directory path
+    //   console.log(`Directory cleaned: ${currentDirectory}`);
+      return currentDirectory;
+
     } catch (error) {
       console.error(`Error cleaning directory ${directory}:`, error);
       throw error;
@@ -167,6 +167,18 @@ async function pythonScript(inputDir, outputDir, runType, db_name){
             resolve(stdout);
         });
     });
+}
+
+async function deleteDir(project_path) {
+
+	console.log("this is the path to delete: ", project_path);
+
+	fs.rm(project_path, {recursive: true, force: true}, (err) => {
+		if(err) {
+			return console.error('Error deleting dir: ', err);
+		}
+		return console.log('Dir deleted succesfully');
+	});
 }
 
 
@@ -394,14 +406,9 @@ api.post('/api/createC', async (req, res) => {
         return res.status(400).send("Username cookie not found.");
     }
 
-
-
     let username = req.cookies.Username;
     let project_name = req.body.projectName;
 	let db_name = project_name;
-
-    console.log("username:", username);
-    console.log("project name:", project_name);
 
     let public_path = __dirname.replace('routes',''),
         main_path = public_path + 'public/projects/',
@@ -443,6 +450,7 @@ api.post('/api/createC', async (req, res) => {
         }
     } catch (error) {
         console.error("Error during file move:", error);
+		await deleteDir(project_path);
         return res.status(500).send(error.message);
     }
 
@@ -451,6 +459,7 @@ api.post('/api/createC', async (req, res) => {
         await unzipFile(targetPath, project_path);
     } catch (error) {
         console.error("Error during unzip process:", error);
+		await deleteDir(project_path);
         return res.status(500).send("Error unzipping file: " + error.message);
     }
 
@@ -461,6 +470,7 @@ api.post('/api/createC', async (req, res) => {
         console.log("Extracted files:", extractedFiles);
     } catch (error) {
         console.error("Error reading project path:", error);
+		await deleteDir(project_path);
         return res.status(500).send("Error reading project directory: " + error.message);
     }
 
@@ -473,7 +483,8 @@ api.post('/api/createC', async (req, res) => {
         await pythonScript(inputDir, project_path, runType, db_name);
     } catch (error) {
         console.error("Error running python script:", error);
-        return res.status(500).send("Error processing file with python script: " + error.message);
+		await deleteDir(project_path);
+        return res.status(500).send("Error processing file with python script");
     }
 
     // Delete temporary input folder; use promise-based fs method for better error handling.
@@ -482,8 +493,8 @@ api.post('/api/createC', async (req, res) => {
         console.log('Folder deleted successfully');
     } catch (err) {
         console.error('Error deleting the folder:', err);
+		await deleteDir(project_path);
 		return res.status(500).send("Error deleting temporary folder: " + err.message);
-        // Proceed without blocking the final response if cleanup fails
     }
 
     // Insert data into the database and handle any errors
@@ -499,8 +510,12 @@ api.post('/api/createC', async (req, res) => {
             success: true,
             message: "Access permission granted successfully"
         });
+
+		
+
     } catch (error) {
         console.error("Database error while granting access:", error);
+		await deleteDir(project_path);
         if (error.message && error.message.includes("UNIQUE constraint failed")) {
             return res.status(409).json({
                 success: false,
@@ -508,6 +523,7 @@ api.post('/api/createC', async (req, res) => {
                 error: error.message
             });
         } else {
+			await deleteDir(project_path);
             return res.status(500).json({
                 success: false,
                 message: "Failed to grant project access",
