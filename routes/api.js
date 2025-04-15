@@ -15,7 +15,171 @@ const path = require('path');
 const { stdout } = require('process');
 const sharp = require('sharp');
 const api = express.Router();
+const new_file_path = require("path");
+const unzipper = require('unzipper');
 
+async function cleanDirectory(directory) {
+    try {
+      // Clean the directory path itself first
+      const dirName = path.basename(directory);
+      const parentDir = path.dirname(directory);
+      const cleanedDirName = dirName.trim().replace(/[ 0+]/g, '_');
+      
+      // If directory name needs cleaning, rename it first
+      let currentDirectory = directory;
+      if (dirName !== cleanedDirName) {
+        const newDirPath = path.join(parentDir, cleanedDirName);
+        await fs.promises.rename(directory, newDirPath);
+        currentDirectory = newDirPath;
+        console.log(`Renamed directory: ${directory} -> ${newDirPath}`);
+      }
+      
+      const files = await fs.promises.readdir(currentDirectory);
+    //   console.log(`Cleaning directory: ${currentDirectory}`);
+      
+      for (const file of files) {
+        const filePath = path.join(currentDirectory, file);
+        const stats = await fs.promises.stat(filePath);
+        
+        // Process subdirectories 
+        if (stats.isDirectory()) {
+          
+          if (file === "__MACOSX") continue;
+          
+          // Clean subdirectory name first
+          if (file !== file.trim() || file.includes(' ') || file.includes('0') || file.includes('+')) {
+            const newDirName = file.trim().replace(/[ 0+]/g, '_');
+            const newDirPath = path.join(currentDirectory, newDirName);
+            await fs.promises.rename(filePath, newDirPath);
+            // console.log(`Renamed subdirectory: ${file} -> ${newDirName}`);
+            
+            // Handle subdirectories - clean them recursively
+            await cleanDirectory(newDirPath);
+          } else {
+            // Handle subdirectories - clean them recursively
+            await cleanDirectory(filePath);
+          }
+          continue;
+        }
+        
+        // Remove unwanted system files
+        if (file === '.DS_Store' || 
+            file === '._.DS_Store' || 
+            file.startsWith('._') || 
+            file === 'Thumbs.db' || 
+            file === 'desktop.ini') {
+          await fs.promises.unlink(filePath);
+        //   console.log(`Removed system file: ${filePath}`);
+          continue;
+        }
+        
+        // Clean filename: Remove trailing/leading spaces and replace spaces, 0s and + with _
+        if (file !== file.trim() || file.includes(' ') || file.includes('0') || file.includes('+')) {
+          const newFileName = file.trim().replace(/[ 0+]/g, '_');
+          const newFilePath = path.join(currentDirectory, newFileName);
+          
+          await fs.promises.rename(filePath, newFilePath);
+        }
+      }
+      
+    //   console.log(`Directory cleaned: ${currentDirectory}`);
+      return currentDirectory;
+
+    } catch (error) {
+      console.error(`Error cleaning directory ${directory}:`, error);
+      throw error;
+    }
+}
+
+async function unzipFile(zipFilePath, outputDir) {
+    try {
+        const zip = new StreamZip.async({ file: zipFilePath });
+        
+        await zip.extract(null, outputDir);
+        
+        await zip.close();
+        
+        const macosxPath = `${outputDir}/__MACOSX`;
+        if (fs.existsSync(macosxPath)) {
+            console.log("Removing __MACOSX folder");
+            await new Promise((resolve, reject) => {
+                rimraf(macosxPath, (err) => {
+                    if (err) {
+                        console.error("Error removing __MACOSX folder:", err);
+                        reject(err);
+                    } else {
+                        console.log("__MACOSX folder removed successfully");
+                        resolve();
+                    }
+                });
+            });
+        }
+
+		await cleanDirectory(outputDir);
+        
+        console.log("Deleting original zip file:", zipFilePath);
+        // Convert fs.unlink to a promise and await it
+        await new Promise((resolve, reject) => {
+            fs.unlink(zipFilePath, (err) => {
+                if (err) {
+                    console.error("Error deleting zip file:", err);
+                    reject(err);
+                } else {
+                    console.log("Zip file deleted successfully");
+                    resolve();
+                }
+            });
+        });
+        
+        console.log("All unzip operations completed successfully");
+        
+    } catch (error) {
+        console.error("Error in unzipFile:", error);
+        throw error;
+    }
+}
+
+async function pythonScript(inputDir, outputDir, runType, db_name){
+
+	console.log("running functions");
+	console.log("this is the input dir:", inputDir);
+	console.log("this is the outpuy dir:", outputDir);
+	console.log("this is the project db name:", db_name);
+
+	const pyScript = path.join(__dirname, '../controllers/imports/import_options.py');
+	const command = `python3 ${pyScript} -i ${inputDir} -o ${outputDir} -d ${db_name} -r ${runType}`;
+
+	console.log("python", pyScript);
+	console.log("command", command);
+
+	return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+            if(error) {
+                console.error(`Error running python script: ${error.message}`);
+                reject(error);
+                return;
+            }
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                return;
+            }
+            console.log(`stdout: ${stdout}`);
+            resolve(stdout);
+        });
+    });
+}
+
+async function deleteDir(project_path) {
+
+	console.log("this is the path to delete: ", project_path);
+
+	fs.rm(project_path, {recursive: true, force: true}, (err) => {
+		if(err) {
+			return console.error('Error deleting dir: ', err);
+		}
+		return console.log('Dir deleted succesfully');
+	});
+}
 
 
 api.post('/logout', async (req, res) => {
@@ -228,6 +392,148 @@ api.post('/signup', async (req, res) => {
 	return res.redirect('/');
 });
 
+api.post('/api/createC', async (req, res) => {
+    console.log("create Classification");
+
+    // Validate file upload and required fields
+    if (!req.files || !req.files.upload_images) {
+        return res.status(400).send("No file uploaded.");
+    }
+    if (!req.body.projectName) {
+        return res.status(400).send("Project name not provided.");
+    }
+    if (!req.cookies.Username) {
+        return res.status(400).send("Username cookie not found.");
+    }
+
+    let username = req.cookies.Username;
+    let project_name = req.body.projectName;
+	let db_name = project_name;
+
+    let public_path = __dirname.replace('routes',''),
+        main_path = public_path + 'public/projects/',
+        project_path = main_path + username + "-" + project_name;
+
+    // Create main and project directories
+    try {
+        if (!fs.existsSync(main_path)) {
+            fs.mkdirSync(main_path);
+        }
+        if (!fs.existsSync(project_path)) {
+            fs.mkdirSync(project_path);
+        }
+    } catch (err) {
+        console.error("Error creating directories:", err);
+        return res.status(500).send("Error creating directories.");
+    }
+
+    const uploadedFile = req.files.upload_images;
+    const targetPath = `${project_path}/${uploadedFile.name.trim().replace(/[ 0+]/g, '_')}`;
+
+    // Move file to target path
+    try {
+        await new Promise((resolve, reject) => {
+            uploadedFile.mv(targetPath, (err) => {
+                if (err) {
+                    console.error("Error moving file:", err);
+                    reject(new Error("Failed to move file."));
+                } else {
+                    console.log("File moved to path:", targetPath);
+                    resolve();
+                }
+            });
+        });
+
+        if (!fs.existsSync(targetPath)) {
+            console.error(`File not found at path: ${targetPath}`);
+            return res.status(400).send("Uploaded file not found.");
+        }
+    } catch (error) {
+        console.error("Error during file move:", error);
+		await deleteDir(project_path);
+        return res.status(500).send(error.message);
+    }
+
+    // Unzip the uploaded file and handle errors
+    try {
+        await unzipFile(targetPath, project_path);
+    } catch (error) {
+        console.error("Error during unzip process:", error);
+		await deleteDir(project_path);
+        return res.status(500).send("Error unzipping file: " + error.message);
+    }
+
+    // Retrieve the extracted files and set up input directory for Python script
+    let extractedFiles;
+    try {
+        extractedFiles = fs.readdirSync(project_path);
+        console.log("Extracted files:", extractedFiles);
+    } catch (error) {
+        console.error("Error reading project path:", error);
+		await deleteDir(project_path);
+        return res.status(500).send("Error reading project directory: " + error.message);
+    }
+
+    const inputDir = project_path + '/' + extractedFiles[0];
+    const runType = "class";
+    console.log("Using input directory:", inputDir);
+
+    // Run the Python script and handle errors
+    try {
+        await pythonScript(inputDir, project_path, runType, db_name);
+    } catch (error) {
+        console.error("Error running python script:", error);
+		await deleteDir(project_path);
+        return res.status(500).send("Error processing file with python script");
+    }
+
+    // Delete temporary input folder; use promise-based fs method for better error handling.
+    try {
+        await fs.promises.rm(inputDir, { recursive: true });
+        console.log('Folder deleted successfully');
+    } catch (err) {
+        console.error('Error deleting the folder:', err);
+		await deleteDir(project_path);
+		return res.status(500).send("Error deleting temporary folder: " + err.message);
+    }
+
+    // Insert data into the database and handle any errors
+    try {
+		await db.runAsync("INSERT INTO Access (Username, PName, Admin) VALUES ('"+username+"', '"+project_name+"', '"+username+"')");
+        const project_description = "none";
+        const auto_save = 1;
+		await db.allAsync("INSERT INTO Projects (PName, PDescription, AutoSave, Admin) VALUES ('" + project_name + "', '" + project_description + "', '" + auto_save +"', '" + username + "')");
+
+        console.log(`Successfully granted access to ${username} for project ${project_name}`);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Access permission granted successfully"
+        });
+
+		
+
+    } catch (error) {
+        console.error("Database error while granting access:", error);
+		await deleteDir(project_path);
+        if (error.message && error.message.includes("UNIQUE constraint failed")) {
+            return res.status(409).json({
+                success: false,
+                message: "User already has access to this project",
+                error: error.message
+            });
+        } else {
+			await deleteDir(project_path);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to grant project access",
+                error: error.message
+            });
+        }
+    }
+});
+
+
 api.post('/createP', async (req, res) => {
 
 	console.log("addProject");
@@ -374,6 +680,8 @@ api.post('/createP', async (req, res) => {
 	await cdb.runAsync("CREATE TABLE Labels (LID INTEGER PRIMARY KEY, CName VARCHAR NOT NULL, X INTEGER NOT NULL, Y INTEGER NOT NULL, W INTEGER NOT NULL, H INTEGER NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(CName) REFERENCES Classes(CName), FOREIGN KEY(IName) REFERENCES Images(IName))");
 	await cdb.runAsync("CREATE TABLE Validation (Confidence INTEGER NOT NULL, LID INTEGER NOT NULL PRIMARY KEY, CName VARCHAR NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(LID) REFERENCES Labels(LID), FOREIGN KEY(IName) REFERENCES Images(IName), FOREIGN KEY(CName) REFERENCES Classes(CName))"); //tp1
 
+	console.log("save", auto_save);
+	console.log("project des", project_description);
 
 	var results1 = await db.allAsync("INSERT INTO Projects (PName, PDescription, AutoSave, Admin) VALUES ('" + project_name + "', '" + project_description + "', '" + auto_save +"', '" + username + "')");
 
@@ -4152,6 +4460,46 @@ api.post('/upload_weights', async(req,res) => {
 	}
 });
 
+
+api.post('/yolovx', async(req, res) => {
+	console.log('new yolovx path');
+
+	var PName = req.body.PName,
+			Admin = req.body.Admin,
+			user = req.cookies.Username,
+			yolovx_path = req.body.yolovx_path;
+
+	var public_path = __dirname.replace('routes',''),
+			main_path = public_path + 'public/projects/',   // $LABELING_TOOL_PATH/public/projects/
+			project_path = main_path + Admin + '-' + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
+			images_path = project_path + '/images',                 // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images
+			downloads_path = main_path + user + '_Downloads',
+			training_path = project_path + '/training',
+			yolovx_path_file = training_path + '/yolovxPaths.txt';
+
+	console.log("yolovx_path: ", yolovx_path)
+	console.log("Exists: ", fs.existsSync(yolovx_path))
+	if(fs.existsSync(yolovx_path))
+	{
+
+			fs.writeFile(yolovx_path_file, yolovx_path+"\n", {'flag':'a'}, function(err){
+					if(err)
+					{
+							console.log(err);
+					}
+			});
+
+			res.send({"Success": "YOLO Path Saved"});
+	}
+	else
+	{
+			res.send({"Success": `ERROR! ${yolovx_path} is not a valid path`});
+	}
+});
+
+
+
+
 //upload weights file
 api.post('/upload_pre_weights', async(req,res) => {
 	console.log('upload_pre_weights');
@@ -4172,9 +4520,9 @@ api.post('/upload_pre_weights', async(req,res) => {
 		weights_file_path = weights_path + weights_file.name;
 
 	console.log(weights_file.name.split('.').pop());
-	if((weights_file.name.split('.').pop() != "137") && (weights_file.name.split('.').pop() != "weights"))
+	if((weights_file.name.split('.').pop() != "137") && (weights_file.name.split('.').pop() != "weights") && (weights_file.name.split('.').pop() != "pt"))
 	{
-		res.send({"Success": "ERROR: Wrong filetype. Must be type .137 or weights"});
+		res.send({"Success": "ERROR: Wrong filetype. Must be type .137 or weights or pt"});
 	}
 	else
 	{
@@ -4194,6 +4542,514 @@ api.post('/upload_pre_weights', async(req,res) => {
 		res.send({"Success": "Your weight file has been uploaded and saved"});
 	}
 });
+
+
+api.post('/yolo-run', async (req, res) => {
+	console.log('Starting YOLO Run:');
+
+	const {exec} = require('child_process');
+	//const {spawn} = require('child_process');
+
+	var date = Date.now();
+
+	var PName = req.body.PName,
+			Admin = req.body.Admin,
+			user = req.cookies.Username,
+			darknet_path = req.body.yolovx_path,
+			yolovx_path = req.body.yolovx_path,
+			log = `${date}.log`,
+			trainDataPer = req.body.TrainingPercent,
+			batch = req.body.batch,
+			subdiv = req.body.subdiv,
+			width = req.body.width,
+			height = req.body.height,
+			yolo_version = req.body.yolo_version,
+			yolo_task = req.body.yolo_task,
+			yolo_mode = req.body.yolo_mode,
+			epochs = req.body.epochs,
+			imgsz = req.body.imgsz,
+			device = req.body.device,
+			options = req.body.options,
+			weight_name = req.body.weights;
+
+	var err_file = `${date}-error.log`;
+
+
+	/*
+	Steps:
+	1. Create txt files for each image
+	2. Create classes.txt file
+	3. Call datatovalues.py script
+	*/
+
+
+	var public_path = __dirname.replace('routes',''),
+		main_path = public_path + 'public/projects/', // $LABELING_TOOL_PATH/public/projects/
+		project_path = main_path + Admin + '-' + PName, // $LABELING_TOOL_PATH/public/projects/project_name
+		images_path = project_path + '/images', // $LABELING_TOOL_PATH/public/projects/project_name/images
+		downloads_path = main_path + user + '_Downloads',
+		training_path = project_path + '/training',
+		logs_path = training_path + '/logs',
+		run_path = `${logs_path}/${date}`,
+		classes_path = run_path + '/coco_classes.yaml',
+		weight_path = training_path + '/weights/' + weight_name,
+		yolo_script = public_path + 'controllers/training/datatovalues.py',
+		wrapper_path = public_path + 'controllers/training/train_data_from_project.py';
+
+
+
+	//Create run path
+	if(!fs.existsSync(run_path)) {	
+		fs.mkdirSync(run_path);
+	}
+
+	fs.writeFile(`${run_path}/${log}`, "", (err) => {
+			if (err) throw err;
+	});
+
+	/////////////Copy YOLO template files over to run folder///////////////////////
+	console.log("Copy YOLO template files over to run folder")
+	cfgTemp_path = public_path + 'controllers/training/cfgTemplate.txt'
+	cfgTemp = run_path + '/cfgTemplate.txt'
+	fs.copyFile(cfgTemp_path, cfgTemp, (err) => {
+			if(err) {
+					console.log(err);
+			}
+	})
+
+	dataTemp_path = public_path + 'controllers/training/dataTemplate.txt'
+	dataTemp = run_path + '/dataTemplate.txt'
+	fs.copyFile(dataTemp_path, dataTemp, (err) => {
+			if(err) {
+					console.log(err);
+			}
+	})
+
+	//////////////Copy darknet config script to darknet directory//////////////////
+	console.log("Copy YOLO config script to run directory")
+	darknet_cfg_script = run_path + '/datatovalues.py'
+	if(!existsSync(darknet_cfg_script)) {
+			fs.copyFile(yolo_script, darknet_cfg_script, (err) => {
+					if(err) {
+							console.log(err);
+					}
+			});
+	}
+
+	// Connect to database
+	var ycdb = new sqlite3.Database(project_path+'/'+PName+'.db', (err) => {
+			if (err) {
+					return console.error(err.message);
+			}
+			console.log('Connected to ycdb.');
+	});
+	ycdb.getAsync = function (sql) {
+			var that = this;
+			return new Promise(function (resolve, reject) {
+					that.get(sql, function (err, row) {
+							if (err) {
+									console.log("runAsync ERROR! ", err);
+									reject(err);
+							}
+							else
+									resolve(row);
+					});
+			}).catch(err => {
+					console.error(err);
+			});
+	};
+	ycdb.allAsync = function (sql) {
+			var that = this;
+			return new Promise(function (resolve, reject) {
+					that.all(sql, function (err, row) {
+							if (err) {
+									console.log("runAsync ERROR! ", err);
+									reject(err);
+							}
+							else
+									resolve(row);
+					});
+			}).catch(err => {
+					console.error(err);
+			});
+	};
+	ycdb.runAsync = function (sql) {
+			var that = this;
+			return new Promise(function (resolve, reject) {
+					that.run(sql, function (err, row) {
+							if (err){
+									console.log("runAsync ERROR! ", err);
+									reject(err);
+							}
+							else {
+									resolve(row);
+							}
+					});
+			}).catch(err => {
+					console.error(err);
+			});
+	};
+
+
+	if (yolo_task == "detect") {
+		
+			/////////////Create Project within run folder if does not exist////////////////////
+			console.log("Create Detect Project within run folder if does not exist");
+			project = `${Admin}-${PName}`;
+			abs_darknet_project_path = run_path;
+			abs_darknet_images_path = path.join(abs_darknet_project_path, 'images');
+			abs_darknet_images_train = path.join(abs_darknet_images_path, 'train');
+			abs_darknet_images_val = path.join(abs_darknet_images_path, 'val');
+			abs_darknet_labels_path = path.join(abs_darknet_project_path, 'labels');
+			abs_darknet_labels_train = path.join(abs_darknet_labels_path, 'train');
+			abs_darknet_labels_val = path.join(abs_darknet_labels_path, 'val');
+
+			if(!fs.existsSync(abs_darknet_images_path)) {
+					//Create images and labels directories
+					fs.mkdirSync(abs_darknet_images_path, (err) => {
+							if(err) { console.log(err); }
+							else { console.log("YOLO Images Directory created"); }
+					});
+					fs.mkdirSync(abs_darknet_images_train, (err) => {
+							if(err) { console.log(err); }
+							else { console.log("YOLO Images Train Directory created"); }
+					});
+					fs.mkdirSync(abs_darknet_images_val, (err) => {
+							if(err) { console.log(err); }
+							else { console.log("YOLO Images Validate Directory created"); }
+					});
+					fs.mkdirSync(abs_darknet_labels_path, (err) => {
+							if(err) { console.log(err); }
+							else { console.log("YOLO Lables Directory created"); }
+					});
+					fs.mkdirSync(abs_darknet_labels_train, (err) => {
+							if(err) { console.log(err); }
+							else { console.log("YOLO Lables Train Directory created"); }
+					});
+					fs.mkdirSync(abs_darknet_labels_val, (err) => {
+							if(err) { console.log(err); }
+							else { console.log("YOLO Lables Validate Directory created"); }
+					});
+			}
+
+			//////////////////Create label txt files////////////////////////////
+			console.log("Create label txt files");
+			var cnames = [];
+			var results1 = await ycdb.allAsync("SELECT * FROM Classes");
+			var results2 = await ycdb.allAsync("SELECT * FROM Images");
+			for(var i = 0; i < results1.length; i++)
+			{
+					cnames.push(results1[i].CName);
+			}
+			var dict_images_labels = {}
+
+			for(var i=0; i<results2.length; i++){
+
+					var img = fs.readFileSync(`${images_path}/${results2[i].IName}`),
+							img_data = probe.sync(img),
+							img_w = img_data.width,
+							img_h = img_data.height;
+
+					var results3 = await ycdb.allAsync("SELECT * FROM Labels WHERE IName = '" + results2[i].IName + "'");
+					for(var j=0; j<results3.length; j++){
+							// x, y, w, h
+							var centerX = (results3[j].X+(results3[j].W/2))/img_w;
+							var centerY = (results3[j].Y+(results3[j].H/2))/img_h
+							to_string_value = cnames.indexOf(results3[j].CName) +" "+centerX+" "+centerY+" "+results3[j].W/img_w +" "+results3[j].H/img_h +"\n"
+							if(dict_images_labels[results2[i].IName] == undefined){
+									dict_images_labels[results2[i].IName] = to_string_value;
+							}
+							else {
+									dict_images_labels[results2[i].IName] += to_string_value;
+							}
+					}
+					if(results3.length == 0) {
+							dict_images_labels[results2[i].IName] = "";
+					}
+			}
+
+			for(var key in dict_images_labels){
+					// remove_dot_ext = key.split(".")[0]
+					remove_dot_ext = path.parse(key).name;
+					fs.writeFileSync(`${images_path}/${remove_dot_ext}.txt`,dict_images_labels[key] , (err) => {
+							if (err) throw err;
+					});
+			}
+
+			//////////////Create image and label links //////////////////////////
+			console.log("Create YOLO image and label link files for the split");
+			var results0 = await ycdb.allAsync("SELECT COUNT(*) as COUNT FROM Images");
+			var dict_images_count = results0[0].COUNT;
+			var results1 = await ycdb.allAsync("SELECT * FROM Images");
+			var trainDataImageSplit = Math.round((trainDataPer/100) * dict_images_count);
+			var trainDataValSplit = Math.round((100 - trainDataPer)/100 * dict_images_count);
+
+			for(var i=0; i<results1.length; i++){
+					var filename = results1[i].IName.substr(0, results1[i].IName.lastIndexOf('.'));
+					var label_file = filename + ".txt";
+					if (i < trainDataImageSplit) {
+							abs_darknet_org_images_path = path.join(images_path, results1[i].IName);
+							abs_darknet_org_labels_path = path.join(images_path, label_file);
+							abs_darknet_train_images_path = path.join(abs_darknet_images_train, results1[i].IName);
+							abs_darknet_train_labels_path = path.join(abs_darknet_labels_train, label_file);
+							fs.symlink(abs_darknet_org_images_path, abs_darknet_train_images_path, 'file', (err) => {
+									if(err){ console.log(err); }
+									else { console.log("Symlink created for YOLO image training file"); }
+							});
+							fs.symlink(abs_darknet_org_labels_path, abs_darknet_train_labels_path, 'file', (err) => {
+									if(err){ console.log(err); }
+									else { console.log("Symlink created for YOLO label training file "); }
+							});
+					}
+					else {
+							console.log("Symlink created for YOLO image validation file");
+							abs_darknet_org_images_path = path.join(images_path, results1[i].IName);
+							abs_darknet_org_lables_path = path.join(images_path, label_file);
+							abs_darknet_train_val_path = path.join(abs_darknet_images_val, results1[i].IName);
+							abs_darknet_train_labels_path = path.join(abs_darknet_labels_val, label_file);
+							fs.symlink(abs_darknet_org_images_path, abs_darknet_train_val_path, 'file', (err) => {
+									if(err){ console.log(err); }
+									else { console.log("Symlink created for YOLO image validation file"); }
+							});
+							fs.symlink(abs_darknet_org_lables_path, abs_darknet_train_labels_path, 'file', (err) => {
+									if(err){ console.log(err); }
+									else { console.log("Symlink created for YOLO label validation file"); }
+							});
+					}
+			}
+
+			///////////////////Create symbolic link from darknet to run///////////////////////////////
+			abs_darknet_project_run = abs_darknet_project_path;
+			abs_weight_project_path = path.join(training_path, "logs", date.toString(), weight_name);
+			if(!fs.existsSync(abs_weight_project_path)) {
+					console.log("Create symbolic link from YOLO model file")
+					fs.symlink(weight_path, abs_weight_project_path, 'file', (err) => {
+							if(err) { console.log(err); }
+							else { console.log("Symlink created for YOLO model file"); }
+					});
+			}
+
+			//////////////Create Classes file////////////////////////////
+			var results2 = await ycdb.allAsync("SELECT * FROM Classes");
+			console.log("Create YOLO Classes file");
+			var classes="# Train/val/test sets\n";
+			classes = classes + "path: " + run_path + "\n";
+			classes = classes + "train: " + abs_darknet_images_train + "\n";
+			classes = classes + "val: " + abs_darknet_images_val + "\n";
+			classes = classes + "test: \n";
+			classes = classes + "\n# Classes (COCO classes)\n";
+			classes = classes + "names:\n";
+
+			for(var i=0; i<results2.length; i++) {
+					classes = classes + "  " + i + ": " + results2[i].CName + '\n';
+			}
+
+			fs.writeFileSync(classes_path, classes, (err) => {
+					if (err) throw err;
+					console.log("Done writing YOLO Classes file");
+			});
+
+			ycdb.close((err) => {
+					if(err){ console.log(err); }
+					else { console.log("ycdb closed successfully"); }
+			});
+
+	}
+	else if (yolo_task == "classify") {
+		// if its classify 
+		// train val directories
+		// for the secific project create the directories of all the labels
+		// based on the speciic labels crop it 
+		const cropImage = async(sourcePath, targetPath, x, y, width, height) => {
+
+            try{
+
+                const cropOptions = {
+
+                    left: Math.floor(x),    // Ensure x is an integer
+
+                    top: Math.floor(y),     // Ensure y is an integer
+
+                    width: Math.floor(width), // Ensure width is an integer
+
+                    height: Math.floor(height), // Ensure height is an integer
+
+                };
+
+                await sharp(sourcePath)
+
+                .extract(cropOptions) // Crop with x, y, w, h
+
+                .toFile(targetPath); // Save to the target path
+
+ 
+
+                console.log(`Image cropped successfully: ${targetPath}`)
+
+               
+
+            } catch (err) {
+
+                console.error(`error cropping image: ${err.message}`)
+
+            }
+
+ 
+
+        };
+
+		/////////////Create Project within run folder if does not exist////////////////////
+		console.log("Create Classify Project within run folder if does not exist");
+		project = `${Admin}-${PName}`;
+		abs_darknet_project_path = run_path;
+		abs_darknet_images_path = path.join(abs_darknet_project_path, 'images');
+		abs_darknet_images_train = path.join(abs_darknet_images_path, 'train');
+		abs_darknet_images_val = path.join(abs_darknet_images_path, 'val');
+
+		if(!fs.existsSync(abs_darknet_images_path)) {
+				//Create images and labels directories
+				fs.mkdirSync(abs_darknet_images_path, (err) => {
+						if(err) {
+								console.log(err);
+						}
+						else {
+								console.log("YOLO Images Directory created");
+						}
+				});
+				fs.mkdirSync(abs_darknet_images_train, (err) => {
+						if(err) {
+								console.log(err);
+						}
+						else {
+								console.log("YOLO Images Train Directory created");
+						}
+				});
+				fs.mkdirSync(abs_darknet_images_val, (err) => {
+						if(err) {
+								console.log(err);
+						}
+						else {
+								console.log("YOLO Images Validate Directory created");
+						}
+				});
+		}
+
+		//////////////Create image and label links //////////////////////////
+		console.log("Create YOLO image and label link files for the split");
+		var results0 = await ycdb.allAsync("SELECT COUNT(*) as COUNT FROM Images");
+		var dict_images_count = results0[0].COUNT;
+		var results1 = await ycdb.allAsync("SELECT * FROM Images");
+		var trainDataImageSplit = Math.round((trainDataPer/100) * dict_images_count);
+		var trainDataValSplit = Math.round((100 - trainDataPer)/100 * dict_images_count);
+
+		for(var i=0; i<results1.length; i++) {
+				var filename = results1[i].IName.substr(0, results1[i].IName.lastIndexOf('.'));
+				var label_file = filename + ".txt";
+				if (i < trainDataImageSplit) {
+						abs_darknet_org_images_path = path.join(images_path, results1[i].IName);
+						abs_darknet_org_labels_path = path.join(images_path, label_file);
+						abs_darknet_train_images_path = path.join(abs_darknet_images_train, results1[i].IName);
+						abs_darknet_train_labels_path = path.join(abs_darknet_labels_train, label_file);
+						fs.symlink(abs_darknet_org_images_path, abs_darknet_train_images_path, 'file', (err) => {
+								if(err){
+										console.log(err);
+								}
+								else {
+										console.log("Symlink created for YOLO image training file");
+								}
+						});
+						fs.symlink(abs_darknet_org_labels_path, abs_darknet_train_labels_path, 'file', (err) => {
+								if(err){
+										console.log(err);
+								}
+								else {
+										console.log("Symlink created for YOLO label training file ");
+								}
+						});
+				}
+				else {
+						console.log("Symlink created for YOLO image validation file");
+						abs_darknet_org_images_path = path.join(images_path, results1[i].IName);
+				}
+
+		}
+}
+
+console.log("\n");
+console.log("   yolo_task = ", yolo_task);
+console.log("   yolo_mode = ", yolo_mode);
+console.log("darknet_path = ", darknet_path);
+console.log(" yolovx_path = ", yolovx_path);
+console.log("   main_path = ", main_path);
+console.log("    run_path = ", run_path);
+console.log("dnet_pct_run = ", abs_darknet_project_run);
+console.log("dnet_img_pth = ", abs_darknet_images_path);
+console.log("classes_path = ", classes_path);
+console.log(" absdnetprun = ", abs_darknet_project_run);
+console.log(" weight_name = ", weight_name);
+console.log("images_count = ", dict_images_count);
+console.log("trainDataPer = ", trainDataPer);
+console.log(" trainimgspt = ", trainDataImageSplit);
+console.log(" trainvalspt = ", trainDataValSplit);
+console.log("    run_path = ", run_path);
+console.log("\n");
+
+/////////////////////////////// Call Ashwin's script here /////////////////////////////////////////
+console.log("Calling Ultralytics YOLO python script to do training");
+console.log("YOLO training task: ", yolo_task);
+
+// Pass in python path, script, and options
+darknet_project_run = run_path;
+darknet_images_path = path.join(abs_darknet_project_path, 'images');
+darknet_labels_path = path.join(abs_darknet_project_path, 'labels');
+var cmd = "";
+if (yolo_mode == "train") {
+		cmd = `python3 ${yolo_script} -d ${run_path} -t ${yolo_task} -m ${yolo_mode} -i ${darknet_images_path} -n ${classes_path} -p ${trainDataPer} -l ${abs_darknet_project_run}/${log} -f ${darknet_path} -w ${weight_path} -b ${batch} -s ${subdiv} -x ${width} -y ${height} -v ${yolo_version} -e ${epochs} -I ${imgsz} -D ${device} -o "${options}"`;
+}
+else {
+		cmd = `python3 --version`;
+		console.log("YOLO python script not for training");
+}
+var success = "";
+var error = '';
+console.log(cmd);
+
+var child = exec(cmd, (err, stdout, stderr) => {
+
+		if (err){
+				console.log(`This is the error: ${err.message}`);
+				if (err.message != "stdout maxBuffer length exceeded"){
+						success = err.message;
+						fs.writeFile(`${darknet_project_run}/${err_file}`, success, (err) => {
+								if (err) throw err;
+						});
+				}
+		}
+		else if (stderr) {
+				console.log(`This is the stderr: ${stderr}`);
+				if (stderr != "stdout maxBuffer length exceeded"){
+						fs.writeFile(`${darknet_project_run}/${err_file}`, stderr, (err) => {
+								if (err) throw err;
+						});
+				}
+				//return;
+		}
+		console.log("stdout: ", stdout);
+		console.log("stderr: ", stderr);
+		console.log("err: ", err);
+		console.log("The YOLO training script has finished running");
+		fs.writeFile(`${run_path}/done.log`, success, (err) => {
+				if (err) throw err;
+		});
+
+});
+res.send({"Success": `YOLO Training Started`});
+});
+
+
+
+
+
 
 api.post('/deleteRun', async (req, res) => {
 	console.log("delete Run");
@@ -4267,7 +5123,8 @@ api.post('/python', async(req, res) => {
 });
 
 	api.post('/darknet', async(req, res) => {
-		console.log('new darknet path');
+		console.log('is this right pages');
+
 
 		var PName = req.body.PName,
 			Admin = req.body.Admin,

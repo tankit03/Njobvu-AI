@@ -1,6 +1,6 @@
 node_modules
-public/projects/*
-db/*
+public/projects/
+db/manage.db
 .bash_history
 .bashrc
 .cache/
@@ -11,5 +11,5 @@ db/*
 .nvm/
 .sqlite_history
 .viminfo
-config.json
 tmp/
+config.json
