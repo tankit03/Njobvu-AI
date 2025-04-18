@@ -22,7 +22,7 @@ def help_msg():
 def insert_data(conn, data):
     cursor = conn.cursor()
 
-    print(data)
+    # print(data)
     cursor.execute('''
         INSERT INTO Labels (CName, X, Y, W, H, IName)
         VALUES (?, ?, ?, ?, ?, ?)

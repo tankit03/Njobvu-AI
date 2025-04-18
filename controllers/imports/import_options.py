@@ -26,7 +26,13 @@ def help():
     print('\t\tinput should be a directory of images used for inference and the weights file should be the weights file related to your project')
 
 def classification_plus_import(db_name, input_dir, output):
-    with open('labels.txt', 'w') as f:
+    # Ensure output directory exists
+    if not os.path.exists(output):
+        os.makedirs(output)
+        
+    # Create labels.txt in the output directory instead of root
+    labels_path = os.path.join(output, 'labels.txt')
+    with open(labels_path, 'w') as f:
         #for each directory of imgs under a class, we are going to get each img, open it get all the data and write that too labels file
         if os.path.exists(input_dir):
             for directory in os.listdir(input_dir):
@@ -42,7 +48,8 @@ def classification_plus_import(db_name, input_dir, output):
                  
     script_dir = os.path.dirname(os.path.abspath(__file__))
     import_nj_script = os.path.join(script_dir, "importNJ.py")
-    command = f'python3 {import_nj_script} -n new -i {input_dir} -t labels.txt -p {output} -z {output} -C yes -d {db_name}'
+    # Update command to use the new labels path
+    command = f'python3 {import_nj_script} -n new -i {input_dir} -t {labels_path} -p {output} -z {output} -C yes -d {db_name}'
     os.system(command)
 
 
@@ -51,7 +58,7 @@ def inference_into_classification(input_dir, output, weights_file, classificatio
     model = YOLO(weights_file)
 
     # Get class names dynamically from the model
-    class_names = model.names  # This retrieves {0: 'person', 1: 'car', ...}
+    class_names = model.names 
 
     if not os.path.exists(classification_dir):
         os.makedirs(classification_dir)
