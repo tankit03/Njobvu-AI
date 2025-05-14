@@ -1,6 +1,6 @@
 const { exec } = require("child_process");
 const fs = require("fs");
-const rimraf = require("../public/libraries/rimraf");
+const rimraf = require("../../public/libraries/rimraf");
 const StreamZip = require("node-stream-zip");
 
 async function addImages(req, res) {

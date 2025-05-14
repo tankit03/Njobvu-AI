@@ -1,5 +1,5 @@
 const StreamZip = require("node-stream-zip");
-const rimraf = require("../public/libraries/rimraf");
+const rimraf = require("../../public/libraries/rimraf");
 const path = require("path");
 
 async function mergeTest(req, res) {

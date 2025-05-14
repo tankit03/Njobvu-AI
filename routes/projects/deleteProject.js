@@ -1,5 +1,5 @@
 const fs = require("fs");
-const rimraf = require("../public/libraries/rimraf");
+const rimraf = require("../../public/libraries/rimraf");
 
 async function deleteProject(req, res) {
     console.log("deleteProject");

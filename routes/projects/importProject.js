@@ -1,8 +1,8 @@
 const StreamZip = require("node-stream-zip");
-const rimraf = require("../public/libraries/rimraf");
+const rimraf = require("../../public/libraries/rimraf");
 const { exec } = require("child_process");
 
-async function importProjec(req, res) {
+async function importProject(req, res) {
     req.setTimeout(600000);
     console.log("import");
 
