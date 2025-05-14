@@ -39,3 +39,5 @@ async function uploadWeights(req, res) {
         res.send({ Success: "Your script has been uploaded and saved" });
     }
 }
+
+module.exports = uploadWeights;
