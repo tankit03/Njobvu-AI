@@ -18,9 +18,7 @@ async function createClassification(req, res) {
     let project_name = req.body.projectName;
     let db_name = project_name;
 
-    let public_path = __dirname
-            .replace("routes", "")
-            .replace("classification", ""),
+    let public_path = __dirname.replace("routes", "").replace("training", ""),
         main_path = public_path + "public/projects/",
         project_path = main_path + username + "-" + project_name;
 

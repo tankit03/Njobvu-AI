@@ -59,7 +59,7 @@ async function signup(req, res) {
         );
     }
 
-    var public_path = __dirname.replace("routes", "");
+    var public_path = __dirname.replace("routes", "").replace("user", "");
     var main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         downloads_path = main_path + username + "_Downloads";
 
