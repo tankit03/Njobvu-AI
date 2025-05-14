@@ -51,6 +51,7 @@ const createProject = require("./projects/createProject");
 const updateProject = require("./projects/updateProject");
 const deleteProject = require("./projects/deleteProject");
 const addImages = require("./projects/addImages");
+const deleteImage = require("./projects/deleteImage");
 const importProject = require("./projects/importProject");
 const mergeLocal = require("./projects/mergeLocal");
 const removeAccess = require("./projects/removeAccess");
@@ -59,6 +60,7 @@ const script = require("./projects/script");
 
 const updateLabels = require("./labelling/updateLabels");
 const deleteLabels = require("./labelling/deleteLabels");
+const switchLabels = require("./labelling/switchLabels");
 
 const downloadDataset = require("./downloads/downloadDataset");
 const downloadProject = require("./downloads/downloadProject");
@@ -68,6 +70,10 @@ const downloadRun = require("./downloads/downloadRun");
 
 const test = require("./tests/test");
 const mergeTest = require("./tests/mergeTest");
+
+const changeValidation = require("./validation/changeValidation");
+const deleteLabelValidation = require("./validation/deleteValidation");
+
 
 // USER ROUTES
 api.post("/logout", logout);
@@ -102,6 +108,7 @@ api.post("/createP", createProject);
 api.post("/updateProject", updateProject);
 api.post("/deleteProject", deleteProject);
 api.post("/addImages", addImages);
+api.post("deleteImage", deleteImage);
 api.post("/import", importProject);
 api.post("/mergeLocal", mergeLocal);
 api.post("/removeAccess", removeAccess);
@@ -111,6 +118,7 @@ api.post("/script", script);
 // LABELLING ROUTES
 api.post("/updateLabels", updateLabels);
 api.delete("/deleteBadLabels/:Admin/:PName/:Lid", deleteLabels);
+api.put("/api/switchLabels", switchLabels);
 
 // DOWNLOAD ROUTES
 api.post("/downloadDataset", downloadDataset);
@@ -118,6 +126,12 @@ api.post("/downloadProject", downloadProject);
 api.post("/downloadScript", downloadScript);
 api.post("/downloadWeights", downloadWeights);
 api.post("/downloadRun", downloadRun);
+
+//VALIDATION ROUTES
+api.post("/changeValidation", changeValidation);
+api.post("/deleteLabelValidation",deleteLabelValidation);
+
+
 
 // TEST ROUTES
 api.post("/test", test);
@@ -219,236 +233,6 @@ api.post("/changePassword", async (req, res) => {
     }
 });
 
-api.post("/deleteImage", async (req, res) => {
-    console.log("deleteImage");
-
-    var IDX = parseInt(req.body.IDX),
-        PName = req.body.PName,
-        admin = req.body.Admin,
-        user = req.cookies.Username,
-        images = req.body.ImageArray;
-
-    console.log("IDX: ", IDX);
-    // set paths
-    var public_path = process.cwd() + "/".replace("routes", ""),
-        main_path = public_path + "public/projects/",
-        project_path = main_path + admin + "-" + PName,
-        images_path = project_path + "/images/";
-
-    var didb = new sqlite3.Database(
-        project_path + "/" + PName + ".db",
-        (err) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            console.log("Connected to didb.");
-        },
-    );
-    didb.getAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.get(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    didb.allAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.all(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    didb.runAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.run(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    console.log(images);
-    if (images.includes(",")) {
-        images = images.split(",");
-    }
-
-    var deleteLabels = "";
-    var deleteImages = "";
-    var deleteVal = "";
-    if (typeof images == "string") {
-        deleteImages = `DELETE FROM Images WHERE IName = '${images}'`;
-        deleteLabels = `DELETE FROM Labels WHERE IName = '${images}'`;
-        deleteVal = `DELETE FROM Validation WHERE IName = '${images}'`;
-    } else {
-        deleteLabels = `DELETE FROM Labels WHERE IName = '${images[0]}'`;
-        deleteImages = `DELETE FROM Images WHERE IName = '${images[0]}'`;
-        deleteVal = `DELETE FROM Validation WHERE IName = '${images[0]}'`;
-        for (var i = 1; i < images.length; i++) {
-            var string = ` OR IName = '${images[i]}'`;
-            deleteLabels += string;
-            deleteClasses += string;
-        }
-    }
-
-    console.log(deleteLabels);
-    await didb.runAsync(deleteLabels);
-
-    console.log(deleteImages);
-    await didb.runAsync(deleteImages);
-
-    console.log(deleteVal);
-    await didb.runAsync(deleteVal);
-
-    //reIndex Images to reset rowId
-    var reIndexImages = await didb.allAsync("SELECT * FROM Images"); //tp1
-    await didb.runAsync("DELETE FROM Images");
-    for (var t = 0; t < reIndexImages.length; t++) {
-        await didb.runAsync(
-            "INSERT INTO Images (IName, reviewImage, validateImage) VALUES ('" +
-                reIndexImages[t]["IName"] +
-                "', '" +
-                reIndexImages[t]["reviewImage"] +
-                "', '" +
-                reIndexImages[t]["validateImage"] +
-                "')",
-        );
-    }
-
-    // for(var i = 1; i < images.length; i++){
-    image_path = `${images_path}` + images; //change if multi image deletion is requested
-    console.log("Delete image: ", image_path);
-    fs.unlink(image_path, function (err) {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log("done");
-        }
-    });
-    // }
-
-    didb.close(function (err) {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log("didb closed successfully");
-            res.send({ Success: "Yes" });
-        }
-    });
-});
-
-api.post("/deleteLabel", async (req, res) => {
-    console.log("deleteLabel");
-
-    var IDX = parseInt(req.body.IDX),
-        PName = req.body.PName,
-        admin = req.body.Admin,
-        user = req.cookies.Username,
-        labels = req.body.LabelArray;
-
-    console.log("IDX: ", IDX);
-    // set paths
-    var public_path = process.cwd() + "/".replace("routes", ""),
-        main_path = public_path + "public/projects/",
-        project_path = main_path + admin + "-" + PName;
-
-    var didb = new sqlite3.Database(
-        project_path + "/" + PName + ".db",
-        (err) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            console.log("Connected to didb.");
-        },
-    );
-    didb.getAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.get(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    didb.allAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.all(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    didb.runAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.run(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    console.log(labels);
-    if (labels.includes(",")) {
-        labels = labels.split(",");
-    }
-
-    var deleteLabels = "";
-    var deleteVal = "";
-    if (typeof labels == "string") {
-        deleteLabels = `DELETE FROM Labels WHERE LID = '${labels}'`;
-        deleteVal = `DELETE FROM Validation WHERE LID = '${labels}'`;
-    } else {
-        deleteLabels = `DELETE FROM Labels WHERE LID = '${labels[0]}'`;
-        deleteVal = `DELETE FROM Validation WHERE LID = '${labels[0]}'`;
-        for (var i = 1; i < labels.length; i++) {
-            var string = ` OR LID = '${labels[i]}'`;
-            deleteLabels += string;
-        }
-    }
-
-    console.log(deleteLabels);
-    await didb.runAsync(deleteLabels);
-
-    console.log(deleteVal);
-    await didb.runAsync(deleteVal);
-
-    didb.close(function (err) {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log("didb closed successfully");
-            res.send({ Success: "Yes" });
-        }
-    });
-});
 
 api.post("/bootstrap", async (req, res) => {
     console.log("bootstrap-run");
@@ -745,142 +529,6 @@ api.post("/bootstrap", async (req, res) => {
     res.send({ Success: "Yes" });
 });
 
-api.post("/changeValidation", async (req, res) => {
-    var PName = req.body.PName;
-    var admin = req.body.Admin;
-    var status = req.body.validMode;
 
-    var public_path = process.cwd() + "/".replace("routes", ""),
-        main_path = public_path + "public/projects/",
-        project_path = main_path + admin + "-" + PName,
-        images_path = project_path + "/images/";
-
-    var rmdb = new sqlite3.Database(
-        project_path + "/" + PName + ".db",
-        (err) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            console.log("Connected to rmdb.");
-        },
-    );
-
-    rmdb.runAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.run(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-
-    if (status == 0) {
-        await db.runAsync(
-            "UPDATE Projects SET Validate = '" +
-                Number(1) +
-                "' WHERE PName = '" +
-                PName +
-                "' AND Admin ='" +
-                admin +
-                "'",
-        );
-        await rmdb.runAsync("UPDATE Images SET reviewImage = 1");
-        console.log("Enabled Validation mode for: " + admin + "-" + PName);
-
-        rmdb.close(function (err) {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log("rmdb closed successfully");
-            }
-        });
-
-        res.send({ Success: "Yes" });
-    } else if (status == 1) {
-        await db.runAsync(
-            "UPDATE Projects SET Validate = '" +
-                Number(0) +
-                "' WHERE PName = '" +
-                PName +
-                "' AND Admin ='" +
-                admin +
-                "'",
-        );
-        await rmdb.runAsync("UPDATE Images SET reviewImage = 0");
-        console.log("Disabled Validation mode for: " + admin + "-" + PName);
-
-        rmdb.close(function (err) {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log("rmdb closed successfully");
-            }
-        });
-
-        res.send({ Success: "Yes" });
-    } else {
-        rmdb.close(function (err) {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log("rmdb closed successfully");
-            }
-        });
-
-        res.send({ Success: "No" });
-    }
-});
-
-api.put("", async (req, res) => {});
-
-api.put("/api/switchLabels", async (req, res) => {
-    try {
-        const { selectedLabels, selectedClass, currentClass, Admin, PName } =
-            req.body;
-
-        const public_path = __dirname.replace("routes", ""),
-            main_path = public_path + "public/projects/",
-            project_path = main_path + Admin + "-" + PName;
-
-        const dbPath = project_path + "/" + PName + ".db";
-
-        const db = new sqlite3.Database(dbPath, (err) => {
-            if (err) {
-                console.log("hello");
-                console.error(err.message);
-                return res.status(500).send("Database connection error");
-            }
-            console.log(`Connected to ${PName} database`);
-        });
-
-        const updateLabels = `UPDATE Labels SET CName = ? WHERE CName = ? AND LID IN (${selectedLabels})`;
-
-        db.run(updateLabels, [selectedClass, currentClass], function (err) {
-            if (err) {
-                console.error("Error updating Labels:", err.message);
-                return res.status(500).send("Error updating Labels");
-            }
-            console.log(`Labels switched successfully`);
-            return res.json({
-                message: "Labels switched successfully",
-                body: req.body,
-            });
-        });
-        db.close((err) => {
-            if (err) {
-                console.error(err.message);
-            } else {
-                console.log("Database connection closed");
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
 
 module.exports = api;
