@@ -16,7 +16,7 @@ async function mergeTest(req, res) {
     console.log("upload: ", upload_images);
 
     //set paths
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = process.cwd() + "/".replace("routes", ""),
         main_path = public_path + "public/projects",
         project_path = main_path + "/" + Admin + "-" + project_name,
         image_path = project_path + "/images",

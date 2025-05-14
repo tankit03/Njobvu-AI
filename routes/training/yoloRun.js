@@ -35,7 +35,7 @@ async function yoloRun(req, res) {
 	3. Call datatovalues.py script
 	*/
 
-    var public_path = __dirname.replace("routes", "").replace("training", ""),
+    var public_path = process.cwd() + "/".replace("routes", "").replace("training", ""),
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
         images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images

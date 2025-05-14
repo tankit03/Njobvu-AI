@@ -6,7 +6,7 @@ async function updateLabels(req, res) {
         admin = req.body.Admin,
         user = req.cookies.Username;
 
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = process.cwd() + "/".replace("routes", ""),
         main_path = public_path + "public/projects/";
 
     // get form inputs

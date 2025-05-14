@@ -10,7 +10,7 @@ async function addClasses(req, res) {
         validation = req.body.validation;
 
     // Set paths
-    var public_path = __dirname.replace("routes", "").replace("training", ""),
+    var public_path = process.cwd() + "/".replace("routes", "").replace("training", ""),
         main_path = public_path + "public/projects/",
         project_path = main_path + admin + "-" + PName;
 

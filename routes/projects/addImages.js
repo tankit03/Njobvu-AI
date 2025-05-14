@@ -13,7 +13,7 @@ async function addImages(req, res) {
         user = req.cookies.Username;
 
     console.log("PName: ", project_name);
-    var public_path = __dirname.replace("routes", "").replace("projects", ""),
+    var public_path = process.cwd() + "/".replace("routes", "").replace("projects", ""),
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + admin + "-" + project_name, // $LABELING_TOOL_PATH/public/projects/project_name
         merge_path = project_path + "/merge/",

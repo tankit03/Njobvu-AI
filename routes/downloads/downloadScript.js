@@ -16,7 +16,7 @@ async function downloadScript(req, res) {
 
     console.log("scritps: ", scripts);
     // Set paths
-    var public_path = __dirname.replace("routes", "").replace("downloads", ""),
+    var public_path = process.cwd() + "/".replace("routes", "").replace("downloads", ""),
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
         images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images

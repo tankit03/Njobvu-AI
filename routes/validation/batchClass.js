@@ -6,7 +6,7 @@ async function batchChangeClass(req, res){
         class1 = req.body.class1,
         class2 = req.body.class2;
 
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = process.cwd() + "/".replace("routes", ""),
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + admin + "-" + project_name; // $LABELING_TOOL_PATH/public/projects/project_name
 

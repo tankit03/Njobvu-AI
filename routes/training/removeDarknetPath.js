@@ -9,7 +9,7 @@ async function removeDarknetPath(req, res) {
     var remove_paths = req.body["darknet_paths[]"];
     console.log("remove_paths: ", remove_paths);
 
-    var public_path = __dirname.replace("routes", "").replace("training", ""),
+    var public_path = process.cwd() + "/".replace("routes", "").replace("training", ""),
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
         images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images

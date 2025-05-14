@@ -129,7 +129,7 @@ api.post("/changeUname", async (req, res) => {
     var user = req.cookies.Username,
         UName = req.body.UName;
 
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = process.cwd() + "/".replace("routes", ""),
         main_path = public_path + "public/projects/",
         download_path = main_path + user + "_Downloads",
         new_download_path = main_path + UName + "_Downloads";
@@ -230,7 +230,7 @@ api.post("/deleteImage", async (req, res) => {
 
     console.log("IDX: ", IDX);
     // set paths
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = process.cwd() + "/".replace("routes", ""),
         main_path = public_path + "public/projects/",
         project_path = main_path + admin + "-" + PName,
         images_path = project_path + "/images/";
@@ -363,7 +363,7 @@ api.post("/deleteLabel", async (req, res) => {
 
     console.log("IDX: ", IDX);
     // set paths
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = process.cwd() + "/".replace("routes", ""),
         main_path = public_path + "public/projects/",
         project_path = main_path + admin + "-" + PName;
 
@@ -460,7 +460,7 @@ api.post("/bootstrap", async (req, res) => {
         upload_images = req.files.upload_images,
         IDX = parseInt(req.body.IDX);
 
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = process.cwd() + "/".replace("routes", ""),
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + Admin + "-" + project_name, // $LABELING_TOOL_PATH/public/projects/project_name
         images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
@@ -750,7 +750,7 @@ api.post("/changeValidation", async (req, res) => {
     var admin = req.body.Admin;
     var status = req.body.validMode;
 
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = process.cwd() + "/".replace("routes", ""),
         main_path = public_path + "public/projects/",
         project_path = main_path + admin + "-" + PName,
         images_path = project_path + "/images/";

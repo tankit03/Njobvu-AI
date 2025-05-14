@@ -11,7 +11,7 @@ async function deleteProject(req, res) {
         user = req.cookies.Username;
 
     // Set paths
-    var public_path = __dirname.replace("routes", "").replace("projects", ""),
+    var public_path = process.cwd() + "/".replace("routes", "").replace("projects", ""),
         main_path = public_path + "public/projects/";
     project_path = main_path + admin + "-" + PName;
 

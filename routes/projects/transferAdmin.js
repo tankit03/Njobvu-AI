@@ -41,7 +41,7 @@ async function transferAdmin(req, res) {
     await db.runAsync("PRAGMA foreign_keys=on");
 
     // Change name of project directory to match new admin
-    var public_path = __dirname.replace("routes", "").replace("projects", ""),
+    var public_path = process.cwd() + "/".replace("routes", "").replace("projects", ""),
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + Admin + "-" + PName,
         new_path = main_path + NewAdmin + "-" + PName; // $LABELING_TOOL_PATH/public/projects/project_name
