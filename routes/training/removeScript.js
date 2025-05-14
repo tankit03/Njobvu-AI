@@ -10,7 +10,7 @@ async function removeScript(req, res) {
     console.log("remove_script scripts: ", scripts);
     console.log("remove_script scripts.length: ", scripts.length);
 
-    var public_path = __dirname.replace("routes", ""),
+    var public_path = __dirname.replace("routes", "").replace("training", ""),
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
         images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images
