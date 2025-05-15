@@ -78,7 +78,6 @@ const deleteLabelValidation = require("./validation/deleteValidation");
 
 const bootstrapController = require("./bootstrap/bootstrapController");
 
-
 // USER ROUTES
 api.post("/logout", logout);
 api.post("/login", login);
@@ -136,7 +135,7 @@ api.post("/downloadRun", downloadRun);
 
 //VALIDATION ROUTES
 api.post("/changeValidation", changeValidation);
-api.post("/deleteLabelValidation",deleteLabelValidation);
+api.post("/deleteLabelValidation", deleteLabelValidation);
 
 // TEST ROUTES
 api.post("/test", test);

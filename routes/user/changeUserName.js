@@ -1,7 +1,12 @@
+<<<<<<< Updated upstream
 const {readdirSync } = require("fs");
 
 async function changeUserName(req, res) {
+=======
+const { readdirSync } = require("fs");
+>>>>>>> Stashed changes
 
+async function changeUserName(req, res) {
     console.log("changeUname");
 
     var user = req.cookies.Username,
@@ -60,7 +65,7 @@ async function changeUserName(req, res) {
         httpOnly: true,
     });
     return res.send({ Success: "Yes" });
-    
 }
 
 module.exports = changeUserName;
+

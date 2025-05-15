@@ -1,5 +1,4 @@
 async function switchLabels(req, res) {
-
     try {
         const { selectedLabels, selectedClass, currentClass, Admin, PName } =
             req.body;
@@ -45,7 +44,8 @@ async function switchLabels(req, res) {
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
-    }   
+    }
 }
 
 module.exports = switchLabels;
+
