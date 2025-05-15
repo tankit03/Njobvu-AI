@@ -13,4 +13,4 @@ async function getSignupPage(req, res) {
     });
 }
 
-moudle.exports = getSignupPage;
+module.exports = getSignupPage;

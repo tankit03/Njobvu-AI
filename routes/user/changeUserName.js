@@ -1,10 +1,4 @@
-<<<<<<< Updated upstream
-const {readdirSync } = require("fs");
-
-async function changeUserName(req, res) {
-=======
 const { readdirSync } = require("fs");
->>>>>>> Stashed changes
 
 async function changeUserName(req, res) {
     console.log("changeUname");
@@ -68,4 +62,3 @@ async function changeUserName(req, res) {
 }
 
 module.exports = changeUserName;
-

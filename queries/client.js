@@ -1,4 +1,9 @@
-const { Database } = require("sqlite3");
+const {
+    Database,
+    OPEN_READWRITE,
+    OPEN_CREATE,
+    OPEN_FULLMUTEX,
+} = require("sqlite3");
 
 class Client {
     /**
@@ -6,7 +11,7 @@ class Client {
      */
     constructor(filename) {
         this.db = null;
-        this.open = false;
+        this.dbOpen = false;
         this.lastOperation = null;
         this.interval = null;
 
@@ -15,11 +20,13 @@ class Client {
          * @description Starts an interval. If the last operation
          */
         this.open = () => {
-            if (this.open) {
+            if (this.dbOpen) {
                 return;
             }
 
-            this.open = true;
+            console.log("running open");
+
+            this.dbOpen = true;
 
             const openMode = OPEN_READWRITE | OPEN_CREATE | OPEN_FULLMUTEX;
 
@@ -50,7 +57,7 @@ class Client {
          * @description Close the existing database connection
          */
         this.close = () => {
-            if (!this.open || !this.db) return;
+            if (!this.dbOpen || !this.db) return;
 
             this.db.close(function (error) {
                 if (error) {
@@ -66,7 +73,7 @@ class Client {
          * @description Check if the database is open. If not, attempt to open it. If error, return a result to be consumed by the client
          */
         this.checkOpenWithResult = () => {
-            if (!this.open || !this.db) {
+            if (!this.dbOpen || !this.db) {
                 const success = this.open();
 
                 if (success) return null;
@@ -121,6 +128,7 @@ class Client {
             }
 
             this.db.all(sql, params, function (error, rows) {
+                console.log(error, rows);
                 if (error != null) {
                     result = {
                         error: result,
@@ -172,4 +180,4 @@ class Client {
     }
 }
 
-module.exports = Client;
+module.exports = { Client };
