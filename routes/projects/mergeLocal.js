@@ -13,7 +13,7 @@ async function mergeLocal(req, res) {
     console.log("mergeAdmin: ", mergeAdmin);
 
     //set paths
-    var public_path = process.cwd() + "/".replace("routes", "").replace("projects", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects",
         project_path = main_path + "/" + Admin + "-" + PName,
         mdb_path = project_path + "/" + PName + ".db",

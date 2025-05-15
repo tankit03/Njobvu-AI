@@ -10,7 +10,7 @@ async function deleteImage(req, res) {
 
     console.log("IDX: ", IDX);
     // set paths
-    var public_path = process.cwd() + "/".replace("routes", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects/",
         project_path = main_path + admin + "-" + PName,
         images_path = project_path + "/images/";

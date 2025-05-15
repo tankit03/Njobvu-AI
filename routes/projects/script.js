@@ -5,7 +5,7 @@ async function script(req, res) {
         user = req.cookies.Username,
         python_file = req.files.upload_python;
 
-    var public_path = process.cwd() + "/".replace("routes", "").replace("projects", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
         images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images

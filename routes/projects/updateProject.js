@@ -8,7 +8,7 @@ async function updateProject(req, res) {
     console.log("New Project Name:", project_name);
     console.log("New Project Description:", project_description);
 
-    var public_path = process.cwd() + "/".replace("routes", "").replace("projects", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects/",
         project_path = main_path + admin + "-" + PName;
 

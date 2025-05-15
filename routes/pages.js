@@ -99,7 +99,7 @@ module.exports = {
         var PName = projects[IDX].PName;
         var admin = projects[IDX].Admin;
 
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName,
             path = project_path + "/" + PName + ".db";
@@ -343,7 +343,7 @@ module.exports = {
             perPage = req.query.perPage,
             user = req.cookies.Username;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var project_path = public_path + "public/projects/";
 
         if (page == undefined) {
@@ -505,7 +505,7 @@ module.exports = {
             perPage = req.query.perPage,
             user = req.cookies.Username;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var project_path = public_path + "public/projects/";
 
         if (page == undefined) {
@@ -653,6 +653,8 @@ module.exports = {
             perPage: perPage,
             logged: req.query.logged,
             needs_review: review_counter,
+            activePage: "HomeV",
+            IDX: null
         });
     },
 
@@ -730,7 +732,7 @@ module.exports = {
         var PName = projects[num].PName;
         var admin = projects[num].Admin;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var main_path = public_path + "public/projects/";
         var path = main_path + admin + "-" + PName + "/" + PName + ".db";
         if (isNaN(IDX)) {
@@ -752,7 +754,7 @@ module.exports = {
         var admin = project.Admin;
 
         // Construct the database path
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var db_path =
             public_path +
             "public/projects/" +
@@ -912,7 +914,7 @@ module.exports = {
         var PName = project.PName;
         var admin = project.Admin;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var db_path =
             public_path +
             "public/projects/" +
@@ -1022,7 +1024,7 @@ module.exports = {
     getProjectPage: async (req, res) => {
         console.log("getProjectPage");
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
 
         // get URL variables
         var IDX = parseInt(req.query.IDX),
@@ -1051,7 +1053,7 @@ module.exports = {
         var PName = projects[num].PName;
         var admin = projects[num].Admin;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var db_path =
             public_path +
             "public/projects/" +
@@ -1164,7 +1166,7 @@ module.exports = {
     getValidationProjectPage: async (req, res) => {
         console.log("getValidationProjectPage");
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
 
         // get URL variables
         var IDX = parseInt(req.query.IDX),
@@ -1195,7 +1197,7 @@ module.exports = {
         var PName = projects[num].PName;
         var admin = projects[num].Admin;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var db_path =
             public_path +
             "public/projects/" +
@@ -1558,7 +1560,7 @@ module.exports = {
                 "'",
         );
 
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName,
             path = project_path + "/" + PName + ".db",
@@ -1781,7 +1783,7 @@ module.exports = {
                 "'",
         );
 
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName,
             path = project_path + "/" + PName + ".db",
@@ -1991,7 +1993,7 @@ module.exports = {
         var PName = projects[num].PName;
         var admin = projects[num].Admin;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         (main_path = public_path + "public/projects/"),
             (path = main_path + admin + "-" + PName + "/" + PName + ".db"),
             (training_path = main_path + admin + "-" + PName + "/training"),
@@ -2162,7 +2164,7 @@ module.exports = {
         var admin = projects[num].Admin;
 
         // set paths
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName;
 
@@ -2386,7 +2388,7 @@ module.exports = {
         var admin = projects[num].Admin;
 
         // set paths
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName;
 
@@ -2800,7 +2802,7 @@ module.exports = {
         var admin = projects[num].Admin;
 
         // set paths
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName,
             path = project_path + "/" + PName + ".db",
@@ -3193,7 +3195,7 @@ module.exports = {
         var admin = projects[num].Admin;
 
         // set paths
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName,
             path = project_path + "/" + PName + ".db",
@@ -3670,7 +3672,7 @@ module.exports = {
         var admin = projects[num].Admin;
 
         // set paths
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName,
             path = project_path + "/" + PName + ".db",
@@ -3937,7 +3939,7 @@ module.exports = {
         var PName = projects[num].PName;
         var admin = projects[num].Admin;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var main_path = public_path + "public/projects/";
         var path = main_path + admin + "-" + PName + "/" + PName + ".db";
 
@@ -4079,7 +4081,7 @@ module.exports = {
         var PName = projects[num].PName;
         var admin = projects[num].Admin;
 
-        var public_path = process.cwd() + "/".replace("routes", "");
+        var public_path = currentPath;
         var main_path = public_path + "public/projects/";
         var path = main_path + admin + "-" + PName + "/" + PName + ".db";
 
@@ -4224,7 +4226,7 @@ module.exports = {
         var admin = projects[num].Admin;
 
         // set paths
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName,
             path = project_path + "/" + PName + ".db",
@@ -4538,7 +4540,7 @@ module.exports = {
         var admin = projects[num].Admin;
 
         // set paths
-        var public_path = process.cwd() + "/".replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + admin + "-" + PName,
             path = project_path + "/" + PName + ".db",

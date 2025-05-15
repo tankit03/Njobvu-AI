@@ -5,7 +5,7 @@ async function changeUserName(req, res) {
     var user = req.cookies.Username,
         UName = req.body.UName;
 
-    var public_path = process.cwd() + "/".replace("routes", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects/",
         download_path = main_path + user + "_Downloads",
         new_download_path = main_path + UName + "_Downloads";

@@ -9,7 +9,7 @@ async function deleteRun(req, res) {
         run_path = req.body.run_path,
         log_file = req.body.log_file;
 
-    var public_path = process.cwd() + "/".replace("routes", "").replace("training", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + user + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
         images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images

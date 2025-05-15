@@ -9,7 +9,7 @@ async function downloadProject(req, res) {
     var username = req.cookies.Username;
 
     // Set paths
-    var public_path = process.cwd() + "/".replace("routes", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects/",
         project_path = main_path + admin + "-" + PName,
         //download_path = project_path + '/downloads',

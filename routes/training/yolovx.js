@@ -6,7 +6,7 @@ async function yolovx(req, res) {
         user = req.cookies.Username,
         yolovx_path = req.body.yolovx_path;
 
-    var public_path = process.cwd() + "/".replace("routes", "").replace("training", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
         images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images

@@ -5,8 +5,10 @@ const StreamZip = require("node-stream-zip");
 const rimraf = require("../../public/libraries/rimraf");
 
 async function createProject(req, res) {
-    var public_path = process.cwd() + "/".replace("routes", "").replace("projects", "");
+    
 
+    // var public_path = currentPath;
+    var public_path = currentPath
     // get form inputs
     var project_name = req.body.project_name,
         upload_images = req.files["upload_images"],

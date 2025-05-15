@@ -67,7 +67,7 @@ const express = require('express'),
     app = express();
     // sqlite3 = require('sqlite3').verbose(),
 // get path
-global.currentPath = process.cwd();
+global.currentPath = process.cwd() + '/';
 global.dataFolder = currentPath + '/data/';
 
 // read files

@@ -13,7 +13,7 @@ async function downloadDataset(req, res) {
         user = req.cookies.Username;
 
     // Set paths
-    var public_path = process.cwd() + "/".replace("routes", "").replace("downloads", ""),
+    var public_path = currentPath,
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         project_path = main_path + admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
         merge_path = project_path + "/merge/",
