@@ -4,11 +4,15 @@ async function switchLabels(req, res) {
         const { selectedLabels, selectedClass, currentClass, Admin, PName } =
             req.body;
 
-        const public_path = __dirname.replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + Admin + "-" + PName;
 
+
+
         const dbPath = project_path + "/" + PName + ".db";
+
+        console.log("this path:", dbPath);
 
         const db = new sqlite3.Database(dbPath, (err) => {
             if (err) {

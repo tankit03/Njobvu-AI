@@ -9,7 +9,7 @@ async function deleteLabels(req, res) {
         console.log("PName: ", PName);
         console.log("Lid: ", Lid);
 
-        const public_path = __dirname.replace("routes", ""),
+        var public_path = currentPath,
             main_path = public_path + "public/projects/",
             project_path = main_path + Admin + "-" + PName;
 

@@ -14,7 +14,7 @@ module.exports = {
     getLoginPage: async (req, res) => {
         console.log("getLoginPage");
         var auto_save = 1;
-        db.runAsync("UPDATE Projects SET AutoSave = '" + auto_save + "'");
+        db.runAsync("UPDATE Projects SET AutoSave = '" + auto_save + "'"); 
 
         res.render("login", {
             title: "login",
@@ -4812,6 +4812,8 @@ module.exports = {
             email: email,
             users: users,
             logged: req.query.logged,
+            activePage: "user",
+            IDX: null
         });
     },
     // 404 page
