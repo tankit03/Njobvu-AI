@@ -1,3 +1,4 @@
+const { resolve } = require("bluebird");
 const {
     Database,
     OPEN_READWRITE,
@@ -98,21 +99,22 @@ class Client {
                 return result;
             }
 
-            this.db.run(sql, params, function (error) {
-                if (error != null) {
-                    result = {
-                        error: result,
-                    };
-                } else {
-                    result = {
-                        success: true,
-                    };
-                }
+            return new Promise((resolve) => {
+                this.db.run(sql, params, (error, rows) => {
+                    this.lastOperation = Date.now();
+                    if (error) {
+                        resolve({
+                            error,
+                            rows: [],
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            rows,
+                        });
+                    }
+                });
             });
-
-            this.lastOperation = Date.now();
-
-            return result;
         };
 
         /**
@@ -121,30 +123,28 @@ class Client {
          * @returns {object} The result object of the query containing all rows or an error
          */
         this.all = async (sql, params) => {
-            let result = this.checkOpenWithResult();
+            let checkError = this.checkOpenWithResult();
 
-            if (result) {
-                return result;
+            if (checkError) {
+                return checkError;
             }
 
-            this.db.all(sql, params, function (error, rows) {
-                console.log(error, rows);
-                if (error != null) {
-                    result = {
-                        error: result,
-                        rows: [],
-                    };
-                } else {
-                    result = {
-                        success: true,
-                        rows: rows,
-                    };
-                }
+            return new Promise((resolve) => {
+                this.db.all(sql, params, (error, rows) => {
+                    this.lastOperation = Date.now();
+                    if (error) {
+                        resolve({
+                            error,
+                            rows: [],
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            rows,
+                        });
+                    }
+                });
             });
-
-            this.lastOperation = Date.now();
-
-            return result;
         };
 
         /**
@@ -153,29 +153,29 @@ class Client {
          * @returns {object} The result object of the query containing the row or an error
          */
         this.get = async (sql, params) => {
-            let result = this.checkOpenWithResult();
+            
+            let checkError = this.checkOpenWithResult();
 
-            if (result) {
-                return result;
+            if (checkError) {
+                return checkError;
             }
-
-            this.db.get(sql, params, function (error, row) {
-                if (error != null) {
-                    result = {
-                        error: result,
-                        row: null,
-                    };
-                } else {
-                    result = {
-                        success: true,
-                        row: row,
-                    };
-                }
+            
+            return new Promise((resolve) => {
+                this.db.get(sql, params, function (error, rows) {
+                    this.lastOperation = Date.now();
+                    if (error) {
+                        resolve({
+                            error,
+                            rows: [],
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            rows,
+                        });
+                    }
+                });
             });
-
-            this.lastOperation = Date.now();
-
-            return result;
         };
     }
 }
