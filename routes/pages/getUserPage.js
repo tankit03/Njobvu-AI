@@ -26,6 +26,8 @@ async function getUserPage(req, res) {
         email: email,
         users: users,
         logged: req.query.logged,
+        activePage: "User",
+        IDX: null,
     });
 }
 

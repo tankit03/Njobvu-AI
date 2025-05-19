@@ -1,15 +1,15 @@
-async function changeLname(req, res) {
-    console.log("changeLname");
+const queries = require("../../queries/queries");
 
+async function changeLname(req, res) {
     var user = req.cookies.Username,
         LName = req.body.LName;
-    await db.runAsync(
-        "UPDATE Users SET LastName = '" +
-            LName +
-            "' WHERE Username = '" +
-            user +
-            "'",
-    );
+
+    try {
+        await queries.managed.updateUser(user, null, null, null, LName, null);
+    } catch (err) {
+        console.error(err);
+        return res.send({ Success: "No" });
+    }
 
     return res.send({ Success: "Yes" });
 }

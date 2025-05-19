@@ -1,15 +1,17 @@
+const queries = require("../../queries/queries");
+
 async function changeFname(req, res) {
     console.log("changeFname");
 
     var user = req.cookies.Username,
         FName = req.body.FName;
-    await db.runAsync(
-        "UPDATE Users SET FirstName = '" +
-            FName +
-            "' WHERE Username = '" +
-            user +
-            "'",
-    );
+
+    try {
+        await queries.managed.updateUser(user, null, null, FName, null, null);
+    } catch (err) {
+        console.error(err);
+        return res.send({ Success: "No" });
+    }
 
     return res.send({ Success: "Yes" });
 }
