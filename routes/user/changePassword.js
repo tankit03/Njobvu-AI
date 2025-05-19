@@ -1,16 +1,21 @@
+const queries = require("../../queries/queries");
+
 async function changePassword(req, res) {
-
-    console.log("changePassword");
-
-    var user = req.cookies.Username,
+    var username = req.cookies.Username,
         oldPassword = req.body.oldPassword,
         newPassword = req.body.newPassword;
 
-    var passwords = await db.allAsync(
-        "SELECT Password FROM Users WHERE Username = '" + user + "'",
-    );
+    let user;
+    try {
+        user = await queries.managed.getUser(username);
+    } catch (err) {
+        console.error(err);
+        return res.send({ Success: "Could not get current user" });
+    }
 
-    if (!bcrypt.compareSync(oldPassword, passwords[0].Password)) {
+    console.log(user);
+
+    if (!bcrypt.compareSync(oldPassword, user.row.Password)) {
         return res.send({ Success: "Wrong Password!" });
     } else {
         bcrypt.hash(newPassword, 10, async function (err, hash) {
@@ -18,21 +23,27 @@ async function changePassword(req, res) {
                 console.error(err);
                 return res.send({
                     Success:
-                        "Password encryption error. Password has not been changed",
+                        "Password hashing error. Password has not been changed",
                 });
             } else {
-                await db.runAsync(
-                    "UPDATE Users SET Password = '" +
-                        hash +
-                        "' WHERE Username = '" +
-                        user +
-                        "'",
-                );
+                try {
+                    await queries.managed.updateUser(
+                        username,
+                        null,
+                        hash,
+                        null,
+                        null,
+                        null,
+                    );
+                } catch (err) {
+                    console.error(err);
+                    return res.send({ Success: "Error updating password" });
+                }
+
                 return res.send({ Success: "Yes" });
             }
         });
     }
 }
-
 
 module.exports = changePassword;

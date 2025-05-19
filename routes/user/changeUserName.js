@@ -1,8 +1,7 @@
 const { readdirSync } = require("fs");
+const queries = require("../../queries/queries");
 
 async function changeUserName(req, res) {
-    console.log("changeUname");
-
     var user = req.cookies.Username,
         UName = req.body.UName;
 
@@ -11,34 +10,15 @@ async function changeUserName(req, res) {
         download_path = main_path + user + "_Downloads",
         new_download_path = main_path + UName + "_Downloads";
 
-    await db.runAsync(
-        "UPDATE Users SET Username = '" +
-            UName +
-            "' WHERE Username = '" +
-            user +
-            "'",
-    );
-    await db.runAsync(
-        "UPDATE Access SET Username = '" +
-            UName +
-            "' WHERE Username = '" +
-            user +
-            "'",
-    );
-    await db.runAsync(
-        "UPDATE Access SET Admin = '" +
-            UName +
-            "' WHERE Admin = '" +
-            user +
-            "'",
-    );
-    await db.runAsync(
-        "UPDATE Projects SET Admin = '" +
-            UName +
-            "' WHERE Admin = '" +
-            user +
-            "'",
-    );
+    try {
+        await queries.managed.updateUser(user, UName, null, null, null, null);
+        await queries.managed.changeAllAccessForUsername(user, UName);
+        await queries.managed.changeAllAccessAdminForUsername(user, UName);
+        await queries.managed.updateAllProjectsForAdmin(user, UName);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send("Error updating user");
+    }
 
     fs.rename(download_path, new_download_path, () => {});
 

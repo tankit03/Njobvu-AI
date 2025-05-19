@@ -1,24 +1,25 @@
+const queries = require("../../queries/queries");
+
 async function deleteUser(req, res) {
-    console.log("delete user");
     var user = req.cookies.Username;
 
     var public_path = __dirname.replace("routes", "").replace("user", ""),
         main_path = public_path + "public/projects/";
 
-    var darknet_path = new Set();
+    var darknetPath = new Set();
 
-    var filesinfolder = readdirSync(main_path);
-    // Delete the Files
-    for (var i = 0; i < filesinfolder.length; i++) {
+    var filesInFolder = readdirSync(main_path);
+
+    for (var i = 0; i < filesInFolder.length; i++) {
         if (
-            filesinfolder[i].split("_")[0] == user ||
-            filesinfolder[i].split("-")[0] == user
+            filesInFolder[i].split("_")[0] == user ||
+            filesInFolder[i].split("-")[0] == user
         ) {
-            if (filesinfolder[i].split("-")[0] == user) {
+            if (filesInFolder[i].split("-")[0] == user) {
                 var tempdarknet = fs
                     .readFileSync(
                         main_path +
-                            filesinfolder[i] +
+                            filesInFolder[i] +
                             "/training/darknetPaths.txt",
                         "utf-8",
                     )
@@ -27,11 +28,12 @@ async function deleteUser(req, res) {
                     .split(",");
                 for (var f = 0; f < tempdarknet.length; f++) {
                     if (tempdarknet[f] != "") {
-                        darknet_path.add(tempdarknet[f]);
+                        darknetPath.add(tempdarknet[f]);
                     }
                 }
             }
-            rimraf(main_path + filesinfolder[i], (err) => {
+
+            rimraf(main_path + filesInFolder[i], (err) => {
                 if (err) {
                     console.error(
                         "there was an error with the user contents: ",
@@ -44,14 +46,13 @@ async function deleteUser(req, res) {
         }
     }
 
-    //Delete the YOLO Files
-    const drknt_temp = darknet_path.values();
-    for (var i = 0; i < darknet_path.size; i++) {
-        var current_darknet_path = drknt_temp.next().value;
-        var darknetFiles = readdirSync(current_darknet_path);
+    const darknetTemp = darknetPath.values();
+    for (var i = 0; i < darknetPath.size; i++) {
+        var currentDarknetPath = darknetTemp.next().value;
+        var darknetFiles = readdirSync(currentDarknetPath);
         for (var i = 0; i < darknetFiles.length; i++) {
             if (darknetFiles[i].split("-")[0] == user) {
-                rimraf(current_darknet_path + "/" + darknetFiles[i], (err) => {
+                rimraf(currentDarknetPath + "/" + darknetFiles[i], (err) => {
                     if (err) {
                         console.error(
                             "there was an error with the user contents: ",
@@ -66,11 +67,16 @@ async function deleteUser(req, res) {
             }
         }
     }
-    // Delete from the Database
-    db.getAsync("DELETE FROM Access WHERE Admin = '" + user + "'");
-    db.getAsync("DELETE FROM Access WHERE Username = '" + user + "'");
-    db.getAsync("DELETE FROM Projects WHERE Admin = '" + user + "'");
-    db.getAsync("DELETE FROM Users WHERE Username = '" + user + "'");
+
+    try {
+        await queries.managed.deleteAllUserAccess(user);
+        await queries.managed.deleteAllAdminAccess(user);
+        await queries.managed.deleteAllProjectsForAdmin(user);
+        await queries.managed.deleteUser(user);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send("Error deleting user");
+    }
 
     res.clearCookie("Username");
     return res.send({ Success: "Yes" });
