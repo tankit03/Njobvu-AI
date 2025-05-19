@@ -1,62 +1,50 @@
 const fs = require("fs");
+const queries = require("../../queries/queries");
 
 async function signup(req, res) {
-    var Fname = req.body.Fname,
-        Lname = req.body.Lname,
+    var firstName = req.body.Fname,
+        lastName = req.body.Lname,
         email = req.body.email,
         username = req.body.username,
         password = req.body.password;
 
-    var results1 = await db.getAsync(
-        "SELECT COUNT(*) AS USER FROM `Users` WHERE Username = '" +
-            username +
-            "'",
-    );
-    if (results1.USER != 0) {
-        return res.redirect("/signup");
+    try {
+        const userExists = await queries.managed.checkUserExists(username);
+
+        if (userExists.row.ExistingUsers > 0) {
+            res.status(409).send("User with that username already exists");
+            return;
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error signing up");
+        return;
     }
+
+    let error = null;
 
     bcrypt.hash(password, 10, async function (err, hash) {
         if (err) {
             console.error(err);
         } else {
-            await db.allAsync(
-                "INSERT INTO Users (Username, Password, FirstName, LastName, Email) VALUES ('" +
-                    username +
-                    "', '" +
-                    hash +
-                    "', '" +
-                    Fname +
-                    "', '" +
-                    Lname +
-                    "', '" +
-                    email +
-                    "')",
-            );
+            try {
+                await queries.managed.createUser(
+                    username,
+                    hash,
+                    firstName,
+                    lastName,
+                    email,
+                );
+            } catch (err) {
+                console.error(err);
+                res.status(500).send("Error creating user");
+                error = err;
+            }
         }
     });
 
-    var results3 = await db.getAsync(
-        "SELECT COUNT(*) AS DUSER FROM Projects WHERE Admin='ZeroUser'",
-    );
-    if (results3.DUSER > 0) {
-        var results4 = await db.getAsync(
-            "SELECT * FROM Projects WHERE Admin='ZeroUser'",
-        );
-        for (var i = 0; i < results3.DUSER; i++) {
-            await db.runAsync(
-                "INSERT INTO Access (Username, PName) VALUES ('" +
-                    username +
-                    "', '" +
-                    results4.PName +
-                    "')",
-            );
-        }
-        await db.runAsync(
-            "UPDATE Projects SET Admin = '" +
-                username +
-                "' WHERE Admin ='ZeroUser'",
-        );
+    if (error !== null) {
+        return;
     }
 
     var public_path = currentPath;

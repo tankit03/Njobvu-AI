@@ -30,6 +30,8 @@ global.removeDir = util.promisify(fs.rmdir);
 global.projectDbClients = {};
 global.managedDbClient = new Client(path.join(__dirname, "db", "manage.db"));
 
+managedDbClient.migrate();
+
 const allProjectsPath = path.join(__dirname, "public", "projects");
 
 for (const project of fs.readdirSync(allProjectsPath)) {
@@ -43,12 +45,6 @@ for (const project of fs.readdirSync(allProjectsPath)) {
         }
     }
 }
-
-(async () => {
-    const result = await queries.managed.getUserProjects("admin");
-
-    console.log(result);
-})();
 
 var ssl_key_path = configFile.ssl_key_path;
 var ssl_cert_path = configFile.ssl_cert_path;

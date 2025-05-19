@@ -1,4 +1,5 @@
 const fs = require("fs");
+const queries = require("../../queries/queries");
 
 async function login(req, res) {
     var username = req.body.username,
@@ -16,17 +17,22 @@ async function login(req, res) {
         });
     }
 
-    var passwords = await db.allAsync(
-        "SELECT Password FROM Users WHERE Username = '" + username + "'",
-    );
-    var found = 0;
-    for (var i = 0; i < passwords.length; i++) {
-        if (bcrypt.compareSync(password, passwords[i].Password)) {
-            found = 1;
-            break;
-        }
+    let user;
+
+    try {
+        user = await queries.managed.getUser(username);
+    } catch (err) {
+        console.error(err);
+        res.send({ Success: "No" });
+        return;
     }
-    if (found > 0) {
+
+    if (!user) {
+        res.status(404).send({ Success: "No" });
+        return;
+    }
+
+    if (bcrypt.compareSync(password, user.row.Password)) {
         res.cookie("Username", username, {
             httpOnly: true,
         });

@@ -6,6 +6,8 @@ async function getSignupPage(req, res) {
         users.push(results1[i].Username);
     }
 
+    console.log(users);
+
     res.render("signup", {
         title: "signup",
         logged: req.query.logged,

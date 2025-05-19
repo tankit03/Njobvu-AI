@@ -1,4 +1,5 @@
-const { resolve } = require("bluebird");
+const fs = require("fs");
+const path = require("path");
 const {
     Database,
     OPEN_READWRITE,
@@ -13,7 +14,7 @@ class Client {
     constructor(filename) {
         this.db = null;
         this.dbOpen = false;
-        this.lastOperation = null;
+        this.lastOperation = Date.now();
         this.interval = null;
 
         /**
@@ -24,8 +25,6 @@ class Client {
             if (this.dbOpen) {
                 return;
             }
-
-            console.log("running open");
 
             this.dbOpen = true;
 
@@ -42,14 +41,6 @@ class Client {
 
             if (success) this.db = db;
             else return success;
-
-            this.interval =
-                (() => {
-                    if (Date.now() - this.lastOperation > 100 * 1000) {
-                        this.close();
-                    }
-                },
-                30 * 1000);
 
             return success;
         };
@@ -92,25 +83,23 @@ class Client {
          * @param {string[]} params The parameters to pass into the query
          * @returns {object} The result object of the query
          */
-        this.run = async (sql, params) => {
+        this.run = (sql, params) => {
             let result = this.checkOpenWithResult();
 
             if (result) {
                 return result;
             }
 
-            return new Promise((resolve) => {
-                this.db.run(sql, params, (error, rows) => {
+            return new Promise((resolve, reject) => {
+                this.db.run(sql, params, (error) => {
                     this.lastOperation = Date.now();
                     if (error) {
-                        resolve({
+                        reject({
                             error,
-                            rows: [],
                         });
                     } else {
                         resolve({
                             success: true,
-                            rows,
                         });
                     }
                 });
@@ -122,18 +111,18 @@ class Client {
          * @param {string[]} params The parameters to pass into the query
          * @returns {object} The result object of the query containing all rows or an error
          */
-        this.all = async (sql, params) => {
+        this.all = (sql, params) => {
             let checkError = this.checkOpenWithResult();
 
             if (checkError) {
                 return checkError;
             }
 
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 this.db.all(sql, params, (error, rows) => {
                     this.lastOperation = Date.now();
                     if (error) {
-                        resolve({
+                        reject({
                             error,
                             rows: [],
                         });
@@ -152,30 +141,57 @@ class Client {
          * @param {string[]} params The parameters to pass into the query
          * @returns {object} The result object of the query containing the row or an error
          */
-        this.get = async (sql, params) => {
-            
+        this.get = (sql, params) => {
             let checkError = this.checkOpenWithResult();
 
             if (checkError) {
                 return checkError;
             }
-            
-            return new Promise((resolve) => {
-                this.db.get(sql, params, function (error, rows) {
+
+            return new Promise((resolve, reject) => {
+                this.db.get(sql, params, (error, row) => {
                     this.lastOperation = Date.now();
                     if (error) {
-                        resolve({
+                        reject({
                             error,
-                            rows: [],
+                            row: [],
                         });
                     } else {
                         resolve({
                             success: true,
-                            rows,
+                            row,
                         });
                     }
                 });
             });
+        };
+
+        this.migrate = async () => {
+            try {
+                this.open();
+
+                const migrationsPath = path.join(
+                    __dirname,
+                    "../db/migrations.sql",
+                );
+
+                const migrations = fs.readFileSync(migrationsPath, "utf-8");
+
+                const statements = migrations
+                    .split(";")
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+
+                for (const stmt of statements) {
+                    await this.run(stmt, []).catch(() =>
+                        console.error(
+                            "migration failed, likely because it was already run",
+                        ),
+                    );
+                }
+            } catch (err) {
+                console.error("error running migrations: " + err);
+            }
         };
     }
 }
