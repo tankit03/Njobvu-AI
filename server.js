@@ -3,7 +3,6 @@
 ////////////////////////////////////////////////////////
 const { Client } = require("./queries/client");
 const path = require("path");
-const queries = require("./queries/queries");
 
 global.configFile = require("./config.json");
 
@@ -41,7 +40,7 @@ for (const project of fs.readdirSync(allProjectsPath)) {
         if (file.endsWith(".db")) {
             const dbFile = path.join(projectPath, file);
 
-            global.projectDbClients[dbFile] = new Client(dbFile);
+            global.projectDbClients[projectPath] = new Client(dbFile);
         }
     }
 }

@@ -27,7 +27,7 @@ async function login(req, res) {
         return;
     }
 
-    if (!user) {
+    if (!user.row) {
         res.status(404).send({ Success: "No" });
         return;
     }
