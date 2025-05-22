@@ -8,7 +8,18 @@ module.exports = {
 
                 return result;
             } catch (err) {
-                console.error(err);
+                return err;
+            }
+        },
+        deleteImage: async function (projectPath, imageName) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const query = "DELETE FROM Images WHERE IName = ?";
+                const result = await db.run(query, [imageName]);
+
+                return result;
+            } catch (err) {
+                return err;
             }
         },
     },

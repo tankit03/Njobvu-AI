@@ -23,5 +23,16 @@ module.exports = {
                 return err;
             }
         },
+        deleteValidation: async function (projectPath, imageName) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const query = "DELETE FROM Validation WHERE IName = ?";
+                const result = await db.run(query, [imageName]);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
     },
 };

@@ -86,6 +86,8 @@ async function getLabelingPage(req, res) {
         });
     };
 
+    console.log(String(IName));
+
     var results1 = await ldb.allAsync("SELECT * FROM `Classes`");
     var Classes = [];
     for (var i = 0; i < results1.length; i++) {
@@ -93,7 +95,7 @@ async function getLabelingPage(req, res) {
     }
     var results2 = await ldb.allAsync("SELECT * FROM `Images`");
     var rowid = await ldb.getAsync(
-        "SELECT rowid FROM Images WHERE IName = '" + IName + "'",
+        `SELECT IName, display_id FROM (SELECT IName, ROW_NUMBER() OVER (ORDER BY rowid) AS display_id FROM Images) AS numbered WHERE IName = '${String(IName)}'`,
     );
 
     var results3 = await ldb.allAsync(
@@ -159,7 +161,7 @@ async function getLabelingPage(req, res) {
 
         var list_counter = [];
 
-        curr_index = Number(rowid.rowid);
+        curr_index = Number(rowid.display_id);
         if (curr_index != 1) {
             prev_IName = results2[curr_index - 2]["IName"];
         }

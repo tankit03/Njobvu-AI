@@ -2,6 +2,20 @@ const client = require("../client");
 
 module.exports = {
     managed: {
+        deleteProject: async function (projectName, username) {
+            try {
+                const query =
+                    "DELETE FROM Projects WHERE PName = ? AND Admin = ?";
+                const result = await global.managedDbClient.run(query, [
+                    projectName,
+                    username,
+                ]);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
         createProject: async function (
             projectName,
             projectDescription,

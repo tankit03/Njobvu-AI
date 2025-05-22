@@ -247,6 +247,7 @@ async function getValidationLabelingPage(req, res) {
             results2.push(imageData[0]);
         }
     }
+
     var rowid;
     for (var b = 0; b < results2.length; b++) {
         if (IName == results2[b].IName) {

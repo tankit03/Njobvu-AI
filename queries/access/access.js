@@ -1,5 +1,19 @@
 module.exports = {
     managed: {
+        deleteAccessFromProject: async function (username, projectName) {
+            try {
+                const query =
+                    "DELETE FROM Access WHERE Username = ? AND PName = ?";
+                const result = await global.managedDbClient.run(query, [
+                    username,
+                    projectName,
+                ]);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
         deleteAllUserAccess: async function (username) {
             try {
                 const query = "DELETE FROM Access WHERE Username = ?";

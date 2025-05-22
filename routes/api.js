@@ -114,7 +114,7 @@ api.post("/createP", createProject);
 api.post("/updateProject", updateProject);
 api.post("/deleteProject", deleteProject);
 api.post("/addImages", addImages);
-api.post("deleteImage", deleteImage);
+api.post("/deleteImage", deleteImage);
 api.post("/import", importProject);
 api.post("/mergeLocal", mergeLocal);
 api.post("/removeAccess", removeAccess);
