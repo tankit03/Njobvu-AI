@@ -20,7 +20,7 @@ module.exports = {
             projectName,
             projectDescription,
             autoSave,
-            admin,
+            username,
         ) {
             try {
                 const query =

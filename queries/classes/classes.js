@@ -24,5 +24,16 @@ module.exports = {
                 return err;
             }
         },
+        updateClassName: async function (projectPath, oldName, newName) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const query = "UPDATE Classes SET CName = ? WHERE CName = ?";
+                const result = await db.run(query, [newName, oldName]);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
     },
 };

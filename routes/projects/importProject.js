@@ -1,12 +1,13 @@
 const StreamZip = require("node-stream-zip");
 const rimraf = require("../../public/libraries/rimraf");
 const queries = require("../../queries/queries");
+const { Client } = require("../../queries/client");
 
 async function importProject(req, res) {
     req.setTimeout(600000);
 
     var uploadImages = req.files["upload_file"],
-        projectName = req.body.projectName,
+        projectName = req.body.project_name,
         username = req.cookies.Username,
         autoSave = 1,
         projectDescription = "none";
@@ -35,7 +36,7 @@ async function importProject(req, res) {
     }
 
     for (var i = 0; i < projects.rows.length; i++) {
-        names.push(projects[i].PName);
+        names.push(projects.rows[i].PName);
     }
 
     if (names.includes(projectName)) {
@@ -107,8 +108,18 @@ async function importProject(req, res) {
                 return res.status(500).send("Error removing .zip file");
             }
 
-            var images = await readdirAsync(imagesPath);
-            var imcount = await imdb.allAsync("SELECT * FROM Images");
+            let images = await readdirAsync(imagesPath);
+            let oldImages;
+
+            try {
+                oldImages = await queries.project.getAllImages(projectPath);
+            } catch (err) {
+                console.error(err);
+                await res.status(500).send("Could not fetch old images");
+            }
+
+            console.log(oldImages);
+
             var oldDbImages = [];
             var fileTypes = [
                 "jpeg",
@@ -121,17 +132,17 @@ async function importProject(req, res) {
                 "TIFF",
             ];
 
-            for (let j = 0; j < imcount.length; j++) {
-                oldDbImages.push(imcount[j].IName);
+            for (let j = 0; j < oldImages.rows.length; j++) {
+                oldDbImages.push(oldImages.rows[j].IName);
             }
 
             for (let j = 0; j < images.length; j++) {
-                var oldImg = images[j];
+                var oldImg = oldDbImages.find((oldImg) => oldImg === image);
                 var image = images[j];
                 image = image.trim();
                 image = image.split(" ").join("_");
                 image = image.split("+").join("_");
-                var ext = image.split(".").pop();
+                let ext = image.split(".").pop();
 
                 if (image != oldImg) {
                     fs.renameSync(
@@ -141,159 +152,174 @@ async function importProject(req, res) {
                 }
 
                 if (oldDbImages.includes(oldImg) && image != oldImg) {
-                    await imdb.runAsync(
-                        "UPDATE Images SET IName = '" +
-                            image +
-                            "' WHERE IName = '" +
-                            images[j] +
-                            "'",
-                    );
-                    await imdb.runAsync(
-                        "UPDATE Labels SET IName = '" +
-                            image +
-                            "' WHERE IName = '" +
-                            images[j] +
-                            "'",
-                    );
-                    await imdb.runAsync(
-                        "UPDATE Validation SET IName = '" +
-                            image +
-                            "' WHERE IName = '" +
-                            images[j] +
-                            "'",
-                    );
+                    try {
+                        await queries.project.updateImageName(
+                            projectPath,
+                            images[j],
+                            image,
+                        );
+                        await queries.project.updateLabelImageName(
+                            projectPath,
+                            images[j],
+                            image,
+                        );
+                        await queries.project.updateValidationImageName(
+                            projectPath,
+                            images[j],
+                            image,
+                        );
+                    } catch (err) {
+                        console.error(err);
+                        await res.status(500).send("Error renaming old image");
+                    }
                 } else if (
                     !oldDbImages.includes(oldImg) &&
                     fileTypes.includes(ext)
                 ) {
-                    await imdb.runAsync(
-                        "INSERT INTO Images (IName, reviewImage, validateImage) VALUES ('" +
-                            image +
-                            "', '" +
-                            1 +
-                            "', '" +
-                            0 +
-                            "')",
-                    );
-                }
-            }
-
-            var classes = await imdb.allAsync("SELECT CName FROM Classes");
-            for (var j = 0; j < classes.length; j++) {
-                var CName = classes[j].CName;
-                CName = CName.trim();
-                CName = CName.split(" ").join("_");
-                await imdb.runAsync(
-                    "UPDATE Classes SET CName = '" +
-                        CName +
-                        "' WHERE CName = '" +
-                        classes[j].CName +
-                        "'",
-                );
-                await imdb.runAsync(
-                    "UPDATE Labels SET CName = '" +
-                        CName +
-                        "' WHERE CName = '" +
-                        classes[j].CName +
-                        "'",
-                );
-                await imdb.runAsync(
-                    "UPDATE Validation SET CName = '" +
-                        CName +
-                        "' WHERE CName = '" +
-                        classes[j].CName +
-                        "'",
-                );
-            }
-            var labels = await imdb.allAsync("SELECT * FROM Labels");
-            var confidence = await imdb.allAsync("SELECT * FROM Validation");
-            var conf = {};
-            for (var x = 0; x < confidence.length; x++) {
-                console.log(confidence[x]);
-                conf[confidence[x].LID] = confidence[x];
-            }
-            // console.log(confidence);
-            // console.log(conf);
-            var cur_labels = [];
-            var cur_conf = [];
-            for (var j = 0; j < labels.length; j++) {
-                if (labels[j].W > 0 && labels[j].H > 0) {
-                    cur_labels.push([
-                        labels[j].CName,
-                        labels[j].X,
-                        labels[j].Y,
-                        labels[j].W,
-                        labels[j].H,
-                        labels[j].IName,
-                    ]);
-                    // console.log(conf)
-                    if (labels[j].LID in conf) {
-                        cur_conf.push([conf[labels[j].LID]]);
-                    } else {
-                        cur_conf.push([]);
+                    try {
+                        await queries.project.addImages(
+                            projectPath,
+                            image,
+                            1,
+                            0,
+                        );
+                    } catch (err) {
+                        console.error(err);
+                        return res.status(500).send("Error adding image");
                     }
                 }
             }
-            // console.log("CIR CONGAfADF");
-            // console.log(labels);
-            await imdb.runAsync("DELETE FROM Labels");
-            await imdb.runAsync("DELETE FROM Validation");
-            for (var j = 0; j < cur_labels.length; j++) {
-                await imdb.runAsync(
-                    "INSERT INTO Labels (LID, CName, X, Y, W, H, IName) VALUES ('" +
-                        Number(j + 1) +
-                        "', '" +
-                        cur_labels[j][0] +
-                        "', '" +
-                        Number(cur_labels[j][1]) +
-                        "', '" +
-                        Number(cur_labels[j][2]) +
-                        "', '" +
-                        Number(cur_labels[j][3]) +
-                        "', '" +
-                        Number(cur_labels[j][4]) +
-                        "', '" +
-                        cur_labels[j][5] +
-                        "')",
-                );
 
-                if (cur_conf[j].length != 0) {
-                    await imdb.runAsync(
-                        "INSERT INTO Validation (Confidence, LID, CName, IName) VALUES ('" +
-                            Number(cur_conf[j][0].Confidence) +
-                            "', '" +
-                            Number(j + 1) +
-                            "', '" +
-                            cur_conf[j][0].CName +
-                            "', '" +
-                            cur_conf[j][0].IName +
-                            "')",
-                    ); //tp4
+            let classes;
+            try {
+                classes = await queries.project.getAllClasses(projectPath);
+            } catch (err) {
+                console.error(err);
+                return res
+                    .status(500)
+                    .send("Error retrieveing existing classes");
+            }
+
+            for (let j = 0; j < classes.rows.length; j++) {
+                let CName = classes.rows[j].CName;
+
+                CName = CName.trim();
+                CName = CName.split(" ").join("_");
+
+                try {
+                    await queries.project.updateClassName(
+                        projectPath,
+                        classes.rows[j].CName,
+                        CName,
+                    );
+                    await queries.project.updateLabelClassName(
+                        projectPath,
+                        classes.rows[j].CName,
+                        CName,
+                    );
+                    await queries.project.updateValidationClassName(
+                        projectPath,
+                        classes.rows[j].CName,
+                        CName,
+                    );
+                } catch (err) {
+                    console.error(err);
+                    return res
+                        .status(500)
+                        .send("Error normalizing class names");
+                }
+            }
+
+            let labels;
+            let confidence;
+
+            try {
+                labels = await queries.project.getAllLabels(projectPath);
+                confidence =
+                    await queries.project.getAllValidations(projectPath);
+            } catch (err) {
+                console.error(err);
+                await res.status(500).send("Error getting validation & labels");
+            }
+
+            var conf = {};
+            for (let j = 0; j < confidence.rows.length; j++) {
+                conf[confidence.rows[j].LID] = confidence.rows[j];
+            }
+
+            var currentLabels = [];
+            var currentConfidence = [];
+
+            for (let j = 0; j < labels.rows.length; j++) {
+                const label = labels.rows[j];
+                if (label.W > 0 && label.H > 0) {
+                    currentLabels.push([
+                        label.CName,
+                        label.X,
+                        label.Y,
+                        label.W,
+                        label.H,
+                        label.IName,
+                    ]);
+
+                    if (label.LID in conf) {
+                        currentConfidence.push([conf[label.LID]]);
+                    } else {
+                        currentConfidence.push([]);
+                    }
+                }
+            }
+
+            try {
+                await queries.project.deleteAllLabels(projectPath);
+                await queries.project.deleteAllValidations(projectPath);
+            } catch (err) {
+                return err;
+            }
+
+            for (let j = 0; j < currentLabels.length; j++) {
+                const currentLabel = currentLabels[j];
+                const currentConf = currentConfidence[j];
+
+                try {
+                    await queries.project.createLabel(
+                        projectPath,
+                        Number(j + 1),
+                        currentLabel[0],
+                        currentLabel[1],
+                        currentLabel[2],
+                        currentLabel[4],
+                        currentLabel[5],
+                    );
+
+                    if (currentConf.length != 0) {
+                        await queries.project.createValidation(
+                            projectPath,
+                            Number(currentConf[0].Confidence),
+                            Number(j + 1),
+                            currentConf[0].CName,
+                            currentConf[0].IName,
+                        );
+                    }
+                } catch (err) {
+                    console.error(err);
+                    return res
+                        .status(500)
+                        .send("Error creating label or validation");
                 }
             }
             if (!fs.existsSync(boostrapPath)) {
-                console.log("import Project (create folders)");
                 fs.mkdirSync(boostrapPath);
             }
-            // Check for training related files
-            if (!fs.existsSync(trainingPath)) {
-                console.log("addProject (create folders)");
 
+            if (!fs.existsSync(trainingPath)) {
                 fs.mkdirSync(trainingPath);
                 fs.mkdirSync(logsPath);
                 fs.mkdirSync(pythonPath);
                 fs.mkdirSync(weightsPath);
 
-                fs.writeFile(pythonPathFile, "", function (err) {
-                    if (err) {
-                        console.log(err);
-                    }
-                });
-                fs.writeFile(darknetPathsFile, "", function (err) {
-                    if (err) {
-                        console.log(err);
-                    }
-                });
+                fs.writeFileSync(pythonPathFile, "");
+                fs.writeFileSync(darknetPathsFile, "");
             } else {
                 if (!fs.existsSync(logsPath)) {
                     fs.mkdirSync(logsPath);
@@ -308,42 +334,27 @@ async function importProject(req, res) {
                 }
 
                 if (!fs.existsSync(pythonPathFile)) {
-                    fs.writeFile(pythonPathFile, "", function (err) {
-                        if (err) {
-                            console.log(err);
-                        }
-                    });
+                    fs.writeFileSync(pythonPathFile, "");
                 }
 
                 if (!fs.existsSync(darknetPathsFile)) {
-                    fs.writeFile(darknetPathsFile, "", function (err) {
-                        if (err) {
-                            console.log(err);
-                        }
-                    });
+                    fs.writeFileSync(darknetPathsFile, "");
                 }
             }
 
-            imdb.close(function (err) {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log("dpdb closed successfully");
-                }
-            });
-            // res.send({"Success": "Yes"});
             res.send("Import Finished");
+
             break;
         }
     }
+
     if (found == 0) {
-        //delete imported project
         rimraf(projectPath, function (err) {
             if (err) {
                 console.error(err);
             }
-            console.log("done");
         });
+
         res.send({ Success: "No .db file found" });
     }
 }
