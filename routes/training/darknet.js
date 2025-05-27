@@ -1,36 +1,23 @@
 async function darknet(req, res) {
-    console.log("is this right pages");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,
-        darknet_path = req.body.darknet_path;
+        darknetPath = req.body.darknetPath;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        darknet_path_file = training_path + "/darknetPaths.txt";
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        darknetPathFile = trainingPath + "/darknetPaths.txt";
 
-    console.log("darknet_path: ", darknet_path);
-    console.log("Exists: ", fs.existsSync(darknet_path));
-    if (fs.existsSync(darknet_path)) {
-        fs.writeFile(
-            darknet_path_file,
-            darknet_path + "\n",
-            { flag: "a" },
-            function (err) {
-                if (err) {
-                    console.log(err);
-                }
-            },
-        );
+    if (fs.existsSync(darknetPath)) {
+        fs.writeFileSync(darknetPathFile, darknetPath + "\n", { flag: "a" });
 
         res.send({ Success: "Darknet Path Saved" });
     } else {
-        res.send({ Success: `ERROR! ${darknet_path} is not a valid path` });
+        res.send({ Success: `ERROR! ${darknetPath} is not a valid path` });
     }
 }
 

@@ -1,14 +1,9 @@
 async function removeScript(req, res) {
-    console.log("remove python script");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         IDX = parseInt(req.body.IDX),
         user = req.cookies.Username,
         scripts = req.body["scripts[]"].split(",");
-
-    console.log("remove_script scripts: ", scripts);
-    console.log("remove_script scripts.length: ", scripts.length);
 
     var public_path = currentPath,
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/

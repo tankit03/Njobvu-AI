@@ -14,8 +14,6 @@ async function python(req, res) {
         training_path = project_path + "/training",
         python_path_file = training_path + "/Paths.txt";
 
-    console.log("python_path: ", python_path);
-    console.log("Exists: ", fs.existsSync(python_path));
     if (fs.existsSync(python_path)) {
         fs.writeFile(
             python_path_file,

@@ -1,5 +1,28 @@
 module.exports = {
     project: {
+        getLabelsForImageName: async function (projectPath, imageName) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const query = "SELECT * FROM Labels WHERE IName = ?";
+                const result = await db.all(query, [imageName]);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
+        getMaxLabelId: async function (projectPath) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const query =
+                    "SELECT * FROM Labels WHERE LID = (SELECT MAX(LID)  FROM Labels)";
+                const result = await db.all(query);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
         getAllLabels: async function (projectPath) {
             try {
                 const db = global.projectDbClients[projectPath];

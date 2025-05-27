@@ -1,3 +1,5 @@
+const queries = require("../../queries/queries");
+
 async function run(req, res) {
     console.log("run script");
 
@@ -49,57 +51,14 @@ async function run(req, res) {
         if (err) throw err;
     });
 
-    ///////////////////Connect to database /////////////////////////////////////////
-
-    var rundb = new sqlite3.Database(project_db, (err) => {
-        if (err) {
-            return console.error(err.message);
-        }
-        console.log("Connected to rundb.");
-    });
-    rundb.getAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.get(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    rundb.allAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.all(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    rundb.runAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.run(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-
-    ///////////////Create Tensorflow training csv /////////////////////////////////
-
-    var labels = await rundb.allAsync("SELECT * FROM Labels");
+    let existingLabels;
+    try {
+        existingLabels = await queries.project.getAllLabels(project_path);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send("Error fetching labels");
+    }
+    const labels = existingLabels.rows;
     var xmin = 0;
     var xmax = 0;
     var ymin = 0;
@@ -171,19 +130,8 @@ async function run(req, res) {
         console.log("done writing csv");
     });
 
-    rundb.close((err) => {
-        if (err) {
-            console.log(err);
-        } else {
-            console.log("rundb closed successfully");
-        }
-    });
-
     //Create error file name
     var err_file = `${date}-error.log`;
-
-    // Call Chris's script here
-    // Pass in python path, script, and options
 
     //TODO: Add weights, training.csv, and validate.csv options to command
     options = options.replace("<data_dir>", images_path);

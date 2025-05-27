@@ -14,22 +14,15 @@ async function script(req, res) {
         logs_path = training_path + "/logs",
         python_file_path = training_path + "/python/" + python_file.name;
 
-    console.log(python_file.name[-3]);
     if (python_file.name.split(".").pop() != "py") {
         res.send({ Success: "ERROR: Wrong filetype. Must by type .py" });
     } else {
-        // move python file and check of python path exists
         await python_file.mv(python_file_path);
-        // console.log(req.files);
 
-        // create trainging path if does not exist
         if (!fs.existsSync(training_path)) {
-            fs.mkdir(training_path, (error) => {
-                if (error) {
-                    console.log(errror);
-                }
-            });
+            fs.mkdirSync(training_path);
         }
+
         res.send({ Success: "Your script has been uploaded and saved" });
     }
 }

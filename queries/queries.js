@@ -11,6 +11,15 @@ module.exports = {
         ...user.managed,
         ...access.managed,
         ...projects.managed,
+        sql: async function (sql, params) {
+            try {
+                const result = await global.managedDbClient.run(sql, params);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
     },
     project: {
         ...projects.project,
@@ -18,5 +27,15 @@ module.exports = {
         ...images.project,
         ...labelling.project,
         ...validation.project,
+        sql: async function (projectPath, sql, params) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const result = await db.run(sql, params);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
     },
 };

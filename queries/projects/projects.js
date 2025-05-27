@@ -2,6 +2,21 @@ const client = require("../client");
 
 module.exports = {
     managed: {
+        updateProjectName: async function (newName, projectName, admin) {
+            try {
+                const query =
+                    "UPDATE Projects SET PName = ? WHERE PName = ? AND Admin = ?";
+                const result = await global.managedDbClient.run(query, [
+                    newName,
+                    projectName,
+                    admin,
+                ]);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
         deleteProject: async function (projectName, username) {
             try {
                 const query =

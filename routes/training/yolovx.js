@@ -14,8 +14,6 @@ async function yolovx(req, res) {
         training_path = project_path + "/training",
         yolovx_path_file = training_path + "/yolovxPaths.txt";
 
-    console.log("yolovx_path: ", yolovx_path);
-    console.log("Exists: ", fs.existsSync(yolovx_path));
     if (fs.existsSync(yolovx_path)) {
         fs.writeFile(
             yolovx_path_file,

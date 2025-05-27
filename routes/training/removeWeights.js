@@ -1,6 +1,4 @@
 async function removeWeights(req, res) {
-    console.log("remove weights file");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         IDX = parseInt(req.body.IDX),
@@ -9,9 +7,6 @@ async function removeWeights(req, res) {
     weights_arr.push(req.body["weights[]"]);
     weights = [];
     weights = weights.concat.apply(weights, weights_arr).filter(Boolean);
-
-    console.log("remove_weights weights: ", weights);
-    console.log("remove_weights weights.length: ", weights.length);
 
     var public_path = currentPath,
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/

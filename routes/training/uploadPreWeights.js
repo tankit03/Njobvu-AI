@@ -1,6 +1,4 @@
 async function uploadPreWeights(req, res) {
-    console.log("upload_pre_weights");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,
@@ -16,7 +14,6 @@ async function uploadPreWeights(req, res) {
         weights_path = training_path + "/weights/",
         weights_file_path = weights_path + weights_file.name;
 
-    console.log(weights_file.name.split(".").pop());
     if (
         weights_file.name.split(".").pop() != "137" &&
         weights_file.name.split(".").pop() != "weights" &&

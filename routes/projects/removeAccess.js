@@ -1,5 +1,6 @@
+const queries = require("../../queries/queries");
+
 async function removeAccess(req, res) {
-    console.log("removeAccess");
     var PName = req.body.PName,
         Admin = req.body.Admin,
         IDX = parseInt(req.body.IDX),
@@ -7,17 +8,8 @@ async function removeAccess(req, res) {
         validation = req.body.validation;
 
     var OldUser = req.body.OldUser;
-    console.log("OldUser: ", OldUser);
 
-    await db.runAsync(
-        "DELETE FROM Access WHERE PName = '" +
-            PName +
-            "' AND Username = '" +
-            OldUser +
-            "' AND Admin = '" +
-            Admin +
-            "'",
-    );
+    await queries.managed.deleteAccessFromProject(OldUser, PName);
 
     if (validation) return res.redirect("/configV?IDX=" + IDX);
     return res.redirect("/config/accessSettings?IDX=" + IDX);

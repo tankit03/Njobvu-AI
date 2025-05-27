@@ -1,6 +1,4 @@
 async function removePath(req, res) {
-    console.log("remove python path");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         IDX = parseInt(req.body.IDX),
@@ -12,8 +10,6 @@ async function removePath(req, res) {
     remove_paths = remove_paths.concat
         .apply(remove_paths, remove_paths_arr)
         .filter(Boolean);
-
-    console.log("remove_paths: ", remove_paths);
 
     var public_path = currentPath,
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/

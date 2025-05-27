@@ -1,6 +1,4 @@
 async function deleteRun(req, res) {
-    console.log("delete Run");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         IDX = req.body.IDX,
@@ -16,8 +14,6 @@ async function deleteRun(req, res) {
         downloads_path = main_path + user + "_Downloads",
         training_path = project_path + "/training",
         logs_path = training_path + "/logs/";
-
-    console.log("run_path: ", run_path);
 
     rimraf(run_path, function (err) {
         if (err) {
