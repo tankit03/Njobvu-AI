@@ -70,6 +70,7 @@ module.exports = {
                 const db = global.projectDbClients[projectPath];
                 const query =
                     "INSERT INTO Labels (LID, Cname, X, Y, W, H, IName) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
                 const result = await db.run(query, [
                     labelId,
                     className,
@@ -79,6 +80,8 @@ module.exports = {
                     labelHeight,
                     imageName,
                 ]);
+
+                console.log("done inserting: ", result);
 
                 return result;
             } catch (err) {
@@ -101,6 +104,17 @@ module.exports = {
                 const db = global.projectDbClients[projectPath];
                 const query = "DELETE FROM Labels";
                 const result = await db.run(query);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
+        deleteAllLabelsForImage: async function (projectPath, imageName) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const query = "DELETE FROM Labels WHERE IName = ?";
+                const result = await db.run(query, [imageName]);
 
                 return result;
             } catch (err) {

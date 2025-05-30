@@ -11,6 +11,17 @@ module.exports = {
                 return err;
             }
         },
+        getAllValidationsForImage: async function (projectPath, imageName) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const query = "SELECT * FROM Validations WHERE IName = ?";
+                const result = await db.all(query, [imageName]);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
         createValidation: async function (
             projectPath,
             confidence,
@@ -80,6 +91,17 @@ module.exports = {
                 const db = global.projectDbClients[projectPath];
                 const query = "DELETE FROM Validation";
                 const result = await db.run(query);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
+        deleteAllValidationsForImage: async function (projectPath, imageName) {
+            try {
+                const db = global.projectDbClients[projectPath];
+                const query = "DELETE FROM Validation WHERE IName = ?";
+                const result = await db.run(query, [imageName]);
 
                 return result;
             } catch (err) {

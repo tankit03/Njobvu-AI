@@ -1,5 +1,22 @@
 module.exports = {
     project: {
+        updateReviewImage: async function (
+            projectPath,
+            reviewImage,
+            imageName,
+        ) {
+            try {
+                const db = global.projectDbClients[projectPath];
+
+                const query =
+                    "UPDATE Images SET reviewImage = ? WHERE IName = ?";
+                const result = await db.run(query, [reviewImage, imageName]);
+
+                return result;
+            } catch (err) {
+                return err;
+            }
+        },
         getAllImages: async function (projectPath) {
             try {
                 const db = global.projectDbClients[projectPath];
