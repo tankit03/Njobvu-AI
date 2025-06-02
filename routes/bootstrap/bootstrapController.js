@@ -1,28 +1,28 @@
 const queries = require("../../queries/queries");
 
 async function boostrap(req, res) {
-    var project_name = req.body.PName,
+    var projectName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,
-        darknet_path = req.body.darknet_path,
-        run_number = req.body.run_number,
-        upload_images = req.files.upload_images,
+        darknetPath = req.body.darknet_path,
+        runNumber = req.body.run_number,
+        uploadImages = req.files.upload_images,
         IDX = parseInt(req.body.IDX);
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + Admin + "-" + project_name, // $LABELING_TOOL_PATH/public/projects/project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        logs_path = training_path + "/logs",
-        merge_path = project_path + "/merge/",
-        merge_images = merge_path + "images/",
-        yolo_script = public_path + "controllers/training/bootstrap.py",
-        run_path = logs_path + run_number;
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + Admin + "-" + projectName, // $LABELING_TOOL_PATH/public/projects/project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        logsPath = trainingPath + "/logs",
+        mergePath = projectPath + "/merge/",
+        mergeImages = mergePath + "images/",
+        yoloScript = publicPath + "controllers/training/bootstrap.py",
+        runPath = logsPath + runNumber;
 
-    if (fs.existsSync(merge_path)) {
-        rimraf(merge_path, (err) => {
+    if (fs.existsSync(mergePath)) {
+        rimraf(mergePath, (err) => {
             if (err) {
                 console.log(err);
             } else {
@@ -31,15 +31,15 @@ async function boostrap(req, res) {
     }
 
     try {
-        fs.mkdirSync(merge_path);
-        fs.mkdirSync(merge_images);
+        fs.mkdirSync(mergePath);
+        fs.mkdirSync(mergeImages);
     } catch (err) {
         console.error(err);
         return res.status(500).send("Error making merge directories");
     }
 
     var aidb = new sqlite3.Database(
-        project_path + "/" + project_name + ".db",
+        projectPath + "/" + projectName + ".db",
         (err) => {
             if (err) {
                 return console.error(err.message);
@@ -51,41 +51,41 @@ async function boostrap(req, res) {
     var newImages = [];
     var bootstrapString = "";
 
-    var zip_path = project_path + "/" + upload_images.name; // $LABELING_TOOL_PATH/public/projects/{project_name}/{zip_file_name}
-    await upload_images.mv(zip_path);
+    var zipPath = projectPath + "/" + uploadImages.name; // $LABELING_TOOL_PATH/public/projects/{project_name}/{zip_file_name}
+    await uploadImages.mv(zipPath);
 
-    var zip = new StreamZip.async({ file: zip_path });
+    var zip = new StreamZip.async({ file: zipPath });
 
-    await zip.extract(merge_images);
+    await zip.extract(mergeImages);
     await zip.close();
 
-    rimraf(zip_path, (err) => {
+    rimraf(zipPath, (err) => {
         if (err) {
             console.log(err);
             return res.send("ERROR! " + err);
         }
     });
 
-    let files = await readdirAsync(images_path);
-    let newFiles = await readdirAsync(merge_images);
+    let files = await readdirAsync(imagesPath);
+    let newFiles = await readdirAsync(mergeImages);
 
     for (var i = 0; i < newFiles.length; i++) {
-        var temp = merge_images + "/" + newFiles[i];
+        var temp = mergeImages + "/" + newFiles[i];
         newFiles[i] = newFiles[i].trim();
         newFiles[i] = newFiles[i].split(" ").join("_");
         newFiles[i] = newFiles[i].split("+").join("_");
-        fs.rename(temp, merge_images + "/" + newFiles[i], () => {});
+        fs.rename(temp, mergeImages + "/" + newFiles[i], () => {});
         if (newFiles[i] == "__MACOSX") {
             continue;
         } else if (!files.includes(newFiles[i])) {
             try {
                 fs.renameSync(
-                    merge_images + "/" + newFiles[i],
-                    images_path + "/" + newFiles[i],
+                    mergeImages + "/" + newFiles[i],
+                    imagesPath + "/" + newFiles[i],
                 );
 
                 await queries.project.addImages(
-                    project_path,
+                    projectPath,
                     newFiles[i],
                     0,
                     1,
@@ -101,11 +101,11 @@ async function boostrap(req, res) {
     }
 
     fs.writeFileSync(
-        training_path + "/images_to_bootstrap.txt",
+        trainingPath + "/images_to_bootstrap.txt",
         bootstrapString,
     );
 
-    rimraf(merge_path, (err) => {
+    rimraf(mergePath, (err) => {
         if (err) {
             console.log(err);
         }

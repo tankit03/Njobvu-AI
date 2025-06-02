@@ -11,7 +11,7 @@ async function run(req, res) {
     var PName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,
-        python_path = req.body.python_path,
+        pythonPath = req.body.python_path,
         script = req.body.script,
         log = `${date}.log`,
         weights = req.body.weights,
@@ -28,32 +28,32 @@ async function run(req, res) {
         options = "EMPTY";
     }
     console.log("options: ", options);
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
-        abs_images_path = path.join(__dirname, images_path),
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        logs_path = training_path + "/logs",
-        run_path = `${logs_path}/${date}`,
-        weights_file = training_path + "/weights/" + weights,
-        python_script = training_path + "/python/" + script,
-        wrapper_path =
-            public_path + "controllers/training/train_data_from_project.py",
-        project_db = `${project_path}/${PName}.db`;
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
+        absImagesPath = path.join(__dirname, imagesPath),
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        logsPath = trainingPath + "/logs",
+        runPath = `${logsPath}/${date}`,
+        weightsFile = trainingPath + "/weights/" + weights,
+        pythonScript = trainingPath + "/python/" + script,
+        wrapperPath =
+            publicPath + "controllers/training/train_data_from_project.py",
+        projectDb = `${projectPath}/${PName}.db`;
 
-    if (!fs.existsSync(run_path)) {
-        fs.mkdirSync(run_path);
+    if (!fs.existsSync(runPath)) {
+        fs.mkdirSync(runPath);
     }
 
-    fs.writeFile(`${run_path}/${log}`, "", (err) => {
+    fs.writeFile(`${runPath}/${log}`, "", (err) => {
         if (err) throw err;
     });
 
     let existingLabels;
     try {
-        existingLabels = await queries.project.getAllLabels(project_path);
+        existingLabels = await queries.project.getAllLabels(projectPath);
     } catch (err) {
         console.error(err);
         return res.status(500).send("Error fetching labels");
@@ -67,7 +67,7 @@ async function run(req, res) {
     var i = 0;
     var image = "";
     for (i = 0; i < Math.floor(labels.length * TrainingPercent); i++) {
-        image = path.join(abs_images_path, labels[i].IName);
+        image = path.join(absImagesPath, labels[i].IName);
         xmin = labels[i].X;
         xmax = xmin + labels[i].W;
         ymin = labels[i].Y;
@@ -91,8 +91,8 @@ async function run(req, res) {
             ymax +
             "\n";
     }
-    var training_csv = run_path + "/" + PName + "_train.csv";
-    fs.writeFile(training_csv, data, (err) => {
+    var trainingCsv = runPath + "/" + PName + "_train.csv";
+    fs.writeFile(trainingCsv, data, (err) => {
         if (err) throw err;
         console.log("done writing csv");
     });
@@ -100,7 +100,7 @@ async function run(req, res) {
     ///////////////Create Tensorflow Validate csv /////////////////////////////////
     var data = "filename,width,height,class,xmin,ymin,xmax,ymax\n";
     for (var j = i; j < labels.length; j++) {
-        image = path.join(abs_images_path, labels[j].IName);
+        image = path.join(absImagesPath, labels[j].IName);
         xmin = labels[j].X;
         xmax = xmin + labels[j].W;
         ymin = labels[j].Y;
@@ -124,37 +124,37 @@ async function run(req, res) {
             ymax +
             "\n";
     }
-    var validation_csv = run_path + "/" + PName + "_validate.csv";
-    fs.writeFile(validation_csv, data, (err) => {
+    var validationCsv = runPath + "/" + PName + "_validate.csv";
+    fs.writeFile(validationCsv, data, (err) => {
         if (err) throw err;
         console.log("done writing csv");
     });
 
     //Create error file name
-    var err_file = `${date}-error.log`;
+    var errFile = `${date}-error.log`;
 
     //TODO: Add weights, training.csv, and validate.csv options to command
-    options = options.replace("<data_dir>", images_path);
-    options = options.replace("<training_csv>", training_csv);
-    options = options.replace("<validation_csv>", validation_csv);
-    options = options.replace("<output_dir>", run_path);
-    options = options.replace("<weights>", weights_file);
+    options = options.replace("<data_dir>", imagesPath);
+    options = options.replace("<training_csv>", trainingCsv);
+    options = options.replace("<validation_csv>", validationCsv);
+    options = options.replace("<output_dir>", runPath);
+    options = options.replace("<weights>", weightsFile);
 
-    var cmd = `${wrapper_path} -p ${python_path} -s ${python_script} -l ${run_path}/${log} -o "${options}"`;
+    var cmd = `${wrapperPath} -p ${pythonPath} -s ${pythonScript} -l ${runPath}/${log} -o "${options}"`;
     var success = "Training complete";
     var error = "";
-    process.chdir(run_path);
+    process.chdir(runPath);
 
     var child = exec(cmd, (err, stdout, stderr) => {
         if (err) {
             console.log(`This is the error: ${err.message}`);
             success = err.message;
-            fs.writeFile(`${run_path}/${err_file}`, success, (err) => {
+            fs.writeFile(`${runPath}/${errFile}`, success, (err) => {
                 if (err) throw err;
             });
         } else if (stderr) {
             console.log(`This is the stderr: ${stderr}`);
-            fs.writeFile(`${run_path}/${err_file}`, stderr, (err) => {
+            fs.writeFile(`${runPath}/${errFile}`, stderr, (err) => {
                 if (err) throw err;
             });
             //return;
@@ -163,13 +163,13 @@ async function run(req, res) {
         console.log("stderr: ", stderr);
         console.log("err: ", err);
         console.log("The script has finished running");
-        fs.writeFile(`${run_path}/done.log`, success, (err) => {
+        fs.writeFile(`${runPath}/done.log`, success, (err) => {
             if (err) throw err;
         });
     });
 
     res.send({ Success: `Training Started` });
-    process.chdir(`${public_path}routes`);
+    process.chdir(`${publicPath}routes`);
 }
 
 module.exports = run;

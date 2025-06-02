@@ -227,7 +227,7 @@ async function createProject(req, res) {
         var bzip = new StreamZip.async({ file: bzipPath });
 
         try {
-            let weight_bootstrapPath = "",
+            let weightBootstrapPath = "",
                 cfgBootstrapPath = "",
                 dataBootstrapPath = "";
 
@@ -252,7 +252,7 @@ async function createProject(req, res) {
                     fs.rename(temp, bootstrapPath + "/" + bfiles[i], () => {});
 
                     if (bfiles[i].endsWith(".weights"))
-                        weight_bootstrapPath = bootstrapPath + "/" + bfiles[i];
+                        weightBootstrapPath = bootstrapPath + "/" + bfiles[i];
 
                     if (bfiles[i].endsWith(".cfg"))
                         cfgBootstrapPath = bootstrapPath + "/" + bfiles[i];
@@ -272,13 +272,13 @@ async function createProject(req, res) {
 
             imagesToWrite = await readdirAsync(imagesPath);
 
-            let run_data = imagesToWrite
+            let runData = imagesToWrite
                 .map((i) => imagesPath + "/" + i)
                 .join("\n");
 
             let runTxtPath = bootstrapPath + "/" + "run.txt";
 
-            fs.writeFileSync(runTxtPath, run_data, (err) => {
+            fs.writeFileSync(runTxtPath, runData, (err) => {
                 if (err) throw err;
             });
 
@@ -286,10 +286,10 @@ async function createProject(req, res) {
 
             outBootstrapJson = bootstrapPath + "/out.json";
 
-            var darknet_path = "/export/darknet";
-            var cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknet_path} -w ${weight_bootstrapPath} -o ${outBootstrapJson}`;
+            var darknetPath = "/export/darknet";
+            var cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknetPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
 
-            process.chdir(darknet_path);
+            process.chdir(darknetPath);
 
             var child = exec(cmd, (err, stdout, stderr) => {
                 if (err) {

@@ -3,12 +3,12 @@ const queries = require("../../queries/queries");
 async function deleteUser(req, res) {
     var user = req.cookies.Username;
 
-    var public_path = __dirname.replace("routes", "").replace("user", ""),
-        main_path = public_path + "public/projects/";
+    var publicPath = __dirname.replace("routes", "").replace("user", ""),
+        mainPath = publicPath + "public/projects/";
 
     var darknetPath = new Set();
 
-    var filesInFolder = readdirSync(main_path);
+    var filesInFolder = readdirSync(mainPath);
 
     for (var i = 0; i < filesInFolder.length; i++) {
         if (
@@ -18,7 +18,7 @@ async function deleteUser(req, res) {
             if (filesInFolder[i].split("-")[0] == user) {
                 var tempdarknet = fs
                     .readFileSync(
-                        main_path +
+                        mainPath +
                             filesInFolder[i] +
                             "/training/darknetPaths.txt",
                         "utf-8",
@@ -33,7 +33,7 @@ async function deleteUser(req, res) {
                 }
             }
 
-            rimraf(main_path + filesInFolder[i], (err) => {
+            rimraf(mainPath + filesInFolder[i], (err) => {
                 if (err) {
                     console.error(
                         "there was an error with the user contents: ",

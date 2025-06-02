@@ -15,13 +15,13 @@ async function updateLabels(req, res) {
         reviewImage = req.body.reviewImage,
         prev_IName = req.body.prev_IName,
         next_IName = req.body.next_IName,
-        change_width = req.body.origin_image_width / req.body.image_width,
+        changeWidth = req.body.origin_image_width / req.body.image_width,
         labelsCounter = parseInt(req.body.labels_counter),
-        curr_class = req.body.curr_class,
+        currClass = req.body.curr_class,
         sortFilter = req.body.sortFilter,
         classFilter = req.body.classFilter,
         imageClass = req.body.imageClass,
-        form_action = req.body.form_action;
+        formAction = req.body.form_action;
 
     var projectPath = mainPath + admin + "-" + PName;
 
@@ -139,41 +139,41 @@ async function updateLabels(req, res) {
             }
         }
 
-        if (form_action == "save") {
+        if (formAction == "save") {
             return res.redirect(
                 "/labeling?IDX=" +
                     IDX +
                     "&IName=" +
                     IName +
                     "&curr_class=" +
-                    curr_class,
+                    currClass,
             );
-        } else if (form_action == "auto-prev") {
+        } else if (formAction == "auto-prev") {
             return res.redirect(
                 "/labeling?IDX=" +
                     IDX +
                     "&IName=" +
                     prev_IName +
                     "&curr_class=" +
-                    curr_class,
+                    currClass,
             );
-        } else if (form_action == "auto-next") {
+        } else if (formAction == "auto-next") {
             return res.redirect(
                 "/labeling?IDX=" +
                     IDX +
                     "&IName=" +
                     next_IName +
                     "&curr_class=" +
-                    curr_class,
+                    currClass,
             );
-        } else if (form_action == "saveV") {
+        } else if (formAction == "saveV") {
             return res.redirect(
                 "/labelingV?IDX=" +
                     IDX +
                     "&IName=" +
                     IName +
                     "&curr_class=" +
-                    curr_class +
+                    currClass +
                     "&sort=" +
                     sortFilter +
                     "&class=" +
@@ -181,14 +181,14 @@ async function updateLabels(req, res) {
                     "&classFilter=" +
                     classFilter,
             );
-        } else if (form_action == "auto-prevV") {
+        } else if (formAction == "auto-prevV") {
             return res.redirect(
                 "/labelingV?IDX=" +
                     IDX +
                     "&IName=" +
                     prev_IName +
                     "&curr_class=" +
-                    curr_class +
+                    currClass +
                     "&sort=" +
                     sortFilter +
                     "&class=" +
@@ -196,14 +196,14 @@ async function updateLabels(req, res) {
                     "&classFilter=" +
                     classFilter,
             );
-        } else if (form_action == "auto-nextV") {
+        } else if (formAction == "auto-nextV") {
             return res.redirect(
                 "/labelingV?IDX=" +
                     IDX +
                     "&IName=" +
                     next_IName +
                     "&curr_class=" +
-                    curr_class +
+                    currClass +
                     "&sort=" +
                     sortFilter +
                     "&class=" +

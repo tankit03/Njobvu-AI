@@ -4,39 +4,39 @@ async function removePath(req, res) {
         IDX = parseInt(req.body.IDX),
         user = req.cookies.Username;
 
-    var remove_paths_arr = [];
-    remove_paths_arr.push(req.body["paths[]"]);
-    var remove_paths = [];
-    remove_paths = remove_paths.concat
-        .apply(remove_paths, remove_paths_arr)
+    var removePathsArr = [];
+    removePathsArr.push(req.body["paths[]"]);
+    var removePaths = [];
+    removePaths = removePaths.concat
+        .apply(removePaths, removePathsArr)
         .filter(Boolean);
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        python_path_file = training_path + "/Paths.txt";
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        pythonPathFile = trainingPath + "/Paths.txt";
 
-    var current_paths_arr = [];
-    current_paths_arr.push(
-        fs.readFileSync(python_path_file, "utf-8").split("\n").filter(Boolean),
+    var currentPathsArr = [];
+    currentPathsArr.push(
+        fs.readFileSync(pythonPathFile, "utf-8").split("\n").filter(Boolean),
     );
-    var current_paths = [];
-    current_paths = current_paths.concat
-        .apply(current_paths, current_paths_arr)
+    var currentPaths = [];
+    currentPaths = currentPaths.concat
+        .apply(currentPaths, currentPathsArr)
         .filter(Boolean);
 
-    var new_paths = "";
-    for (var i = 0; i < current_paths.length; i++) {
-        if (remove_paths.includes(current_paths[i])) {
+    var newPaths = "";
+    for (var i = 0; i < currentPaths.length; i++) {
+        if (removePaths.includes(currentPaths[i])) {
             continue;
         }
-        new_paths = `${new_paths}${current_paths[i]}\n`;
+        newPaths = `${newPaths}${currentPaths[i]}\n`;
     }
 
-    fs.writeFile(python_path_file, new_paths, (err) => {
+    fs.writeFile(pythonPathFile, newPaths, (err) => {
         if (err) throw err;
 
         return res.redirect("/config?IDX=" + IDX);

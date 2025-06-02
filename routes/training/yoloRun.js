@@ -7,75 +7,75 @@ async function yoloRun(req, res) {
     var PName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,
-        darknet_path = req.body.yolovx_path,
-        yolovx_path = req.body.yolovx_path,
+        darknetPath = req.body.yolovx_path,
+        yolovxPath = req.body.yolovx_path,
         log = `${date}.log`,
         trainDataPer = req.body.TrainingPercent,
         batch = req.body.batch,
         subdiv = req.body.subdiv,
         width = req.body.width,
         height = req.body.height,
-        yolo_version = req.body.yolo_version,
-        yolo_task = req.body.yolo_task,
-        yolo_mode = req.body.yolo_mode,
+        yoloVersion = req.body.yolo_version,
+        yoloTask = req.body.yolo_task,
+        yoloMode = req.body.yolo_mode,
         epochs = req.body.epochs,
         imgsz = req.body.imgsz,
         device = req.body.device,
         options = req.body.options,
-        weight_name = req.body.weights;
+        weightName = req.body.weights;
 
-    var err_file = `${date}-error.log`;
+    var errFile = `${date}-error.log`;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        logs_path = training_path + "/logs",
-        run_path = `${logs_path}/${date}`,
-        classes_path = run_path + "/coco_classes.yaml",
-        weight_path = training_path + "/weights/" + weight_name,
-        yolo_script = public_path + "controllers/training/datatovalues.py",
-        wrapper_path =
-            public_path + "controllers/training/train_data_from_project.py";
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        logsPath = trainingPath + "/logs",
+        runPath = `${logsPath}/${date}`,
+        classesPath = runPath + "/coco_classes.yaml",
+        weightPath = trainingPath + "/weights/" + weightName,
+        yoloScript = publicPath + "controllers/training/datatovalues.py",
+        wrapperPath =
+            publicPath + "controllers/training/train_data_from_project.py";
 
-    if (!fs.existsSync(run_path)) {
-        fs.mkdirSync(run_path);
+    if (!fs.existsSync(runPath)) {
+        fs.mkdirSync(runPath);
     }
 
-    fs.writeFile(`${run_path}/${log}`, "", (err) => {
+    fs.writeFile(`${runPath}/${log}`, "", (err) => {
         if (err) throw err;
     });
 
-    cfgTemp_path = public_path + "controllers/training/cfgTemplate.txt";
-    cfgTemp = run_path + "/cfgTemplate.txt";
+    cfgTemp_path = publicPath + "controllers/training/cfgTemplate.txt";
+    cfgTemp = runPath + "/cfgTemplate.txt";
     fs.copyFile(cfgTemp_path, cfgTemp, (err) => {
         if (err) {
             console.log(err);
         }
     });
 
-    dataTemp_path = public_path + "controllers/training/dataTemplate.txt";
-    dataTemp = run_path + "/dataTemplate.txt";
+    dataTemp_path = publicPath + "controllers/training/dataTemplate.txt";
+    dataTemp = runPath + "/dataTemplate.txt";
     fs.copyFile(dataTemp_path, dataTemp, (err) => {
         if (err) {
             console.log(err);
         }
     });
 
-    darknet_cfg_script = run_path + "/datatovalues.py";
+    darknet_cfg_script = runPath + "/datatovalues.py";
     if (!existsSync(darknet_cfg_script)) {
-        fs.copyFile(yolo_script, darknet_cfg_script, (err) => {
+        fs.copyFile(yoloScript, darknet_cfg_script, (err) => {
             if (err) {
                 console.log(err);
             }
         });
     }
 
-    if (yolo_task == "detect") {
+    if (yoloTask == "detect") {
         project = `${Admin}-${PName}`;
-        abs_darknet_project_path = run_path;
+        abs_darknet_project_path = runPath;
         abs_darknet_images_path = path.join(abs_darknet_project_path, "images");
         abs_darknet_images_train = path.join(abs_darknet_images_path, "train");
         abs_darknet_images_val = path.join(abs_darknet_images_path, "val");
@@ -139,8 +139,8 @@ async function yoloRun(req, res) {
         let existingClasses;
 
         try {
-            existingImages = await queries.project.getAllImages(project_path);
-            existingClasses = await queries.project.getAllClasses(project_path);
+            existingImages = await queries.project.getAllImages(projectPath);
+            existingClasses = await queries.project.getAllClasses(projectPath);
         } catch (err) {
             console.error(err);
             return res.status(500).send("Error fetching classes");
@@ -149,27 +149,27 @@ async function yoloRun(req, res) {
         for (var i = 0; i < existingClasses.rows.length; i++) {
             cnames.push(existingClasses.rows[i].CName);
         }
-        var dict_images_labels = {};
+        var dictImagesLabels = {};
 
         for (var i = 0; i < existingImages.rows.length; i++) {
             var img = fs.readFileSync(
-                    `${images_path}/${existingImages.rows[i].IName}`,
+                    `${imagesPath}/${existingImages.rows[i].IName}`,
                 ),
-                img_data = probe.sync(img),
-                img_w = img_data.width,
-                img_h = img_data.height;
+                imgData = probe.sync(img),
+                imgW = imgData.width,
+                imgH = imgData.height;
 
             const imageLabels = await queries.project.getLabelsForImageName(
-                project_path,
+                projectPath,
                 existingImages[i].IName,
             );
 
             for (var j = 0; j < imageLabels.rows.length; j++) {
                 // x, y, w, h
                 var centerX =
-                    (imageLabels.rows[j].X + imageLabels.rows[j].W / 2) / img_w;
+                    (imageLabels.rows[j].X + imageLabels.rows[j].W / 2) / imgW;
                 var centerY =
-                    (imageLabels.rows[j].Y + imageLabels.rows[j].H / 2) / img_h;
+                    (imageLabels.rows[j].Y + imageLabels.rows[j].H / 2) / imgH;
                 to_string_value =
                     cnames.indexOf(imageLabels.rows[j].CName) +
                     " " +
@@ -177,37 +177,37 @@ async function yoloRun(req, res) {
                     " " +
                     centerY +
                     " " +
-                    imageLabels.rows[j].W / img_w +
+                    imageLabels.rows[j].W / imgW +
                     " " +
-                    imageLabels.rows[j].H / img_h +
+                    imageLabels.rows[j].H / imgH +
                     "\n";
-                if (dict_images_labels[results2[i].IName] == undefined) {
-                    dict_images_labels[results2[i].IName] = to_string_value;
+                if (dictImagesLabels[results2[i].IName] == undefined) {
+                    dictImagesLabels[results2[i].IName] = to_string_value;
                 } else {
-                    dict_images_labels[results2[i].IName] += to_string_value;
+                    dictImagesLabels[results2[i].IName] += to_string_value;
                 }
             }
             if (imageLabels.rows.length == 0) {
-                dict_images_labels[results2[i].IName] = "";
+                dictImagesLabels[results2[i].IName] = "";
             }
         }
 
-        for (var key in dict_images_labels) {
+        for (var key in dictImagesLabels) {
             // remove_dot_ext = key.split(".")[0]
             remove_dot_ext = path.parse(key).name;
             fs.writeFileSync(
-                `${images_path}/${remove_dot_ext}.txt`,
-                dict_images_labels[key],
+                `${imagesPath}/${remove_dot_ext}.txt`,
+                dictImagesLabels[key],
                 (err) => {
                     if (err) throw err;
                 },
             );
         }
 
-        var dict_images_count = existingImages.rows.length;
+        var dictImagesCount = existingImages.rows.length;
 
         var trainDataImageSplit = Math.round(
-            (trainDataPer / 100) * dict_images_count,
+            (trainDataPer / 100) * dictImagesCount,
         );
 
         for (var i = 0; i < existingImages.rows.length; i++) {
@@ -215,15 +215,15 @@ async function yoloRun(req, res) {
                 0,
                 results1[i].IName.lastIndexOf("."),
             );
-            var label_file = filename + ".txt";
+            var labelFile = filename + ".txt";
             if (i < trainDataImageSplit) {
                 abs_darknet_org_images_path = path.join(
-                    images_path,
+                    imagesPath,
                     existingImages.rows[i].IName,
                 );
                 abs_darknet_org_labels_path = path.join(
-                    images_path,
-                    label_file,
+                    imagesPath,
+                    labelFile,
                 );
                 abs_darknet_train_images_path = path.join(
                     abs_darknet_images_train,
@@ -231,7 +231,7 @@ async function yoloRun(req, res) {
                 );
                 abs_darknet_train_labels_path = path.join(
                     abs_darknet_labels_train,
-                    label_file,
+                    labelFile,
                 );
                 fs.symlink(
                     abs_darknet_org_images_path,
@@ -264,12 +264,12 @@ async function yoloRun(req, res) {
             } else {
                 console.log("Symlink created for YOLO image validation file");
                 abs_darknet_org_images_path = path.join(
-                    images_path,
+                    imagesPath,
                     existingImages.rows[i].IName,
                 );
                 abs_darknet_org_lables_path = path.join(
-                    images_path,
-                    label_file,
+                    imagesPath,
+                    labelFile,
                 );
                 abs_darknet_train_val_path = path.join(
                     abs_darknet_images_val,
@@ -277,7 +277,7 @@ async function yoloRun(req, res) {
                 );
                 abs_darknet_train_labels_path = path.join(
                     abs_darknet_labels_val,
-                    label_file,
+                    labelFile,
                 );
                 fs.symlink(
                     abs_darknet_org_images_path,
@@ -313,14 +313,14 @@ async function yoloRun(req, res) {
         ///////////////////Create symbolic link from darknet to run///////////////////////////////
         abs_darknet_project_run = abs_darknet_project_path;
         abs_weight_project_path = path.join(
-            training_path,
+            trainingPath,
             "logs",
             date.toString(),
-            weight_name,
+            weightName,
         );
         if (!fs.existsSync(abs_weight_project_path)) {
             console.log("Create symbolic link from YOLO model file");
-            fs.symlink(weight_path, abs_weight_project_path, "file", (err) => {
+            fs.symlink(weightPath, abs_weight_project_path, "file", (err) => {
                 if (err) {
                     console.log(err);
                 } else {
@@ -330,7 +330,7 @@ async function yoloRun(req, res) {
         }
 
         var classes = "# Train/val/test sets\n";
-        classes = classes + "path: " + run_path + "\n";
+        classes = classes + "path: " + runPath + "\n";
         classes = classes + "train: " + abs_darknet_images_train + "\n";
         classes = classes + "val: " + abs_darknet_images_val + "\n";
         classes = classes + "test: \n";
@@ -347,11 +347,11 @@ async function yoloRun(req, res) {
                 "\n";
         }
 
-        fs.writeFileSync(classes_path, classes, (err) => {
+        fs.writeFileSync(classesPath, classes, (err) => {
             if (err) throw err;
             console.log("Done writing YOLO Classes file");
         });
-    } else if (yolo_task == "classify") {
+    } else if (yoloTask == "classify") {
         // if its classify
         // train val directories
         // for the secific project create the directories of all the labels
@@ -376,7 +376,7 @@ async function yoloRun(req, res) {
         };
 
         project = `${Admin}-${PName}`;
-        abs_darknet_project_path = run_path;
+        abs_darknet_project_path = runPath;
         abs_darknet_images_path = path.join(abs_darknet_project_path, "images");
         abs_darknet_images_train = path.join(abs_darknet_images_path, "train");
         abs_darknet_images_val = path.join(abs_darknet_images_path, "val");
@@ -407,9 +407,9 @@ async function yoloRun(req, res) {
             });
         }
 
-        var dict_images_count = existingImages.rows.length;
+        var dictImagesCount = existingImages.rows.length;
         var trainDataImageSplit = Math.round(
-            (trainDataPer / 100) * dict_images_count,
+            (trainDataPer / 100) * dictImagesCount,
         );
 
         for (var i = 0; i < existingImages.rows.length; i++) {
@@ -417,15 +417,15 @@ async function yoloRun(req, res) {
                 0,
                 existingImages.rows[i].IName.lastIndexOf("."),
             );
-            var label_file = filename + ".txt";
+            var labelFile = filename + ".txt";
             if (i < trainDataImageSplit) {
                 abs_darknet_org_images_path = path.join(
-                    images_path,
+                    imagesPath,
                     existingImages.rows[i].IName,
                 );
                 abs_darknet_org_labels_path = path.join(
-                    images_path,
-                    label_file,
+                    imagesPath,
+                    labelFile,
                 );
                 abs_darknet_train_images_path = path.join(
                     abs_darknet_images_train,
@@ -433,7 +433,7 @@ async function yoloRun(req, res) {
                 );
                 abs_darknet_train_labels_path = path.join(
                     abs_darknet_labels_train,
-                    label_file,
+                    labelFile,
                 );
                 fs.symlink(
                     abs_darknet_org_images_path,
@@ -466,21 +466,21 @@ async function yoloRun(req, res) {
             } else {
                 console.log("Symlink created for YOLO image validation file");
                 abs_darknet_org_images_path = path.join(
-                    images_path,
+                    imagesPath,
                     results1[i].IName,
                 );
             }
         }
     }
 
-    darknet_project_run = run_path;
+    darknet_project_run = runPath;
     darknet_images_path = path.join(abs_darknet_project_path, "images");
     darknet_labels_path = path.join(abs_darknet_project_path, "labels");
 
     var cmd = "";
 
-    if (yolo_mode == "train") {
-        cmd = `python3 ${yolo_script} -d ${run_path} -t ${yolo_task} -m ${yolo_mode} -i ${darknet_images_path} -n ${classes_path} -p ${trainDataPer} -l ${abs_darknet_project_run}/${log} -f ${darknet_path} -w ${weight_path} -b ${batch} -s ${subdiv} -x ${width} -y ${height} -v ${yolo_version} -e ${epochs} -I ${imgsz} -D ${device} -o "${options}"`;
+    if (yoloMode == "train") {
+        cmd = `python3 ${yoloScript} -d ${runPath} -t ${yoloTask} -m ${yoloMode} -i ${darknet_images_path} -n ${classesPath} -p ${trainDataPer} -l ${abs_darknet_project_run}/${log} -f ${darknetPath} -w ${weightPath} -b ${batch} -s ${subdiv} -x ${width} -y ${height} -v ${yoloVersion} -e ${epochs} -I ${imgsz} -D ${device} -o "${options}"`;
     } else {
         cmd = `python3 --version`;
         console.log("YOLO python script not for training");
@@ -495,7 +495,7 @@ async function yoloRun(req, res) {
             if (err.message != "stdout maxBuffer length exceeded") {
                 success = err.message;
                 fs.writeFile(
-                    `${darknet_project_run}/${err_file}`,
+                    `${darknet_project_run}/${errFile}`,
                     success,
                     (err) => {
                         if (err) throw err;
@@ -506,7 +506,7 @@ async function yoloRun(req, res) {
             console.log(`This is the stderr: ${stderr}`);
             if (stderr != "stdout maxBuffer length exceeded") {
                 fs.writeFile(
-                    `${darknet_project_run}/${err_file}`,
+                    `${darknet_project_run}/${errFile}`,
                     stderr,
                     (err) => {
                         if (err) throw err;
@@ -516,7 +516,7 @@ async function yoloRun(req, res) {
             //return;
         }
 
-        fs.writeFile(`${run_path}/done.log`, success, (err) => {
+        fs.writeFile(`${runPath}/done.log`, success, (err) => {
             if (err) throw err;
         });
     });

@@ -7,9 +7,9 @@ async function addClasses(req, res) {
         user = req.cookies.Username,
         validation = req.body.validation;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/",
-        projectPath = main_path + admin + "-" + PName;
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/",
+        projectPath = mainPath + admin + "-" + PName;
 
     let inputClasses = req.body.input_classes;
     inputClasses = inputClasses.split(",");

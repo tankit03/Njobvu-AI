@@ -4,20 +4,20 @@ async function python(req, res) {
     var PName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,
-        python_path = req.body.python_path;
+        pythonPath = req.body.python_path;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        python_path_file = training_path + "/Paths.txt";
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/Admin-project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/Admin-project_name/images
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        pythonPathFile = trainingPath + "/Paths.txt";
 
-    if (fs.existsSync(python_path)) {
+    if (fs.existsSync(pythonPath)) {
         fs.writeFile(
-            python_path_file,
-            python_path + "\n",
+            pythonPathFile,
+            pythonPath + "\n",
             { flag: "a" },
             function (err) {
                 if (err) {
@@ -28,7 +28,7 @@ async function python(req, res) {
 
         res.send({ Success: "Python Path Saved" });
     } else {
-        res.send({ Success: `ERROR! ${python_path} is not a valid path` });
+        res.send({ Success: `ERROR! ${pythonPath} is not a valid path` });
     }
 }
 
