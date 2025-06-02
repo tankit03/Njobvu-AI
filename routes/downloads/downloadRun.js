@@ -9,7 +9,7 @@ async function downloadRun(req, res) {
         logFile = req.body.log_file,
         runPath = req.body.run_path;
 
-    var publicPath = __dirname.replace("routes", "").replace("training", ""),
+    var publicPath = currentPath,
         mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         projectPath = mainPath + user + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
         imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
@@ -23,10 +23,6 @@ async function downloadRun(req, res) {
     var archive = archiver("zip");
 
     output.on("close", function () {
-        console.log(archive.pointer() + " total bytes");
-        console.log(
-            "archiver has been finalized and the output file descriptor has closed.",
-        );
         res.download(
             downloadsPath +
                 "/" +

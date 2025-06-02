@@ -1,5 +1,4 @@
 async function script(req, res) {
-    console.log("python");
     var PName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,

@@ -2,79 +2,60 @@ export default function transformer(file, api) {
     const j = api.jscodeshift;
     const root = j(file.source);
 
-<<<<<<< HEAD
-    // helper to convert snake_case to camelCase
     const toCamel = (name) =>
         name.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 
-    // collect variable and parameter names to rename
     const renameMap = new Map();
 
-    // find variable declarations
-=======
-    const toCamel = (name) =>
-        name.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-
->>>>>>> b57b4115ddd06de4c5e036274cb7de26c38b655e
+    // Handle variable declarations (var, let, const)
     root.find(j.VariableDeclarator).forEach((path) => {
         const varName = path.value.id.name;
         if (/_/.test(varName)) {
             const newName = toCamel(varName);
-<<<<<<< HEAD
             renameMap.set(varName, newName);
             path.get("id").replace(j.identifier(newName));
         }
     });
 
-    // find function parameters
+    // Handle function parameters
     root.find(j.Function).forEach((path) => {
         path.value.params.forEach((param) => {
             if (param.type === "Identifier" && /_/.test(param.name)) {
                 const newName = toCamel(param.name);
                 renameMap.set(param.name, newName);
                 param.name = newName;
-=======
-
-            j(path)
-                .find(j.Identifier, { name: varName })
-                .replaceWith(j.identifier(newName));
-
-            root.find(j.Identifier, { name: varName }).replaceWith(
-                j.identifier(newName),
-            );
-        }
-    });
-
-    root.find(j.FunctionDeclaration).forEach((path) => {
-        path.value.params.forEach((param) => {
-            if (param.type === "Identifier" && /_/.test(param.name)) {
-                const newName = toCamel(param.name);
-                root.find(j.Identifier, { name: param.name }).replaceWith(
-                    j.identifier(newName),
-                );
->>>>>>> b57b4115ddd06de4c5e036274cb7de26c38b655e
             }
         });
     });
 
-<<<<<<< HEAD
-    // replace references to renamed variables
-    root.find(j.Identifier).forEach((path) => {
-        const name = path.value.name;
+    // Handle assignments **without** declarations (globals)
+    root.find(j.AssignmentExpression).forEach((path) => {
+        const left = path.value.left;
 
-        if (renameMap.has(name)) {
-            const parent = path.parent.value;
-            const isPropertyOfMemberExpression =
-                parent.type === "MemberExpression" &&
-                parent.property === path.value;
-
-            if (!isPropertyOfMemberExpression) {
-                path.value.name = renameMap.get(name);
-            }
+        if (
+            left.type === "Identifier" &&
+            /_/.test(left.name) &&
+            !renameMap.has(left.name)
+        ) {
+            const newName = toCamel(left.name);
+            renameMap.set(left.name, newName);
+            left.name = newName;
         }
     });
 
-=======
->>>>>>> b57b4115ddd06de4c5e036274cb7de26c38b655e
+    // Replace all standalone references (but not object properties!)
+    root.find(j.Identifier).forEach((path) => {
+        const name = path.value.name;
+
+        const parent = path.parent.value;
+        const isPropertyOfMemberExpression =
+            parent.type === "MemberExpression" &&
+            parent.property === path.value;
+
+        if (renameMap.has(name) && !isPropertyOfMemberExpression) {
+            path.value.name = renameMap.get(name);
+        }
+    });
+
     return root.toSource();
 }

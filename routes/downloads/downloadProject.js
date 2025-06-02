@@ -14,15 +14,15 @@ async function downloadProject(req, res) {
         projectPath = mainPath + admin + "-" + PName,
         //download_path = project_path + '/downloads',
         downloadPath = mainPath + username + "_Downloads";
-    (images_path = projectPath + "/images/"),
-        (bootstrap_path = projectPath + "/bootstrap"),
-        (training_path = projectPath + "/training"),
-        (python_path = training_path + "/python"),
-        (logs_path = training_path + "/logs"),
+    (imagesPath = projectPath + "/images/"),
+        (bootstrapPath = projectPath + "/bootstrap"),
+        (trainingPath = projectPath + "/training"),
+        (pythonPath = trainingPath + "/python"),
+        (logsPath = trainingPath + "/logs"),
         //weights_path = training_path + '/weights',
-        (project_db = `${projectPath}/${PName}.db`),
-        (dump_file = `${PName}.dump`),
-        (dump_path = `${projectPath}/${dump_file}`);
+        (projectDb = `${projectPath}/${PName}.db`),
+        (dumpFile = `${PName}.dump`),
+        (dumpPath = `${projectPath}/${dumpFile}`);
 
     // return res.download(download_path + '/' +PName+'.zip');
 
@@ -35,7 +35,7 @@ async function downloadProject(req, res) {
     }
 
     // Connect to database ////////////////////////////////////////////////////////////////
-    var dpdb = new sqlite3.Database(project_db, (err) => {
+    var dpdb = new sqlite3.Database(projectDb, (err) => {
         if (err) {
             return console.error(err.message);
         }

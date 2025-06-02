@@ -16,7 +16,7 @@ async function downloadDataset(req, res) {
         mergeImages = mergePath + "images/",
         imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
         downloadsPath = mainPath + user + "_Downloads";
-    bootstrap_path = projectPath + "/bootstrap";
+    bootstrapPath = projectPath + "/bootstrap";
 
     if (!fs.existsSync(downloadsPath)) {
         fs.mkdirSync(downloadsPath);
@@ -249,7 +249,7 @@ async function downloadDataset(req, res) {
                 var centerY =
                     (imageLabels.rows[j].Y + imageLabels.rows[j].H / 2) / imgH;
 
-                to_string_value =
+                toStringValue =
                     cnames.indexOf(imageLabels.rows[j].CName) +
                     " " +
                     centerX +
@@ -265,10 +265,10 @@ async function downloadDataset(req, res) {
                     dictImagesLabels[existingImages.rows[i].IName] == undefined
                 ) {
                     dictImagesLabels[existingImages.rows[i].IName] =
-                        to_string_value;
+                        toStringValue;
                 } else {
                     dictImagesLabels[existingImages.rows[i].IName] +=
-                        to_string_value;
+                        toStringValue;
                 }
             }
             if (imageLabels.rows.length == 0) {
@@ -290,14 +290,14 @@ async function downloadDataset(req, res) {
         archive.pipe(output);
 
         for (var key in dictImagesLabels) {
-            remove_dot_ext = key.split(".")[0];
+            removeDotExt = key.split(".")[0];
             fs.writeFileSync(
-                `${downloadsPath}/${remove_dot_ext}.txt`,
+                `${downloadsPath}/${removeDotExt}.txt`,
                 dictImagesLabels[key],
             );
 
-            archive.file(`${downloadsPath}/${remove_dot_ext}.txt`, {
-                name: remove_dot_ext + ".txt",
+            archive.file(`${downloadsPath}/${removeDotExt}.txt`, {
+                name: removeDotExt + ".txt",
             });
         }
 
@@ -730,7 +730,7 @@ async function downloadDataset(req, res) {
             },
         );
     } else if (downloadFormat == 5) {
-        if (fs.existsSync(bootstrap_path + "/out.json")) {
+        if (fs.existsSync(bootstrapPath + "/out.json")) {
             var output = fs.createWriteStream(
                 downloadsPath + "/initialClassification.zip",
             );
@@ -747,7 +747,7 @@ async function downloadDataset(req, res) {
             console.log("Organize Data");
 
             var rawLabelBootstrapData = fs.readFileSync(
-                bootstrap_path + "/out.json",
+                bootstrapPath + "/out.json",
             );
 
             fs.writeFile(
