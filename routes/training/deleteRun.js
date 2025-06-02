@@ -4,22 +4,22 @@ async function deleteRun(req, res) {
         IDX = req.body.IDX,
         weights = req.body.weights,
         user = req.cookies.Username,
-        run_path = req.body.run_path,
-        log_file = req.body.log_file;
+        runPath = req.body.runPath,
+        logFile = req.body.logFile;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + user + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        logs_path = training_path + "/logs/";
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + user + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        logsPath = trainingPath + "/logs/";
 
-    rimraf(run_path, function (err) {
+    rimraf(runPath, function (err) {
         if (err) {
             console.error(err);
         }
-        console.log(`${run_path} deleted`);
+        console.log(`${runPath} deleted`);
     });
     return res.redirect("/training?IDX=" + IDX);
 }

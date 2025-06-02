@@ -1,17 +1,17 @@
 async function batchChangeClass(req, res){
 
     console.log("Batch Change Class");
-    var project_name = req.body.PName,
+    var projectName = req.body.PName,
         admin = req.body.Admin,
         class1 = req.body.class1,
         class2 = req.body.class2;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + admin + "-" + project_name; // $LABELING_TOOL_PATH/public/projects/project_name
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + admin + "-" + projectName; // $LABELING_TOOL_PATH/public/projects/project_name
 
     var aidb = new sqlite3.Database(
-        project_path + "/" + project_name + ".db",
+        projectPath + "/" + projectName + ".db",
         (err) => {
             if (err) {
                 return console.error(err.message);

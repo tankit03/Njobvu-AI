@@ -9,17 +9,17 @@ async function downloadDataset(req, res) {
         IDX = parseInt(req.body.IDX),
         user = req.cookies.Username;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        projectPath = main_path + admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
-        merge_path = projectPath + "/merge/",
-        merge_images = merge_path + "images/",
-        images_path = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
-        downloads_path = main_path + user + "_Downloads";
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
+        mergePath = projectPath + "/merge/",
+        mergeImages = mergePath + "images/",
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
+        downloadsPath = mainPath + user + "_Downloads";
     bootstrap_path = projectPath + "/bootstrap";
 
-    if (!fs.existsSync(downloads_path)) {
-        fs.mkdirSync(downloads_path);
+    if (!fs.existsSync(downloadsPath)) {
+        fs.mkdirSync(downloadsPath);
     }
 
     var dddb = new sqlite3.Database(
@@ -31,7 +31,7 @@ async function downloadDataset(req, res) {
         },
     );
 
-    var download_format = parseInt(req.body.download_format);
+    var downloadFormat = parseInt(req.body.downloadFormat);
 
     var cnames = [];
 
@@ -50,7 +50,7 @@ async function downloadDataset(req, res) {
         cnames.push(existingClasses.rows[i].CName);
     }
 
-    if (download_format == 6) {
+    if (downloadFormat == 6) {
         const cropImage = async (
             sourcePath,
             targetPath,
@@ -76,7 +76,7 @@ async function downloadDataset(req, res) {
             }
         };
 
-        folderName = downloads_path + "/dataset";
+        folderName = downloadsPath + "/dataset";
         folderTrain = folderName + "/train";
         folderVal = folderName + "/val";
 
@@ -130,7 +130,7 @@ async function downloadDataset(req, res) {
 
             const isValidation = Math.random() < 0.2;
             let targetFolder = isValidation ? classFolderVal : classFolderTrain;
-            let sourceImagePath = images_path + "/" + indivdualClass.IName;
+            let sourceImagePath = imagesPath + "/" + indivdualClass.IName;
 
             if (!processedImages[indivdualClass.IName]) {
                 processedImages[indivdualClass.IName] = 0;
@@ -165,7 +165,7 @@ async function downloadDataset(req, res) {
 
         await Promise.all(croppingPromises);
 
-        const folderZip = downloads_path + "/dataset.zip";
+        const folderZip = downloadsPath + "/dataset.zip";
         const output = fs.createWriteStream(folderZip);
 
         const archive = archiver("zip", {
@@ -227,15 +227,15 @@ async function downloadDataset(req, res) {
     }
 
     // YOLO
-    if (download_format == 0) {
-        var dict_images_labels = {};
+    if (downloadFormat == 0) {
+        var dictImagesLabels = {};
         for (var i = 0; i < existingImages.rows.length; i++) {
             var img = fs.readFileSync(
-                    `${images_path}/${existingImages.rows[i].IName}`,
+                    `${imagesPath}/${existingImages.rows[i].IName}`,
                 ),
-                img_data = probe.sync(img),
-                img_w = img_data.width,
-                img_h = img_data.height;
+                imgData = probe.sync(img),
+                imgW = imgData.width,
+                imgH = imgData.height;
 
             const imageLabels = await queries.project.getLabelsForImageName(
                 projectPath,
@@ -245,9 +245,9 @@ async function downloadDataset(req, res) {
             for (var j = 0; j < imageLabels.rows.length; j++) {
                 // x, y, w, h
                 var centerX =
-                    (imageLabels.rows[j].X + imageLabels.rows[j].W / 2) / img_w;
+                    (imageLabels.rows[j].X + imageLabels.rows[j].W / 2) / imgW;
                 var centerY =
-                    (imageLabels.rows[j].Y + imageLabels.rows[j].H / 2) / img_h;
+                    (imageLabels.rows[j].Y + imageLabels.rows[j].H / 2) / imgH;
 
                 to_string_value =
                     cnames.indexOf(imageLabels.rows[j].CName) +
@@ -256,32 +256,32 @@ async function downloadDataset(req, res) {
                     " " +
                     centerY +
                     " " +
-                    imageLabels.rows[j].W / img_w +
+                    imageLabels.rows[j].W / imgW +
                     " " +
-                    imageLabels.rows[j].H / img_h +
+                    imageLabels.rows[j].H / imgH +
                     "\n";
 
                 if (
-                    dict_images_labels[existingImages.rows[i].IName] ==
+                    dictImagesLabels[existingImages.rows[i].IName] ==
                     undefined
                 ) {
-                    dict_images_labels[existingImages.rows[i].IName] =
+                    dictImagesLabels[existingImages.rows[i].IName] =
                         to_string_value;
                 } else {
-                    dict_images_labels[existingImages.rows[i].IName] +=
+                    dictImagesLabels[existingImages.rows[i].IName] +=
                         to_string_value;
                 }
             }
             if (imageLabels.rows.length == 0) {
-                dict_images_labels[existingImages.rows[i].IName] = "";
+                dictImagesLabels[existingImages.rows[i].IName] = "";
             }
         }
 
-        var output = fs.createWriteStream(`${downloads_path}/yolo.zip`);
+        var output = fs.createWriteStream(`${downloadsPath}/yolo.zip`);
         var archive = archiver("zip");
 
         output.on("close", function () {
-            res.download(`${downloads_path}/yolo.zip`);
+            res.download(`${downloadsPath}/yolo.zip`);
         });
 
         archive.on("error", function (err) {
@@ -290,14 +290,14 @@ async function downloadDataset(req, res) {
 
         archive.pipe(output);
 
-        for (var key in dict_images_labels) {
+        for (var key in dictImagesLabels) {
             remove_dot_ext = key.split(".")[0];
             fs.writeFileSync(
-                `${downloads_path}/${remove_dot_ext}.txt`,
-                dict_images_labels[key],
+                `${downloadsPath}/${remove_dot_ext}.txt`,
+                dictImagesLabels[key],
             );
 
-            archive.file(`${downloads_path}/${remove_dot_ext}.txt`, {
+            archive.file(`${downloadsPath}/${remove_dot_ext}.txt`, {
                 name: remove_dot_ext + ".txt",
             });
         }
@@ -310,20 +310,20 @@ async function downloadDataset(req, res) {
         classes = classes.substring(0, classes.length - 1);
 
         fs.writeFileSync(
-            downloads_path + "/" + PName + "_Classes.txt",
+            downloadsPath + "/" + PName + "_Classes.txt",
             classes,
         );
 
-        await archive.file(downloads_path + "/" + PName + "_Classes.txt", {
+        await archive.file(downloadsPath + "/" + PName + "_Classes.txt", {
             name: PName + "_Classes.txt",
         });
 
-        archive.directory(images_path, false);
+        archive.directory(imagesPath, false);
         archive.finalize();
     }
 
     // Tensorflow format
-    else if (download_format == 1) {
+    else if (downloadFormat == 1) {
         let labels;
         try {
             labels = await queries.project.getAllLabels(projectPath);
@@ -346,18 +346,18 @@ async function downloadDataset(req, res) {
             ymin = labels[i].Y;
             ymax = ymin + labels[i].H;
 
-            var img = fs.readFileSync(`${images_path}/${labels[i].IName}`);
-            var img_data = probe.sync(img);
-            var img_w = img_data.width;
-            var img_h = img_data.height;
+            var img = fs.readFileSync(`${imagesPath}/${labels[i].IName}`);
+            var imgData = probe.sync(img);
+            var imgW = imgData.width;
+            var imgH = imgData.height;
 
             data =
                 data +
                 labels[i].IName +
                 "," +
-                img_w +
+                imgW +
                 "," +
-                img_h +
+                imgH +
                 "," +
                 labels[i].CName +
                 "," +
@@ -371,14 +371,14 @@ async function downloadDataset(req, res) {
                 "\n";
         }
 
-        fs.writeFileSync(downloads_path + "/" + PName + "_dataset.csv", data);
+        fs.writeFileSync(downloadsPath + "/" + PName + "_dataset.csv", data);
 
-        var output = fs.createWriteStream(downloads_path + "/tensorflow.zip");
+        var output = fs.createWriteStream(downloadsPath + "/tensorflow.zip");
 
         var archive = archiver("zip");
 
         output.on("close", function () {
-            res.download(downloads_path + "/tensorflow.zip");
+            res.download(downloadsPath + "/tensorflow.zip");
         });
 
         archive.on("error", function (err) {
@@ -387,14 +387,14 @@ async function downloadDataset(req, res) {
 
         archive.pipe(output);
 
-        archive.file(downloads_path + "/" + PName + "_dataset.csv", {
+        archive.file(downloadsPath + "/" + PName + "_dataset.csv", {
             name: PName + "_dataset.csv",
         });
 
         archive.finalize();
     }
     // COCO
-    else if (download_format == 2) {
+    else if (downloadFormat == 2) {
         let labels;
         try {
             labels = await queries.project.getAllLabels(projectPath);
@@ -439,15 +439,15 @@ async function downloadDataset(req, res) {
 
         function im(pic, id) {
             var image = {};
-            var rel_image_path = images_path + pic;
+            var relImagePath = imagesPath + pic;
 
-            var img = fs.readFileSync(`${images_path}/${pic}`);
-            var img_data = probe.sync(img);
-            var img_w = img_data.width;
-            var img_h = img_data.height;
+            var img = fs.readFileSync(`${imagesPath}/${pic}`);
+            var imgData = probe.sync(img);
+            var imgW = imgData.width;
+            var imgH = imgData.height;
 
-            image["height"] = img_h;
-            image["width"] = img_w;
+            image["height"] = imgH;
+            image["width"] = imgW;
             image["id"] = id;
             image["file_name"] = pic;
             return image;
@@ -490,18 +490,18 @@ async function downloadDataset(req, res) {
         coco["categories"] = categories;
         coco["annotations"] = annotations;
 
-        var coco_data = JSON.stringify(coco);
+        var cocoData = JSON.stringify(coco);
 
         fs.writeFileSync(
-            downloads_path + "/" + PName + "_coco.json",
-            coco_data,
+            downloadsPath + "/" + PName + "_coco.json",
+            cocoData,
         );
 
-        var output = fs.createWriteStream(downloads_path + "/coco.zip");
+        var output = fs.createWriteStream(downloadsPath + "/coco.zip");
         var archive = archiver("zip");
 
         output.on("close", function () {
-            res.download(downloads_path + "/coco.zip");
+            res.download(downloadsPath + "/coco.zip");
         });
 
         archive.on("error", function (err) {
@@ -510,7 +510,7 @@ async function downloadDataset(req, res) {
 
         archive.pipe(output);
 
-        archive.file(downloads_path + "/" + PName + "_coco.json", {
+        archive.file(downloadsPath + "/" + PName + "_coco.json", {
             name: PName + "_coco.json",
         });
 
@@ -525,7 +525,7 @@ async function downloadDataset(req, res) {
 
         for (var i = 0; i < images.length; i++) {
             archive.file(
-                public_path +
+                publicPath +
                     "/public/projects/" +
                     admin +
                     "-" +
@@ -539,12 +539,12 @@ async function downloadDataset(req, res) {
         archive.finalize();
     }
     //Pascal VOC
-    else if (download_format == 3) {
-        var output = fs.createWriteStream(downloads_path + "/VOC.zip");
+    else if (downloadFormat == 3) {
+        var output = fs.createWriteStream(downloadsPath + "/VOC.zip");
         var archive = archiver("zip");
 
         output.on("close", function () {
-            res.download(downloads_path + "/VOC.zip");
+            res.download(downloadsPath + "/VOC.zip");
         });
 
         archive.on("error", function (err) {
@@ -555,12 +555,12 @@ async function downloadDataset(req, res) {
 
         for (var i = 0; i < existingImages.rows.length; i++) {
             var imgName = existingImages.rows[i].IName;
-            var imgPath = `${images_path}/${imgName}`;
+            var imgPath = `${imagesPath}/${imgName}`;
             var img = fs.readFileSync(`${imgPath}`);
-            var img_data = probe.sync(img);
-            var img_w = img_data.width;
-            var img_h = img_data.height;
-            var img_d = img_data.depth;
+            var imgData = probe.sync(img);
+            var imgW = imgData.width;
+            var imgH = imgData.height;
+            var imgD = imgData.depth;
 
             var data = "<annotation>\n";
             data += "\t<folder>images</folder>\n";
@@ -570,8 +570,8 @@ async function downloadDataset(req, res) {
             data += `\t\t<database>${PName}.db</database>\n`;
             data += `\t</soruce>\n`;
             data += `\t<size>\n`;
-            data += `\t\t<width>${img_w}</width>\n`;
-            data += `\t\t<height>${img_h}</height>\n`;
+            data += `\t\t<width>${imgW}</width>\n`;
+            data += `\t\t<height>${imgH}</height>\n`;
             data += `\t\t<depth>3</depth>\n`;
             data += `\t</size>\n`;
             data += `\t<segmented>0</segmented>\n`;
@@ -613,11 +613,11 @@ async function downloadDataset(req, res) {
             data += "</annotation>";
 
             var xmlname = imgName.split(".")[0] + ".xml";
-            fs.writeFile(downloads_path + "/" + xmlname, data, (err) => {
+            fs.writeFile(downloadsPath + "/" + xmlname, data, (err) => {
                 if (err) throw err;
                 console.log("done writing xml");
             });
-            archive.file(downloads_path + "/" + xmlname, { name: xmlname });
+            archive.file(downloadsPath + "/" + xmlname, { name: xmlname });
         }
 
         let images;
@@ -632,7 +632,7 @@ async function downloadDataset(req, res) {
 
         for (var i = 0; i < images.length; i++) {
             archive.file(
-                public_path +
+                publicPath +
                     "/public/projects/" +
                     admin +
                     "-" +
@@ -646,12 +646,12 @@ async function downloadDataset(req, res) {
         archive.finalize();
     }
     // Summary file
-    else if (download_format == 4) {
-        var output = fs.createWriteStream(downloads_path + "/summary.zip");
+    else if (downloadFormat == 4) {
+        var output = fs.createWriteStream(downloadsPath + "/summary.zip");
         var archive = archiver("zip");
 
         output.on("close", function () {
-            res.download(downloads_path + "/summary.zip");
+            res.download(downloadsPath + "/summary.zip");
         });
 
         archive.on("error", function (err) {
@@ -725,25 +725,25 @@ async function downloadDataset(req, res) {
         }
 
         fs.writeFile(
-            downloads_path + "/" + PName + "_Summary.txt",
+            downloadsPath + "/" + PName + "_Summary.txt",
             data,
             (err) => {
                 if (err) throw err;
-                archive.file(downloads_path + "/" + PName + "_Summary.txt", {
+                archive.file(downloadsPath + "/" + PName + "_Summary.txt", {
                     name: PName + "_Summary.txt",
                 });
 
                 archive.finalize();
             },
         );
-    } else if (download_format == 5) {
+    } else if (downloadFormat == 5) {
         if (fs.existsSync(bootstrap_path + "/out.json")) {
             var output = fs.createWriteStream(
-                downloads_path + "/initialClassification.zip",
+                downloadsPath + "/initialClassification.zip",
             );
             var archive = archiver("zip");
             output.on("close", function () {
-                res.download(downloads_path + "/initialClassification.zip");
+                res.download(downloadsPath + "/initialClassification.zip");
             });
 
             archive.on("error", function (err) {
@@ -753,16 +753,16 @@ async function downloadDataset(req, res) {
             archive.pipe(output);
             console.log("Organize Data");
 
-            var raw_label_bootstrap_data = fs.readFileSync(
+            var rawLabelBootstrapData = fs.readFileSync(
                 bootstrap_path + "/out.json",
             );
 
             fs.writeFile(
-                downloads_path + "/out.json",
-                raw_label_bootstrap_data,
+                downloadsPath + "/out.json",
+                rawLabelBootstrapData,
                 (err) => {
                     if (err) throw err;
-                    archive.file(downloads_path + "/out.json", {
+                    archive.file(downloadsPath + "/out.json", {
                         name: "out.json",
                     });
 

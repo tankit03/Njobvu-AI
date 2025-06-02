@@ -91,21 +91,21 @@ async function mergeLocal(req, res) {
     }
 
     if (fs.existsSync(pythonPathFile)) {
-        var current_paths_arr = [];
-        current_paths_arr.push(
+        var currentPathsArr = [];
+        currentPathsArr.push(
             fs
                 .readFileSync(pythonPathFile, "utf-8")
                 .split("\n")
                 .filter(Boolean),
         );
-        var current_paths = [];
-        current_paths = current_paths.concat
-            .apply(current_paths, current_paths_arr)
+        var currentPaths = [];
+        currentPaths = currentPaths.concat
+            .apply(currentPaths, currentPathsArr)
             .filter(Boolean);
 
         if (fs.existsSync(mergePythonFile)) {
-            var mergePaths_arr = [];
-            mergePaths_arr.push(
+            var mergePathsArr = [];
+            mergePathsArr.push(
                 fs
                     .readFileSync(mergePythonFile, "utf-8")
                     .split("\n")
@@ -113,17 +113,17 @@ async function mergeLocal(req, res) {
             );
             var mergePaths = [];
             mergePaths = mergePaths.concat
-                .apply(mergePaths, mergePaths_arr)
+                .apply(mergePaths, mergePathsArr)
                 .filter(Boolean);
-            var new_paths = "";
+            var newPaths = "";
             for (var i = 0; i < mergePaths.length; i++) {
-                if (current_paths.includes(mergePaths[i])) {
+                if (currentPaths.includes(mergePaths[i])) {
                     continue;
                 }
-                new_paths = `${new_paths}${mergePaths[i]}\n`;
+                newPaths = `${newPaths}${mergePaths[i]}\n`;
             }
 
-            fs.appendFile(pythonPathFile, new_paths, (err) => {
+            fs.appendFile(pythonPathFile, newPaths, (err) => {
                 if (err) {
                     console.log(err);
                 }
@@ -132,39 +132,39 @@ async function mergeLocal(req, res) {
     }
 
     if (fs.existsSync(darknetPathFile)) {
-        var darknet_current_paths_arr = [];
-        darknet_current_paths_arr.push(
+        var darknetCurrentPathsArr = [];
+        darknetCurrentPathsArr.push(
             fs
                 .readFileSync(darknetPathFile, "utf-8")
                 .split("\n")
                 .filter(Boolean),
         );
-        var darknet_current_paths = [];
-        darknet_current_paths = darknet_current_paths.concat
-            .apply(darknet_current_paths, darknet_current_paths_arr)
+        var darknetCurrentPaths = [];
+        darknetCurrentPaths = darknetCurrentPaths.concat
+            .apply(darknetCurrentPaths, darknetCurrentPathsArr)
             .filter(Boolean);
 
         if (fs.existsSync(mergeDarknetFile)) {
-            var darknet_mergePaths_arr = [];
-            darknet_mergePaths_arr.push(
+            var darknetMergePathsArr = [];
+            darknetMergePathsArr.push(
                 fs
                     .readFileSync(mergeDarknetFile, "utf-8")
                     .split("\n")
                     .filter(Boolean),
             );
-            var darknet_mergePaths = [];
-            darknet_mergePaths = darknet_mergePaths.concat
-                .apply(darknet_mergePaths, darknet_mergePaths_arr)
+            var darknetMergePaths = [];
+            darknetMergePaths = darknetMergePaths.concat
+                .apply(darknetMergePaths, darknetMergePathsArr)
                 .filter(Boolean);
-            var darknet_new_paths = "";
-            for (var i = 0; i < darknet_mergePaths.length; i++) {
-                if (darknet_current_paths.includes(darknet_mergePaths[i])) {
+            var darknetNewPaths = "";
+            for (var i = 0; i < darknetMergePaths.length; i++) {
+                if (darknetCurrentPaths.includes(darknetMergePaths[i])) {
                     continue;
                 }
-                darknet_new_paths = `${darknet_new_paths}${darknet_mergePaths[i]}\n`;
+                darknetNewPaths = `${darknetNewPaths}${darknetMergePaths[i]}\n`;
             }
-            console.log("new darknet paths: ", darknet_new_paths);
-            fs.appendFile(darknetPathFile, darknet_new_paths, (err) => {
+            console.log("new darknet paths: ", darknetNewPaths);
+            fs.appendFile(darknetPathFile, darknetNewPaths, (err) => {
                 if (err) {
                     console.log(err);
                 }
@@ -173,24 +173,24 @@ async function mergeLocal(req, res) {
     }
 
     if (fs.existsSync(mergeWeightsPath)) {
-        var merge_weights = await readdirAsync(mergeWeightsPath);
-        for (var i = 0; i < merge_weights.length; i++) {
-            var extension = merge_weights[i].split(".").pop();
+        var mergeWeights = await readdirAsync(mergeWeightsPath);
+        for (var i = 0; i < mergeWeights.length; i++) {
+            var extension = mergeWeights[i].split(".").pop();
             if (extension == "weights" || Number.isInteger(extension)) {
                 var mergeWeightsPath = path.join(
                     mergeWeightsPath,
-                    merge_weights[i],
+                    mergeWeights[i],
                 );
-                var cur_weights = await readdirAsync(weightsPath);
-                var merge_weight_name = merge_weights[i];
+                var curWeights = await readdirAsync(weightsPath);
+                var mergeWeightName = mergeWeights[i];
                 var j = 1;
-                var t = `${merge_weights[i].split(".")[0]}${j}.${extension}`;
+                var t = `${mergeWeights[i].split(".")[0]}${j}.${extension}`;
 
-                while (cur_weights.includes(merge_weight_name)) {
-                    merge_weight_name = `${merge_weights[i].split(".")[0]}${j}.py`;
+                while (curWeights.includes(mergeWeightName)) {
+                    mergeWeightName = `${mergeWeights[i].split(".")[0]}${j}.py`;
                 }
-                var new_weight_path = path.join(weightsPath, merge_weight_name);
-                fs.copyFile(merge_weight_path, new_weight_path, (error) => {
+                var newWeightPath = path.join(weightsPath, mergeWeightName);
+                fs.copyFile(merge_weight_path, newWeightPath, (error) => {
                     if (error) {
                         console.log(error);
                     }

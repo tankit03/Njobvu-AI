@@ -9,12 +9,12 @@ async function deleteLabelValidation(req, res) {
 
     console.log("IDX: ", IDX);
     // set paths
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/",
-        project_path = main_path + admin + "-" + PName;
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/",
+        projectPath = mainPath + admin + "-" + PName;
 
     var didb = new sqlite3.Database(
-        project_path + "/" + PName + ".db",
+        projectPath + "/" + PName + ".db",
         (err) => {
             if (err) {
                 return console.error(err.message);

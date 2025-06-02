@@ -15,7 +15,7 @@ const path = require("path");
 const { stdout } = require("process");
 const sharp = require("sharp");
 const api = express.Router();
-const new_file_path = require("path");
+const newFilePath = require("path");
 const unzipper = require("unzipper");
 
 const unzipFile = require("../utils/unzipFile");

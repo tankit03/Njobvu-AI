@@ -47,12 +47,12 @@ async function signup(req, res) {
         return;
     }
 
-    var public_path = currentPath;
-    var main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        downloads_path = main_path + username + "_Downloads";
+    var publicPath = currentPath;
+    var mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        downloadsPath = mainPath + username + "_Downloads";
 
-    if (!fs.existsSync(downloads_path)) {
-        fs.mkdir(downloads_path, (err) => {
+    if (!fs.existsSync(downloadsPath)) {
+        fs.mkdir(downloadsPath, (err) => {
             if (err) {
                 console.log(err);
             }

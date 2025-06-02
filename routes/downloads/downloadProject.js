@@ -9,25 +9,25 @@ async function downloadProject(req, res) {
     var username = req.cookies.Username;
 
     // Set paths
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/",
-        project_path = main_path + admin + "-" + PName,
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/",
+        projectPath = mainPath + admin + "-" + PName,
         //download_path = project_path + '/downloads',
-        download_path = main_path + username + "_Downloads";
-    (images_path = project_path + "/images/"),
-        (bootstrap_path = project_path + "/bootstrap"),
-        (training_path = project_path + "/training"),
+        downloadPath = mainPath + username + "_Downloads";
+    (images_path = projectPath + "/images/"),
+        (bootstrap_path = projectPath + "/bootstrap"),
+        (training_path = projectPath + "/training"),
         (python_path = training_path + "/python"),
         (logs_path = training_path + "/logs"),
         //weights_path = training_path + '/weights',
-        (project_db = `${project_path}/${PName}.db`),
+        (project_db = `${projectPath}/${PName}.db`),
         (dump_file = `${PName}.dump`),
-        (dump_path = `${project_path}/${dump_file}`);
+        (dump_path = `${projectPath}/${dump_file}`);
 
     // return res.download(download_path + '/' +PName+'.zip');
 
-    if (!fs.existsSync(download_path)) {
-        fs.mkdir(download_path, (err) => {
+    if (!fs.existsSync(downloadPath)) {
+        fs.mkdir(downloadPath, (err) => {
             if (err) {
                 console.log(err);
             }
@@ -83,10 +83,10 @@ async function downloadProject(req, res) {
     ///////////////////////////////////////////////////////////////////////////////////////////
 
     // console.log("table exists: ", await dpdb.allAsync("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='Labels'"));
-    var table_exists = await dpdb.allAsync(
+    var tableExists = await dpdb.allAsync(
         "SELECT COUNT(*) as CNT FROM sqlite_master WHERE type='table' AND name='Labels'",
     );
-    if (table_exists.CNT == 0) {
+    if (tableExists.CNT == 0) {
         // close the database
         dpdb.close(function (err) {
             if (err) {
@@ -103,7 +103,7 @@ async function downloadProject(req, res) {
 			download zipfile
 		*/
 
-        var output = fs.createWriteStream(download_path + "/" + PName + ".zip");
+        var output = fs.createWriteStream(downloadPath + "/" + PName + ".zip");
 
         var archive = archiver("zip");
 
@@ -121,7 +121,7 @@ async function downloadProject(req, res) {
                     console.log("dpdb closed successfully");
                 }
             });
-            return res.download(download_path + "/" + PName + ".zip");
+            return res.download(downloadPath + "/" + PName + ".zip");
         });
 
         archive.on("error", function (err) {
@@ -133,7 +133,7 @@ async function downloadProject(req, res) {
         archive.pipe(output);
 
         //add project to zip
-        archive.directory(project_path, false);
+        archive.directory(projectPath, false);
 
         archive.finalize();
     }

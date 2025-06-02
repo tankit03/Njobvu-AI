@@ -2,22 +2,22 @@ async function uploadPreWeights(req, res) {
     var PName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,
-        weights_file = req.files.upload_weights;
+        weightsFile = req.files.upload_weights;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        logs_path = training_path + "/logs",
-        weights_path = training_path + "/weights/",
-        weights_file_path = weights_path + weights_file.name;
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        logsPath = trainingPath + "/logs",
+        weightsPath = trainingPath + "/weights/",
+        weightsFilePath = weightsPath + weightsFile.name;
 
     if (
-        weights_file.name.split(".").pop() != "137" &&
-        weights_file.name.split(".").pop() != "weights" &&
-        weights_file.name.split(".").pop() != "pt"
+        weightsFile.name.split(".").pop() != "137" &&
+        weightsFile.name.split(".").pop() != "weights" &&
+        weightsFile.name.split(".").pop() != "pt"
     ) {
         res.send({
             Success:
@@ -25,11 +25,11 @@ async function uploadPreWeights(req, res) {
         });
     } else {
         // move python file and check of python path exists
-        await weights_file.mv(weights_file_path);
+        await weightsFile.mv(weightsFilePath);
 
         // create trainging path if does not exist
-        if (!fs.existsSync(training_path)) {
-            fs.mkdir(training_path, (error) => {
+        if (!fs.existsSync(trainingPath)) {
+            fs.mkdir(trainingPath, (error) => {
                 if (error) {
                     console.log(errror);
                 }

@@ -6,19 +6,19 @@ async function downloadRun(req, res) {
         IDX = req.body.IDX,
         weights = req.body.weights,
         user = req.cookies.Username,
-        log_file = req.body.log_file,
-        run_path = req.body.run_path;
+        logFile = req.body.logFile,
+        runPath = req.body.runPath;
 
-    var public_path = __dirname.replace("routes", "").replace("training", ""),
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + user + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
-        downloads_path = main_path + user + "_Downloads",
-        training_path = project_path + "/training",
-        logs_path = training_path + "/logs/";
+    var publicPath = __dirname.replace("routes", "").replace("training", ""),
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + user + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
+        imagesPath = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
+        downloadsPath = mainPath + user + "_Downloads",
+        trainingPath = projectPath + "/training",
+        logsPath = trainingPath + "/logs/";
 
     var output = fs.createWriteStream(
-        downloads_path + "/" + log_file.substr(0, log_file.length - 4) + ".zip",
+        downloadsPath + "/" + logFile.substr(0, logFile.length - 4) + ".zip",
     );
     var archive = archiver("zip");
 
@@ -28,9 +28,9 @@ async function downloadRun(req, res) {
             "archiver has been finalized and the output file descriptor has closed.",
         );
         res.download(
-            downloads_path +
+            downloadsPath +
                 "/" +
-                log_file.substr(0, log_file.length - 4) +
+                logFile.substr(0, logFile.length - 4) +
                 ".zip",
         );
     });
@@ -40,10 +40,10 @@ async function downloadRun(req, res) {
 
     archive.pipe(output);
 
-    var logs = await readdirAsync(`${run_path}`);
+    var logs = await readdirAsync(`${runPath}`);
 
     for (var i = 0; i < logs.length; i++) {
-        archive.file(`${run_path}${logs[i]}`, { name: logs[i] });
+        archive.file(`${runPath}${logs[i]}`, { name: logs[i] });
     }
 
     archive.finalize();

@@ -2,15 +2,15 @@ async function soloChangeClass(req, res) {
 
     var LID = parseInt(req.body.LID),
        selectedClass = req.body.selectedClass,
-        project_name = req.body.PName,
+        projectName = req.body.PName,
         admin = req.body.Admin;
 
-    var public_path = __dirname.replace("routes", ""),
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + admin + "-" + project_name; // $LABELING_TOOL_PATH/public/projects/project_name
+    var publicPath = __dirname.replace("routes", ""),
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + admin + "-" + projectName; // $LABELING_TOOL_PATH/public/projects/project_name
 
     var aidb = new sqlite3.Database(
-        project_path + "/" + project_name + ".db",
+        projectPath + "/" + projectName + ".db",
         (err) => {
             if (err) {
                 return console.error(err.message);

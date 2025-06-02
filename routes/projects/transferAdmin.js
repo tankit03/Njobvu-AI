@@ -37,12 +37,12 @@ async function transferAdmin(req, res) {
         return res.status(500).send("Erorr transferring admin role");
     }
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + Admin + "-" + PName,
-        new_path = main_path + NewAdmin + "-" + PName; // $LABELING_TOOL_PATH/public/projects/project_name
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
+        projectPath = mainPath + Admin + "-" + PName,
+        newPath = mainPath + NewAdmin + "-" + PName; // $LABELING_TOOL_PATH/public/projects/project_name
 
-    fs.renameSync(project_path, new_path);
+    fs.renameSync(projectPath, newPath);
 
     if (validation) return res.redirect("/configV?IDX=" + IDX);
     return res.redirect("/config?IDX=" + IDX);

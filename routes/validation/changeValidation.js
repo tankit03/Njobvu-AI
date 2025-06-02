@@ -4,13 +4,13 @@ async function changeValidation(req, res) {
     var admin = req.body.Admin;
     var status = req.body.validMode;
 
-    var public_path = currentPath,
-        main_path = public_path + "public/projects/",
-        project_path = main_path + admin + "-" + PName,
-        images_path = project_path + "/images/";
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects/",
+        projectPath = mainPath + admin + "-" + PName,
+        imagesPath = projectPath + "/images/";
 
     var rmdb = new sqlite3.Database(
-        project_path + "/" + PName + ".db",
+        projectPath + "/" + PName + ".db",
         (err) => {
             if (err) {
                 return console.error(err.message);

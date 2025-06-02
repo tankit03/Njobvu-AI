@@ -6,40 +6,40 @@ async function mergeTest(req, res) {
     console.log("\nmergeTest");
 
     //get form variables
-    var upload_images = req.files.upload_project,
-        project_name = req.body.PName,
+    var uploadImages = req.files.upload_project,
+        projectName = req.body.PName,
         Admin = req.body.Admin,
         username = req.cookies.Username;
 
-    console.log("project_name: ", project_name);
+    console.log("project_name: ", projectName);
     console.log("Admin: ", Admin);
-    console.log("upload: ", upload_images);
+    console.log("upload: ", uploadImages);
 
     //set paths
-    var public_path = currentPath,
-        main_path = public_path + "public/projects",
-        project_path = main_path + "/" + Admin + "-" + project_name,
-        image_path = project_path + "/images",
-        bootstrap_path = project_path + "/bootstrap",
-        training_path = project_path + "/training",
-        log_path = training_path + "/logs/",
-        scripts_path = training_path + "/python/",
-        python_path_file = training_path + "/Paths.txt",
-        darknet_path_file = training_path + "/darknetPaths.txt",
-        merge_path = project_path + "/merge",
-        merge_images = merge_path + "/images/",
-        zip_path = project_path + "/" + upload_images.name,
-        newDB = merge_path + "/merge.db",
-        dump = merge_path + "/merge.dump";
+    var publicPath = currentPath,
+        mainPath = publicPath + "public/projects",
+        projectPath = mainPath + "/" + Admin + "-" + projectName,
+        imagePath = projectPath + "/images",
+        bootstrapPath = projectPath + "/bootstrap",
+        trainingPath = projectPath + "/training",
+        logPath = trainingPath + "/logs/",
+        scriptsPath = trainingPath + "/python/",
+        pythonPathFile = trainingPath + "/Paths.txt",
+        darknetPathFile = trainingPath + "/darknetPaths.txt",
+        mergePath = projectPath + "/merge",
+        mergeImages = mergePath + "/images/",
+        zipPath = projectPath + "/" + uploadImages.name,
+        newDB = mergePath + "/merge.db",
+        dump = mergePath + "/merge.dump";
 
     //create merge file structure ///////////////////////////////////////////////////////////////////////////////////
-    if (fs.existsSync(merge_path)) {
+    if (fs.existsSync(mergePath)) {
         console.log("merge_path already exists");
-        rimraf(merge_path, (err) => {
+        rimraf(mergePath, (err) => {
             if (err) {
                 console.log(err);
             } else {
-                fs.mkdir(merge_path, (error) => {
+                fs.mkdir(mergePath, (error) => {
                     if (error) {
                         console.log(error);
                     }
@@ -47,7 +47,7 @@ async function mergeTest(req, res) {
             }
         });
     } else {
-        fs.mkdir(merge_path, (err) => {
+        fs.mkdir(mergePath, (err) => {
             if (err) {
                 console.error(err);
                 // res.send({"Success": "merge_path directory failed to make"});
@@ -58,7 +58,7 @@ async function mergeTest(req, res) {
 
     // connect to current project database /////////////////////////////////////////////////////////////////////////////
     var mdb = new sqlite3.Database(
-        project_path + "/" + project_name + ".db",
+        projectPath + "/" + projectName + ".db",
         function (err) {
             if (err) {
                 return console.error(err.message);
@@ -111,9 +111,9 @@ async function mergeTest(req, res) {
     var found = 0;
 
     //move zip file to zip_path
-    await upload_images.mv(zip_path);
-    console.log(`zip_path: ${zip_path}`);
-    var zip = new StreamZip({ file: zip_path });
+    await uploadImages.mv(zipPath);
+    console.log(`zip_path: ${zipPath}`);
+    var zip = new StreamZip({ file: zipPath });
 
     zip.on("error", (err) => {
         console.log("There was an error!");
@@ -126,13 +126,13 @@ async function mergeTest(req, res) {
             }
         });
 
-        fs.unlink(zip_path, (error) => {
+        fs.unlink(zipPath, (error) => {
             if (error) {
                 console.log(error);
             }
         });
 
-        rimraf(merge_path, (err) => {
+        rimraf(mergePath, (err) => {
             if (err) {
                 console.error("there was an error with contents: ", err);
             } else {
@@ -147,16 +147,16 @@ async function mergeTest(req, res) {
     //extract contents of zip file into merge_images
     zip.on("ready", () => {
         console.log("zip is ready");
-        zip.extract(null, merge_path, async (err, count) => {
+        zip.extract(null, mergePath, async (err, count) => {
             console.log(
                 err ? `Extract error: ${err}` : `Extracted ${count} entries`,
             );
             zip.close();
             //read current list of images
-            var currImages = await readdirAsync(image_path);
+            var currImages = await readdirAsync(imagePath);
             console.log("current Images: ", currImages);
             //read in new files
-            var newfiles = await readdirAsync(merge_path);
+            var newfiles = await readdirAsync(mergePath);
             //look for .db file
             //keep track of new files (don't keep images you already have)
             console.log("found " + newfiles.length + " files");
@@ -174,7 +174,7 @@ async function mergeTest(req, res) {
                 console.log("no db found");
                 console.log("delete contents of merge_path");
                 try {
-                    await rimraf(merge_path, (err) => {
+                    await rimraf(mergePath, (err) => {
                         if (err) {
                             console.error(
                                 "there was an error with contents: ",
@@ -204,68 +204,68 @@ async function mergeTest(req, res) {
             } //Merge Projects ///////////////////////////////////////////////////////////////////////////////////////////////
             else {
                 // Transfer incoming runs to current runs
-                var merge_runs_path = `${merge_path}/training/logs/`;
-                if (fs.existsSync(merge_run_path)) {
-                    console.log("merge_runs: ", merge_runs_path);
-                    var merge_runs = await readdirAsync(merge_runs_path);
-                    console.log("incoming runs: ", merge_runs);
-                    for (var i = 0; i < merge_runs.length; i++) {
-                        var merge_run_path = `${merge_runs_path}${merge_runs[i]}`;
-                        console.log("merge_run_path: ", merge_run_path);
-                        if (fs.lstatSync(merge_run_path).isDirectory()) {
-                            var merge_logs = await readdirAsync(merge_run_path);
-                            console.log("merge_logs: ", merge_logs);
-                            var new_run_path = path.join(
-                                log_path,
-                                merge_runs[i],
+                var mergeRunsPath = `${mergePath}/training/logs/`;
+                if (fs.existsSync(mergeRunPath)) {
+                    console.log("merge_runs: ", mergeRunsPath);
+                    var mergeRuns = await readdirAsync(mergeRunsPath);
+                    console.log("incoming runs: ", mergeRuns);
+                    for (var i = 0; i < mergeRuns.length; i++) {
+                        var mergeRunPath = `${mergeRunsPath}${mergeRuns[i]}`;
+                        console.log("merge_run_path: ", mergeRunPath);
+                        if (fs.lstatSync(mergeRunPath).isDirectory()) {
+                            var mergeLogs = await readdirAsync(mergeRunPath);
+                            console.log("merge_logs: ", mergeLogs);
+                            var newRunPath = path.join(
+                                logPath,
+                                mergeRuns[i],
                             );
-                            if (!fs.existsSync(new_run_path)) {
-                                fs.mkdirSync(new_run_path);
-                                console.log("new_run_path: ", new_run_path);
-                                for (var j = 0; j < merge_logs.length; j++) {
-                                    var merge_log_path = path.join(
-                                        merge_run_path,
-                                        merge_logs[j],
+                            if (!fs.existsSync(newRunPath)) {
+                                fs.mkdirSync(newRunPath);
+                                console.log("new_run_path: ", newRunPath);
+                                for (var j = 0; j < mergeLogs.length; j++) {
+                                    var mergeLogPath = path.join(
+                                        mergeRunPath,
+                                        mergeLogs[j],
                                     );
-                                    var new_log_path = path.join(
-                                        new_run_path,
-                                        merge_logs[j],
+                                    var newLogPath = path.join(
+                                        newRunPath,
+                                        mergeLogs[j],
                                     );
-                                    fs.renameSync(merge_log_path, new_log_path);
+                                    fs.renameSync(mergeLogPath, newLogPath);
                                 }
                             }
                         }
                     }
                 }
                 // Transfer incoming bootstrap files to current files
-                var merge_bootstrap_path = `${merge_path}/bootstrap/`;
-                if (fs.existsSync(merge_bootstrap_path)) {
-                    var merge_files = await readdirAsync(merge_bootstrap_path);
-                    for (var i = 0; i < merge_files.length; i++) {
-                        var extension = merge_files[i].split(".").pop();
+                var mergeBootstrapPath = `${mergePath}/bootstrap/`;
+                if (fs.existsSync(mergeBootstrapPath)) {
+                    var mergeFiles = await readdirAsync(mergeBootstrapPath);
+                    for (var i = 0; i < mergeFiles.length; i++) {
+                        var extension = mergeFiles[i].split(".").pop();
                         if (
                             ["weights", "cfg", "data", "json", "txt"].includes(
                                 extension,
                             )
                         ) {
-                            var merge_file_path = path.join(
-                                merge_bootstrap_path,
-                                merge_files[i],
+                            var mergeFilePath = path.join(
+                                mergeBootstrapPath,
+                                mergeFiles[i],
                             );
-                            var cur_files = await readdirAsync(bootstrap_path);
-                            var merge_file_name = merge_files[i];
+                            var curFiles = await readdirAsync(bootstrapPath);
+                            var mergeFileName = mergeFiles[i];
                             var j = 1;
-                            var t = `${merge_files[i].split(".")[0]}${j}.${extension}`;
-                            while (cur_files.includes(merge_file_name)) {
-                                merge_file_name = `${merge_files[i].split(".")[0]}${j}.${extension}`;
+                            var t = `${mergeFiles[i].split(".")[0]}${j}.${extension}`;
+                            while (curFiles.includes(mergeFileName)) {
+                                mergeFileName = `${mergeFiles[i].split(".")[0]}${j}.${extension}`;
                             }
-                            var new_file_path = path.join(
-                                bootstrap_path,
-                                merge_file_name,
+                            var newFilePath = path.join(
+                                bootstrapPath,
+                                mergeFileName,
                             );
                             fs.rename(
-                                merge_file_path,
-                                new_file_path,
+                                mergeFilePath,
+                                newFilePath,
                                 (error) => {
                                     if (error) {
                                         console.log(error);
@@ -276,30 +276,30 @@ async function mergeTest(req, res) {
                     }
                 }
                 // Transfer incomimg python scripts to current scripts
-                var merge_scripts_path = `${merge_path}/training/python/`;
-                if (fs.existsSync(merge_scripts_path)) {
-                    var merge_scripts = await readdirAsync(merge_scripts_path);
-                    for (var i = 0; i < merge_scripts.length; i++) {
-                        if (merge_scripts[i].split(".").pop() == "py") {
-                            var merge_script_path = path.join(
-                                merge_scripts_path,
-                                merge_scripts[i],
+                var mergeScriptsPath = `${mergePath}/training/python/`;
+                if (fs.existsSync(mergeScriptsPath)) {
+                    var mergeScripts = await readdirAsync(mergeScriptsPath);
+                    for (var i = 0; i < mergeScripts.length; i++) {
+                        if (mergeScripts[i].split(".").pop() == "py") {
+                            var mergeScriptPath = path.join(
+                                mergeScriptsPath,
+                                mergeScripts[i],
                             );
-                            var cur_scripts = await readdirAsync(scripts_path);
-                            var merge_script_name = merge_scripts[i];
+                            var curScripts = await readdirAsync(scriptsPath);
+                            var mergeScriptName = mergeScripts[i];
                             var j = 1;
-                            var t = `${merge_scripts[i].split(".")[0]}${j}.py`;
+                            var t = `${mergeScripts[i].split(".")[0]}${j}.py`;
                             // console.log("split name: ", t)
-                            while (cur_scripts.includes(merge_script_name)) {
-                                merge_script_name = `${merge_scripts[i].split(".")[0]}${j}.py`;
+                            while (curScripts.includes(mergeScriptName)) {
+                                mergeScriptName = `${mergeScripts[i].split(".")[0]}${j}.py`;
                             }
-                            var new_script_path = path.join(
-                                scripts_path,
-                                merge_script_name,
+                            var newScriptPath = path.join(
+                                scriptsPath,
+                                mergeScriptName,
                             );
                             fs.rename(
-                                merge_script_path,
-                                new_script_path,
+                                mergeScriptPath,
+                                newScriptPath,
                                 (error) => {
                                     if (error) {
                                         console.log(error);
@@ -311,89 +311,89 @@ async function mergeTest(req, res) {
                 }
 
                 // Add incoming python paths
-                if (fs.existsSync(python_path_file)) {
-                    var current_paths_arr = [];
-                    current_paths_arr.push(
+                if (fs.existsSync(pythonPathFile)) {
+                    var currentPathsArr = [];
+                    currentPathsArr.push(
                         fs
-                            .readFileSync(python_path_file, "utf-8")
+                            .readFileSync(pythonPathFile, "utf-8")
                             .split("\n")
                             .filter(Boolean),
                     );
-                    var current_paths = [];
-                    current_paths = current_paths.concat
-                        .apply(current_paths, current_paths_arr)
+                    var currentPaths = [];
+                    currentPaths = currentPaths.concat
+                        .apply(currentPaths, currentPathsArr)
                         .filter(Boolean);
 
-                    var merge_path_file = `${merge_path}/training/Paths.txt`;
-                    if (fs.existsSync(merge_path_file)) {
-                        var merge_paths_arr = [];
-                        merge_paths_arr.push(
+                    var mergePathFile = `${mergePath}/training/Paths.txt`;
+                    if (fs.existsSync(mergePathFile)) {
+                        var mergePathsArr = [];
+                        mergePathsArr.push(
                             fs
-                                .readFileSync(merge_path_file, "utf-8")
+                                .readFileSync(mergePathFile, "utf-8")
                                 .split("\n")
                                 .filter(Boolean),
                         );
-                        var merge_paths = [];
-                        merge_paths = merge_paths.concat
-                            .apply(merge_paths, merge_paths_arr)
+                        var mergePaths = [];
+                        mergePaths = mergePaths.concat
+                            .apply(mergePaths, mergePathsArr)
                             .filter(Boolean);
-                        var new_paths = "";
-                        for (var i = 0; i < merge_paths.length; i++) {
-                            if (current_paths.includes(merge_paths[i])) {
+                        var newPaths = "";
+                        for (var i = 0; i < mergePaths.length; i++) {
+                            if (currentPaths.includes(mergePaths[i])) {
                                 continue;
                             }
-                            new_paths = `${new_paths}${merge_paths[i]}\n`;
+                            newPaths = `${newPaths}${mergePaths[i]}\n`;
                         }
-                        console.log("new python paths: ", new_paths);
-                        fs.appendFile(python_path_file, new_paths, (err) => {
+                        console.log("new python paths: ", newPaths);
+                        fs.appendFile(pythonPathFile, newPaths, (err) => {
                             if (err) throw err;
                         });
                     }
                 }
 
                 // Add incoming darknet paths
-                if (fs.existsSync(darknet_path_file)) {
-                    var darknet_current_paths_arr = [];
-                    darknet_current_paths_arr.push(
+                if (fs.existsSync(darknetPathFile)) {
+                    var darknetCurrentPathsArr = [];
+                    darknetCurrentPathsArr.push(
                         fs
-                            .readFileSync(darknet_path_file, "utf-8")
+                            .readFileSync(darknetPathFile, "utf-8")
                             .split("\n")
                             .filter(Boolean),
                     );
-                    var darknet_current_paths = [];
-                    darknet_current_paths = darknet_current_paths.concat
-                        .apply(darknet_current_paths, darknet_current_paths_arr)
+                    var darknetCurrentPaths = [];
+                    darknetCurrentPaths = darknetCurrentPaths.concat
+                        .apply(darknetCurrentPaths, darknetCurrentPathsArr)
                         .filter(Boolean);
 
-                    var darknet_merge_path_file = `${merge_path}/training/darknetPaths.txt`;
-                    if (fs.existsSync(darknet_merge_path_file)) {
-                        var darknet_merge_paths_arr = [];
+                    var darknetMergePathFile = `${mergePath}/training/darknetPaths.txt`;
+                    if (fs.existsSync(darknetMergePathFile)) {
+                        var darknetMergePathsArr = [];
 
-                        darknet_merge_paths_arr.push(
+                        darknetMergePathsArr.push(
                             fs
-                                .readFileSync(darknet_merge_path_file, "utf-8")
+                                .readFileSync(darknetMergePathFile, "utf-8")
                                 .split("\n")
                                 .filter(Boolean),
                         );
-                        var darknet_merge_paths = [];
-                        darknet_merge_paths = darknet_merge_paths.concat
-                            .apply(darknet_merge_paths, darknet_merge_paths_arr)
+                        var darknetMergePaths = [];
+                        darknetMergePaths = darknetMergePaths.concat
+                            .apply(darknetMergePaths, darknetMergePathsArr)
                             .filter(Boolean);
-                        var darknet_new_paths = "";
-                        for (var i = 0; i < darknet_merge_paths.length; i++) {
+                        var darknetNewPaths = "";
+                        for (var i = 0; i < darknetMergePaths.length; i++) {
                             if (
-                                darknet_current_paths.includes(
-                                    darknet_merge_paths[i],
+                                darknetCurrentPaths.includes(
+                                    darknetMergePaths[i],
                                 )
                             ) {
                                 continue;
                             }
-                            darknet_new_paths = `${darknet_new_paths}${darknet_merge_paths[i]}\n`;
+                            darknetNewPaths = `${darknetNewPaths}${darknetMergePaths[i]}\n`;
                         }
-                        console.log("new darknet paths: ", darknet_new_paths);
+                        console.log("new darknet paths: ", darknetNewPaths);
                         fs.appendFile(
-                            darknet_path_file,
-                            darknet_new_paths,
+                            darknetPathFile,
+                            darknetNewPaths,
                             (err) => {
                                 if (err) throw err;
                             },
@@ -403,7 +403,7 @@ async function mergeTest(req, res) {
 
                 //connect to new database//////////////////////////////////////////////////////////////////
                 var nmdb = new sqlite3.Database(
-                    merge_path + "/" + incomingDB,
+                    mergePath + "/" + incomingDB,
                     function (err) {
                         if (err) {
                             return console.error(err.message);
@@ -453,9 +453,9 @@ async function mergeTest(req, res) {
 
                 // merge classes //////////////////////////////////////////////////////
                 var results1 = await mdb.allAsync("SELECT * FROM Classes");
-                var cur_classes = [];
+                var curClasses = [];
                 for (var i = 0; i < results1.length; i++) {
-                    cur_classes.push(results1[i].CName);
+                    curClasses.push(results1[i].CName);
                 }
 
                 var results2 = await nmdb.allAsync("SELECT * FROM Classes");
@@ -463,7 +463,7 @@ async function mergeTest(req, res) {
                     var temp = results2[i].CName;
                     results2[i].CName = results2[i].CName.trim();
                     results2[i].CName = results2[i].CName.split(" ").join("_");
-                    if (!cur_classes.includes(results2[i].CName)) {
+                    if (!curClasses.includes(results2[i].CName)) {
                         await nmdb.runAsync(
                             "UPDATE Labels SET CName = '" +
                                 results2[i].CName +
@@ -471,7 +471,7 @@ async function mergeTest(req, res) {
                                 temp +
                                 "'",
                         );
-                        cur_classes.push(results2[i].CName);
+                        curClasses.push(results2[i].CName);
                         await mdb.runAsync(
                             "INSERT INTO Classes (CName) VALUES ('" +
                                 results2[i].CName +
@@ -482,7 +482,7 @@ async function mergeTest(req, res) {
 
                 // merge images /////////////////////////////////////////////////////////
                 //Check base database for missing/renamed images
-                var curr_DB_Images = await readdirAsync(image_path);
+                var curr_DB_Images = await readdirAsync(imagePath);
                 var dbimages = [];
                 var fileTypes = [
                     "jpeg",
@@ -498,7 +498,7 @@ async function mergeTest(req, res) {
                 // console.log("current Images: ", currImages);
 
                 //Check incoming database for missing/renamed images
-                var currImages = await readdirAsync(merge_images);
+                var currImages = await readdirAsync(mergeImages);
                 var dbimages = [];
                 var currDB = await nmdb.allAsync("SELECT * FROM Images");
                 var nmdbimages = [];
@@ -513,8 +513,8 @@ async function mergeTest(req, res) {
                     image = image.split("+").join("_");
                     var ext = image.split(".").pop();
                     fs.rename(
-                        merge_images + currImages[j],
-                        merge_images + image,
+                        mergeImages + currImages[j],
+                        mergeImages + image,
                         () => {},
                     );
                     nmdbimages.push(image);
@@ -551,8 +551,8 @@ async function mergeTest(req, res) {
                 for (var i = 0; i < results4.length; i++) {
                     if (!curr_DB_Images.includes(results4[i].IName)) {
                         fs.rename(
-                            merge_images + results4[i].IName,
-                            image_path + "/" + results4[i].IName,
+                            mergeImages + results4[i].IName,
+                            imagePath + "/" + results4[i].IName,
                             function (err) {
                                 if (err) {
                                     return console.error(err);
@@ -590,9 +590,9 @@ async function mergeTest(req, res) {
 
                 // get current labels
                 var results5 = await mdb.allAsync("SELECT * FROM Labels");
-                var cur_labels = [];
+                var curLabels = [];
                 for (var i = 0; i < results5.length; i++) {
-                    cur_labels.push([
+                    curLabels.push([
                         results5[i].CName,
                         results5[i].X,
                         results5[i].Y,
@@ -606,9 +606,9 @@ async function mergeTest(req, res) {
                 var results6 = await nmdb.allAsync("SELECT * FROM Labels");
 
                 var results7 = await nmdb.allAsync("SELECT * FROM Validation");
-                var new_valids = [];
+                var newValids = [];
                 for (var i = 0; i < results7.length; i++) {
-                    new_valids.push([
+                    newValids.push([
                         results7[i].Confidence,
                         results7[i].LID,
                         results7[i].CName,
@@ -616,10 +616,10 @@ async function mergeTest(req, res) {
                     ]);
                 }
 
-                var new_labels = [];
+                var newLabels = [];
                 var newl = 0;
                 for (var i = 0; i < results6.length; i++) {
-                    new_labels.push([
+                    newLabels.push([
                         results6[i].CName,
                         results6[i].X,
                         results6[i].Y,
@@ -629,21 +629,21 @@ async function mergeTest(req, res) {
                     ]);
 
                     // check if incoming label already exists in current dataset
-                    for (var j = 0; j < cur_labels.length; j++) {
+                    for (var j = 0; j < curLabels.length; j++) {
                         if (
-                            cur_labels[j][0] === new_labels[i][0] &&
-                            cur_labels[j][1] === new_labels[i][1] &&
-                            cur_labels[j][2] === new_labels[i][2] &&
-                            cur_labels[j][3] === new_labels[i][3] &&
-                            cur_labels[j][4] === new_labels[i][4] &&
-                            cur_labels[j][5] === new_labels[i][5]
+                            curLabels[j][0] === newLabels[i][0] &&
+                            curLabels[j][1] === newLabels[i][1] &&
+                            curLabels[j][2] === newLabels[i][2] &&
+                            curLabels[j][3] === newLabels[i][3] &&
+                            curLabels[j][4] === newLabels[i][4] &&
+                            curLabels[j][5] === newLabels[i][5]
                         ) {
                             newl = 1;
                         }
                     }
                     // add incoming label to database
                     if (newl == 0) {
-                        cur_labels.push([
+                        curLabels.push([
                             results6[i].CName,
                             results6[i].X,
                             results6[i].Y,
@@ -668,17 +668,17 @@ async function mergeTest(req, res) {
                                 results6[i].CName +
                                 "')",
                         );
-                        for (var v = 0; v < new_valids.length; v++) {
-                            if (results6[i].LID == new_valids[v][1]) {
+                        for (var v = 0; v < newValids.length; v++) {
+                            if (results6[i].LID == newValids[v][1]) {
                                 await mdb.runAsync(
                                     "INSERT INTO Validation (Confidence, LID, CName, IName) VALUES ('" +
-                                        new_valids[v][0] +
+                                        newValids[v][0] +
                                         "', '" +
                                         Number(newmax) +
                                         "', '" +
-                                        new_valids[v][2] +
+                                        newValids[v][2] +
                                         "', '" +
-                                        new_valids[v][3] +
+                                        newValids[v][3] +
                                         "')",
                                 );
                                 break;
@@ -705,7 +705,7 @@ async function mergeTest(req, res) {
                         console.log("nmdb closed successfully");
                         // delete merge_path
                         try {
-                            rimraf(merge_path, (err) => {
+                            rimraf(mergePath, (err) => {
                                 if (err) {
                                     console.error(
                                         "there was an error with contents: ",
@@ -722,7 +722,7 @@ async function mergeTest(req, res) {
                             console.log(e);
                             console.log("leaving catch block");
                         }
-                        fs.unlink(zip_path, (error) => {
+                        fs.unlink(zipPath, (error) => {
                             if (error) {
                                 console.log(error);
                             }
