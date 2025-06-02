@@ -1,60 +1,51 @@
 module.exports = {
     project: {
-        getLabelsForImageName: async function (projectPath, imageName) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "SELECT * FROM Labels WHERE IName = ?";
-                const result = await db.all(query, [imageName]);
+        getLabelsForImageNameAndClassName: async function (
+            projectPath,
+            imageName,
+            className,
+        ) {
+            const db = global.projectDbClients[projectPath];
+            const query = "SELECT * FROM Labels WHERE IName = ? AND CName = ?";
+            const result = await db.all(query, [imageName, className]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
+        },
+        getLabelsForImageName: async function (projectPath, imageName) {
+            const db = global.projectDbClients[projectPath];
+            const query = "SELECT * FROM Labels WHERE IName = ?";
+            const result = await db.all(query, [imageName]);
+
+            return result;
         },
         getMaxLabelId: async function (projectPath) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query =
-                    "SELECT * FROM Labels WHERE LID = (SELECT MAX(LID)  FROM Labels)";
-                const result = await db.all(query);
+            const db = global.projectDbClients[projectPath];
+            const query =
+                "SELECT * FROM Labels WHERE LID = (SELECT MAX(LID)  FROM Labels)";
+            const result = await db.all(query);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         getAllLabels: async function (projectPath) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "SELECT * FROM Labels";
-                const result = await db.all(query);
+            const db = global.projectDbClients[projectPath];
+            const query = "SELECT * FROM Labels";
+            const result = await db.all(query);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         updateLabelImageName: async function (projectPath, oldName, newName) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "UPDATE Labels SET IName = ? WHERE IName = ?";
-                const result = await db.run(query, [newName, oldName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "UPDATE Labels SET IName = ? WHERE IName = ?";
+            const result = await db.run(query, [newName, oldName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         updateLabelClassName: async function (projectPath, oldName, newName) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "UPDATE Labels SET CName = ? WHERE CName = ?";
-                const result = await db.run(query, [newName, oldName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "UPDATE Labels SET CName = ? WHERE CName = ?";
+            const result = await db.run(query, [newName, oldName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         createLabel: async function (
             projectPath,
@@ -66,60 +57,42 @@ module.exports = {
             labelHeight,
             imageName,
         ) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query =
-                    "INSERT INTO Labels (LID, Cname, X, Y, W, H, IName) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            const db = global.projectDbClients[projectPath];
+            const query =
+                "INSERT INTO Labels (LID, Cname, X, Y, W, H, IName) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-                const result = await db.run(query, [
-                    labelId,
-                    className,
-                    leftX,
-                    bottomY,
-                    labelWidth,
-                    labelHeight,
-                    imageName,
-                ]);
+            const result = await db.run(query, [
+                labelId,
+                className,
+                leftX,
+                bottomY,
+                labelWidth,
+                labelHeight,
+                imageName,
+            ]);
 
-                console.log("done inserting: ", result);
-
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         deleteLabel: async function (projectPath, imageName) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "DELETE FROM Labels WHERE IName = ?";
-                const result = await db.run(query, [imageName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "DELETE FROM Labels WHERE IName = ?";
+            const result = await db.run(query, [imageName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         deleteAllLabels: async function (projectPath) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "DELETE FROM Labels";
-                const result = await db.run(query);
+            const db = global.projectDbClients[projectPath];
+            const query = "DELETE FROM Labels";
+            const result = await db.run(query);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         deleteAllLabelsForImage: async function (projectPath, imageName) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "DELETE FROM Labels WHERE IName = ?";
-                const result = await db.run(query, [imageName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "DELETE FROM Labels WHERE IName = ?";
+            const result = await db.run(query, [imageName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
     },
 };

@@ -1,94 +1,55 @@
 const path = require("path");
 const sharp = require("sharp");
 const fs = require("fs");
+const queries = require("../../queries/queries");
 
 async function downloadDataset(req, res) {
-    console.log("downloadingData");
-
-    // get URL variables
     var PName = req.body.PName,
         admin = req.body.Admin,
         IDX = parseInt(req.body.IDX),
-        // mult = parseInt(req.body.mult),
         user = req.cookies.Username;
 
-    // Set paths
     var public_path = currentPath,
         main_path = public_path + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        project_path = main_path + admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
-        merge_path = project_path + "/merge/",
+        projectPath = main_path + admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
+        merge_path = projectPath + "/merge/",
         merge_images = merge_path + "images/",
-        images_path = project_path + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
+        images_path = projectPath + "/images", // $LABELING_TOOL_PATH/public/projects/project_name/images
         downloads_path = main_path + user + "_Downloads";
-    bootstrap_path = project_path + "/bootstrap";
+    bootstrap_path = projectPath + "/bootstrap";
 
     if (!fs.existsSync(downloads_path)) {
-        fs.mkdir(downloads_path, (err) => {
-            if (err) {
-                console.log(err);
-            }
-        });
+        fs.mkdirSync(downloads_path);
     }
-    // Connect to database
+
     var dddb = new sqlite3.Database(
-        project_path + "/" + PName + ".db",
+        projectPath + "/" + PName + ".db",
         (err) => {
             if (err) {
                 return console.error(err.message);
             }
-            console.log("Connected to dddb.");
         },
     );
-    dddb.getAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.get(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    dddb.allAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.all(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-        });
-    };
-    dddb.runAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.run(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    reject(err);
-                } else resolve(row);
-            });
-        });
-    };
 
-    // get form
     var download_format = parseInt(req.body.download_format);
 
     var cnames = [];
-    var results1 = await dddb.allAsync("SELECT * FROM Classes");
-    var results2 = await dddb.allAsync("SELECT * FROM Images");
 
-    for (var i = 0; i < results1.length; i++) {
-        cnames.push(results1[i].CName);
+    let existingClasses;
+    let existingImages;
+
+    try {
+        existingClasses = await queries.project.getAllClasses(projectPath);
+        existingImages = await queries.project.getAllImages(projectPath);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send("Error fetching existing resources");
     }
 
-    //classfication
+    for (var i = 0; i < existingClasses.rows.length; i++) {
+        cnames.push(existingClasses.rows[i].CName);
+    }
+
     if (download_format == 6) {
         const cropImage = async (
             sourcePath,
@@ -115,8 +76,6 @@ async function downloadDataset(req, res) {
             }
         };
 
-        console.log("HELLOOO");
-
         folderName = downloads_path + "/dataset";
         folderTrain = folderName + "/train";
         folderVal = folderName + "/val";
@@ -125,30 +84,32 @@ async function downloadDataset(req, res) {
             if (!fs.existsSync(folderName)) {
                 fs.mkdirSync(folderName);
             }
+
             if (!fs.existsSync(folderTrain)) {
                 fs.mkdirSync(folderTrain);
             }
+
             if (!fs.existsSync(folderVal)) {
                 fs.mkdirSync(folderVal);
             }
-            console.log("Directories created");
         } catch (err) {
             console.error(err);
         }
 
-        // Get all the image class mappings
+        let imageClassMapping;
 
-        var imageClassMapping = await dddb.allAsync(`
-			SELECT Labels.CName, Labels.X, Labels.Y, Labels.W, Labels.H, Images.IName, Images.reviewImage, Images.validateImage
-			FROM Labels
-			JOIN Images ON Labels.IName = Images.IName
-		`);
+        try {
+            imageClassMapping =
+                await queries.project.getImageClassMapping(projectPath);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).send("Error getting image class mapping");
+        }
 
         const processedImages = {};
         const croppingPromises = [];
 
-        imageClassMapping.forEach((indivdualClass) => {
-            console.log(indivdualClass.CName);
+        imageClassMapping.rows.forEach((indivdualClass) => {
             classFolderTrain = folderTrain + "/" + indivdualClass.CName;
             classFolderVal = folderVal + "/" + indivdualClass.CName;
 
@@ -167,8 +128,6 @@ async function downloadDataset(req, res) {
                 console.error(err);
             }
 
-            // math random to split into validation and training
-
             const isValidation = Math.random() < 0.2;
             let targetFolder = isValidation ? classFolderVal : classFolderTrain;
             let sourceImagePath = images_path + "/" + indivdualClass.IName;
@@ -176,6 +135,7 @@ async function downloadDataset(req, res) {
             if (!processedImages[indivdualClass.IName]) {
                 processedImages[indivdualClass.IName] = 0;
             }
+
             processedImages[indivdualClass.IName]++;
 
             let targetImagePath =
@@ -230,7 +190,6 @@ async function downloadDataset(req, res) {
                 } else {
                     console.log("File downloaded successfully");
 
-                    // Delete the zip file
                     fs.unlink(folderZip, (err) => {
                         if (err) {
                             console.error("Error deleting the zip file:", err);
@@ -239,7 +198,6 @@ async function downloadDataset(req, res) {
                         }
                     });
 
-                    // Delete the folder
                     fs.rm(folderName, { recursive: true }, (err) => {
                         if (err) {
                             console.error("Error deleting the folder:", err);
@@ -268,60 +226,61 @@ async function downloadDataset(req, res) {
         archive.finalize();
     }
 
-    // Yolo Format
+    // YOLO
     if (download_format == 0) {
         var dict_images_labels = {};
-        for (var i = 0; i < results2.length; i++) {
-            var img = fs.readFileSync(`${images_path}/${results2[i].IName}`),
+        for (var i = 0; i < existingImages.rows.length; i++) {
+            var img = fs.readFileSync(
+                    `${images_path}/${existingImages.rows[i].IName}`,
+                ),
                 img_data = probe.sync(img),
                 img_w = img_data.width,
                 img_h = img_data.height;
 
-            var results3 = await dddb.allAsync(
-                "SELECT * FROM Labels WHERE IName = '" +
-                    results2[i].IName +
-                    "'",
+            const imageLabels = await queries.project.getLabelsForImageName(
+                projectPath,
+                existingImages.rows[i].IName,
             );
-            for (var j = 0; j < results3.length; j++) {
+
+            for (var j = 0; j < imageLabels.rows.length; j++) {
                 // x, y, w, h
-                var centerX = (results3[j].X + results3[j].W / 2) / img_w;
-                var centerY = (results3[j].Y + results3[j].H / 2) / img_h;
+                var centerX =
+                    (imageLabels.rows[j].X + imageLabels.rows[j].W / 2) / img_w;
+                var centerY =
+                    (imageLabels.rows[j].Y + imageLabels.rows[j].H / 2) / img_h;
+
                 to_string_value =
-                    cnames.indexOf(results3[j].CName) +
+                    cnames.indexOf(imageLabels.rows[j].CName) +
                     " " +
                     centerX +
                     " " +
                     centerY +
                     " " +
-                    results3[j].W / img_w +
+                    imageLabels.rows[j].W / img_w +
                     " " +
-                    results3[j].H / img_h +
+                    imageLabels.rows[j].H / img_h +
                     "\n";
-                if (dict_images_labels[results2[i].IName] == undefined) {
-                    dict_images_labels[results2[i].IName] = to_string_value;
+
+                if (
+                    dict_images_labels[existingImages.rows[i].IName] ==
+                    undefined
+                ) {
+                    dict_images_labels[existingImages.rows[i].IName] =
+                        to_string_value;
                 } else {
-                    dict_images_labels[results2[i].IName] += to_string_value;
+                    dict_images_labels[existingImages.rows[i].IName] +=
+                        to_string_value;
                 }
             }
-            if (results3.length == 0) {
-                dict_images_labels[results2[i].IName] = "";
+            if (imageLabels.rows.length == 0) {
+                dict_images_labels[existingImages.rows[i].IName] = "";
             }
         }
 
         var output = fs.createWriteStream(`${downloads_path}/yolo.zip`);
         var archive = archiver("zip");
+
         output.on("close", function () {
-            console.log(archive.pointer() + " total bytes");
-            console.log(
-                "archiver has been finalized and the output file descriptor has closed.",
-            );
-            dddb.close(function (err) {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log("dddb closed successfully");
-                }
-            });
             res.download(`${downloads_path}/yolo.zip`);
         });
 
@@ -330,55 +289,57 @@ async function downloadDataset(req, res) {
         });
 
         archive.pipe(output);
-        console.log("Writing labels");
+
         for (var key in dict_images_labels) {
             remove_dot_ext = key.split(".")[0];
             fs.writeFileSync(
                 `${downloads_path}/${remove_dot_ext}.txt`,
                 dict_images_labels[key],
-                (err) => {
-                    if (err) throw err;
-                },
             );
+
             archive.file(`${downloads_path}/${remove_dot_ext}.txt`, {
                 name: remove_dot_ext + ".txt",
             });
         }
 
-        // Classes file
-        console.log("Writing Classes file");
         var classes = "";
-        for (var i = 0; i < results1.length; i++) {
-            classes = classes + results1[i].CName + "\n";
+        for (var i = 0; i < existingClasses.rows.length; i++) {
+            classes = classes + existingClasses.rows[i].CName + "\n";
         }
+
         classes = classes.substring(0, classes.length - 1);
+
         fs.writeFileSync(
             downloads_path + "/" + PName + "_Classes.txt",
             classes,
-            (err) => {
-                if (err) throw err;
-                console.log("done writing Classes file");
-            },
         );
+
         await archive.file(downloads_path + "/" + PName + "_Classes.txt", {
             name: PName + "_Classes.txt",
         });
 
-        //Images
         archive.directory(images_path, false);
-
         archive.finalize();
     }
 
     // Tensorflow format
-    // TODO xmin/ymin
     else if (download_format == 1) {
-        var labels = await dddb.allAsync("SELECT * FROM Labels");
+        let labels;
+        try {
+            labels = await queries.project.getAllLabels(projectPath);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).send("Could not fetch labels");
+        }
+
+        labels = labels.rows;
+
         var xmin = 0;
         var xmax = 0;
         var ymin = 0;
         var ymax = 0;
         var data = "filename,width,height,class,xmin,ymin,xmax,ymax\n";
+
         for (var i = 0; i < labels.length; i++) {
             xmin = labels[i].X;
             xmax = xmin + labels[i].W;
@@ -410,29 +371,13 @@ async function downloadDataset(req, res) {
                 "\n";
         }
 
-        fs.writeFile(
-            downloads_path + "/" + PName + "_dataset.csv",
-            data,
-            (err) => {
-                if (err) throw err;
-                console.log("done writing csv");
-            },
-        );
+        fs.writeFileSync(downloads_path + "/" + PName + "_dataset.csv", data);
 
         var output = fs.createWriteStream(downloads_path + "/tensorflow.zip");
+
         var archive = archiver("zip");
+
         output.on("close", function () {
-            console.log(archive.pointer() + " total bytes");
-            console.log(
-                "archiver has been finalized and the output file descriptor has closed.",
-            );
-            dddb.close(function (err) {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log("dddb closed successfully");
-                }
-            });
             res.download(downloads_path + "/tensorflow.zip");
         });
 
@@ -446,24 +391,28 @@ async function downloadDataset(req, res) {
             name: PName + "_dataset.csv",
         });
 
-        // var images = await dddb.allAsync("SELECT * FROM Images");
-        // for(var i = 0; i < images.length; i++)
-        // {
-        // 	archive.file(public_path+"/public/projects/" + admin + '-' +PName+"/images/"+images[i].IName, {name: images[i].IName});
-        // }
-
         archive.finalize();
     }
     // COCO
     else if (download_format == 2) {
-        var labels = await dddb.allAsync("SELECT * FROM Labels");
+        let labels;
+        try {
+            labels = await queries.project.getAllLabels(projectPath);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).send("Could not fetch labels");
+        }
+
+        labels = labels.rows;
+
+        let images = [];
+
         var xmin = 0;
         var xmax = 0;
         var ymin = 0;
         var ymax = 0;
         var rows = [];
         var imageNames = [];
-        var imageId = 0;
 
         for (var i = 0; i < labels.length; i++) {
             data = [];
@@ -485,7 +434,6 @@ async function downloadDataset(req, res) {
             rows.push(data);
         }
         var coco = {};
-        var images = [];
         var categories = [];
         var annotations = [];
 
@@ -526,10 +474,10 @@ async function downloadDataset(req, res) {
 
             return anno;
         }
-        for (var i = 0; i < results2.length; i++) {
-            // console.log(results2[i].IName);
-            imageNames.push(results2[i].IName);
-            images.push(im(results2[i].IName, i));
+        for (var i = 0; i < existingImages.rows.length; i++) {
+            // console.log(existingImages.rows[i].IName);
+            imageNames.push(existingImages.rows[i].IName);
+            images.push(im(existingImages.rows[i].IName, i));
         }
         for (var i = 0; i < rows.length; i++) {
             annotations.push(annotation(rows[i]));
@@ -539,34 +487,20 @@ async function downloadDataset(req, res) {
         }
 
         coco["images"] = images;
-        // console.log("images: \n", images);
         coco["categories"] = categories;
         coco["annotations"] = annotations;
 
         var coco_data = JSON.stringify(coco);
 
-        fs.writeFile(
+        fs.writeFileSync(
             downloads_path + "/" + PName + "_coco.json",
             coco_data,
-            (err) => {
-                if (err) throw err;
-                console.log("done writing csv");
-            },
         );
+
         var output = fs.createWriteStream(downloads_path + "/coco.zip");
         var archive = archiver("zip");
+
         output.on("close", function () {
-            console.log(archive.pointer() + " total bytes");
-            console.log(
-                "archiver has been finalized and the output file descriptor has closed.",
-            );
-            dddb.close(function (err) {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log("dddb closed successfully");
-                }
-            });
             res.download(downloads_path + "/coco.zip");
         });
 
@@ -580,7 +514,15 @@ async function downloadDataset(req, res) {
             name: PName + "_coco.json",
         });
 
-        var images = await dddb.allAsync("SELECT * FROM Images");
+        try {
+            images = await queries.project.getAllImages(projectPath);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).send("Error fetching images.");
+        }
+
+        images = images.rows;
+
         for (var i = 0; i < images.length; i++) {
             archive.file(
                 public_path +
@@ -600,18 +542,8 @@ async function downloadDataset(req, res) {
     else if (download_format == 3) {
         var output = fs.createWriteStream(downloads_path + "/VOC.zip");
         var archive = archiver("zip");
+
         output.on("close", function () {
-            console.log(archive.pointer() + " total bytes");
-            console.log(
-                "archiver has been finalized and the output file descriptor has closed.",
-            );
-            dddb.close(function (err) {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log("dddb closed successfully");
-                }
-            });
             res.download(downloads_path + "/VOC.zip");
         });
 
@@ -621,8 +553,8 @@ async function downloadDataset(req, res) {
 
         archive.pipe(output);
 
-        for (var i = 0; i < results2.length; i++) {
-            var imgName = results2[i].IName;
+        for (var i = 0; i < existingImages.rows.length; i++) {
+            var imgName = existingImages.rows[i].IName;
             var imgPath = `${images_path}/${imgName}`;
             var img = fs.readFileSync(`${imgPath}`);
             var img_data = probe.sync(img);
@@ -644,9 +576,19 @@ async function downloadDataset(req, res) {
             data += `\t</size>\n`;
             data += `\t<segmented>0</segmented>\n`;
 
-            var labels = await dddb.allAsync(
-                "SELECT * FROM Labels WHERE IName = '" + imgName + "'",
-            );
+            let labels;
+            try {
+                labels = await queries.project.getLabelsForImageName(
+                    projectPath,
+                    imgName,
+                );
+            } catch (err) {
+                console.error(err);
+                return res.status(500).send("Error fetching images");
+            }
+
+            labels = labels.rows;
+
             for (var j = 0; j < labels.length; j++) {
                 var className = labels[j].CName;
                 var xmin = labels[j].X;
@@ -678,7 +620,16 @@ async function downloadDataset(req, res) {
             archive.file(downloads_path + "/" + xmlname, { name: xmlname });
         }
 
-        var images = await dddb.allAsync("SELECT * FROM Images");
+        let images;
+        try {
+            images = await queries.project.getAllImages(projectPath);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).send("Error fetching images");
+        }
+
+        images = images.rows;
+
         for (var i = 0; i < images.length; i++) {
             archive.file(
                 public_path +
@@ -698,19 +649,8 @@ async function downloadDataset(req, res) {
     else if (download_format == 4) {
         var output = fs.createWriteStream(downloads_path + "/summary.zip");
         var archive = archiver("zip");
+
         output.on("close", function () {
-            console.log(archive.pointer() + " total bytes");
-            console.log(
-                "archiver has been finalized and the output file descriptor has closed.",
-            );
-            dddb.close(function (err) {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.log("dddb closed successfully");
-                }
-            });
-            // res.download(public_path+'/public/projects/' + admin + '-' +PName+'/downloads/summary.zip');
             res.download(downloads_path + "/summary.zip");
         });
 
@@ -720,49 +660,75 @@ async function downloadDataset(req, res) {
 
         archive.pipe(output);
         var data = "";
-        console.log("Organize Data");
-        for (var i = 0; i < results2.length; i++) {
-            // console.log("Image: ", results2[i].IName);
-            data = data + results2[i].IName + "\t";
-            var classname = await dddb.allAsync(
-                "SELECT DISTINCT CName FROM Labels WHERE IName = '" +
-                    results2[i].IName +
-                    "'",
-            );
-            // console.log("distinct: ", classname);
-            for (var j = 0; j < classname.length; j++) {
-                var count = await dddb.getAsync(
-                    "SELECT COUNT(*) AS count FROM Labels WHERE IName = '" +
-                        results2[i].IName +
-                        "' AND CName = '" +
-                        classname[j].CName +
-                        "'",
+
+        for (var i = 0; i < existingImages.rows.length; i++) {
+            data = data + existingImages.rows[i].IName + "\t";
+
+            let className;
+            try {
+                className = await queries.project.getClassNameForLabel(
+                    projectPath,
+                    existingImages.rows[i].IName,
                 );
-                // console.log("count: ", count.count);
-                // console.log("CName: ", classname[j].CName);
-                data = data + count.count + ": " + classname[j].CName + "\t";
+            } catch (err) {
+                console.error(err);
+                return res
+                    .status(500)
+                    .send("Error fetching class name for image");
             }
-            var review = await dddb.getAsync(
-                "SELECT reviewImage FROM Images WHERE IName = '" +
-                    results2[i].IName +
-                    "'",
-            );
-            data = data + review.reviewImage + "\t" + "\n";
+
+            className = className.rows;
+
+            for (var j = 0; j < className.length; j++) {
+                let filteredLabels;
+
+                try {
+                    filteredLabels =
+                        await queries.project.getLabelsForImageNameAndClassName(
+                            projectPath,
+                            existingImages.rows[i].IName,
+                            className[j].CName,
+                        );
+                } catch (err) {
+                    console.error(err);
+                    return res
+                        .status(500)
+                        .send(
+                            "Error fetching labels for image name and class name",
+                        );
+                }
+
+                filteredLabels = filteredLabels.rows;
+
+                data =
+                    data +
+                    filteredLabels.length +
+                    ": " +
+                    className[j].CName +
+                    "\t";
+            }
+
+            let image;
+            try {
+                image = await queries.project.getImage(
+                    projectPath,
+                    existingImages.rows[i].IName,
+                );
+            } catch (err) {
+                console.error(err);
+                return res.status(500).send("Error fetching image");
+            }
+
+            image = image.row;
+
+            data = data + image.reviewImage + "\t" + "\n";
         }
 
-        // Create race condition
-        // Not sure if using await will work
-        // as it remains non-blocking and archive.file
-        // does not use the value of fs.writeFile.
-        // fs.writeFileSync is blocking but will cause further slowdown
-        // fs.writeFile(public_path+'/public/projects/' + admin + '-' +PName+'/downloads/'+PName+'_Summary.txt', data, (err) => {
         fs.writeFile(
             downloads_path + "/" + PName + "_Summary.txt",
             data,
             (err) => {
                 if (err) throw err;
-                console.log("done writing summary");
-                // archive.file(public_path+'/public/projects/' + admin + '-' +PName+'/downloads/'+PName+'_Summary.txt', { name: PName+"_Summary.txt" });
                 archive.file(downloads_path + "/" + PName + "_Summary.txt", {
                     name: PName + "_Summary.txt",
                 });
@@ -777,18 +743,6 @@ async function downloadDataset(req, res) {
             );
             var archive = archiver("zip");
             output.on("close", function () {
-                console.log(archive.pointer() + " total bytes");
-                console.log(
-                    "archiver has been finalized and the output file descriptor has closed.",
-                );
-                dddb.close(function (err) {
-                    if (err) {
-                        console.error(err);
-                    } else {
-                        console.log("dddb closed successfully");
-                    }
-                });
-
                 res.download(downloads_path + "/initialClassification.zip");
             });
 
@@ -802,15 +756,12 @@ async function downloadDataset(req, res) {
             var raw_label_bootstrap_data = fs.readFileSync(
                 bootstrap_path + "/out.json",
             );
-            // var label_bootstrap_data = JSON.parse(raw_label_bootstrap_data);
 
             fs.writeFile(
                 downloads_path + "/out.json",
                 raw_label_bootstrap_data,
                 (err) => {
                     if (err) throw err;
-                    console.log("done writing summary");
-                    // archive.file(public_path+'/public/projects/' + admin + '-' +PName+'/downloads/'+PName+'_Summary.txt', { name: PName+"_Summary.txt" });
                     archive.file(downloads_path + "/out.json", {
                         name: "out.json",
                     });

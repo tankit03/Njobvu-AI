@@ -1,26 +1,18 @@
 module.exports = {
     project: {
         getAllValidations: async function (projectPath) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "SELECT * FROM Validations";
-                const result = await db.all(query);
+            const db = global.projectDbClients[projectPath];
+            const query = "SELECT * FROM Validations";
+            const result = await db.all(query);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         getAllValidationsForImage: async function (projectPath, imageName) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "SELECT * FROM Validations WHERE IName = ?";
-                const result = await db.all(query, [imageName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "SELECT * FROM Validations WHERE IName = ?";
+            const result = await db.all(query, [imageName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         createValidation: async function (
             projectPath,
@@ -29,84 +21,60 @@ module.exports = {
             className,
             imageName,
         ) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query =
-                    "INSERT INTO Validation (Confidence, LID, CName, IName) VALUES (?, ?, ?, ?)";
-                const result = await db.run(query, [
-                    confidence,
-                    Number(labelID),
-                    className,
-                    imageName,
-                ]);
+            const db = global.projectDbClients[projectPath];
+            const query =
+                "INSERT INTO Validation (Confidence, LID, CName, IName) VALUES (?, ?, ?, ?)";
+            const result = await db.run(query, [
+                confidence,
+                Number(labelID),
+                className,
+                imageName,
+            ]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         updateValidationImageName: async function (
             projectPath,
             oldName,
             newName,
         ) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "UPDATE Validation SET IName = ? WHERE IName = ?";
-                const result = await db.run(query, [newName, oldName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "UPDATE Validation SET IName = ? WHERE IName = ?";
+            const result = await db.run(query, [newName, oldName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         updateValidationClassName: async function (
             projectPath,
             oldName,
             newName,
         ) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "UPDATE Validation SET CName = ? WHERE CName = ?";
-                const result = await db.run(query, [newName, oldName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "UPDATE Validation SET CName = ? WHERE CName = ?";
+            const result = await db.run(query, [newName, oldName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         deleteValidation: async function (projectPath, imageName) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "DELETE FROM Validation WHERE IName = ?";
-                const result = await db.run(query, [imageName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "DELETE FROM Validation WHERE IName = ?";
+            const result = await db.run(query, [imageName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         deleteAllValidations: async function (projectPath) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "DELETE FROM Validation";
-                const result = await db.run(query);
+            const db = global.projectDbClients[projectPath];
+            const query = "DELETE FROM Validation";
+            const result = await db.run(query);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
         deleteAllValidationsForImage: async function (projectPath, imageName) {
-            try {
-                const db = global.projectDbClients[projectPath];
-                const query = "DELETE FROM Validation WHERE IName = ?";
-                const result = await db.run(query, [imageName]);
+            const db = global.projectDbClients[projectPath];
+            const query = "DELETE FROM Validation WHERE IName = ?";
+            const result = await db.run(query, [imageName]);
 
-                return result;
-            } catch (err) {
-                return err;
-            }
+            return result;
         },
     },
 };
