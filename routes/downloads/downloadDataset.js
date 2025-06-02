@@ -262,8 +262,7 @@ async function downloadDataset(req, res) {
                     "\n";
 
                 if (
-                    dictImagesLabels[existingImages.rows[i].IName] ==
-                    undefined
+                    dictImagesLabels[existingImages.rows[i].IName] == undefined
                 ) {
                     dictImagesLabels[existingImages.rows[i].IName] =
                         to_string_value;
@@ -309,10 +308,7 @@ async function downloadDataset(req, res) {
 
         classes = classes.substring(0, classes.length - 1);
 
-        fs.writeFileSync(
-            downloadsPath + "/" + PName + "_Classes.txt",
-            classes,
-        );
+        fs.writeFileSync(downloadsPath + "/" + PName + "_Classes.txt", classes);
 
         await archive.file(downloadsPath + "/" + PName + "_Classes.txt", {
             name: PName + "_Classes.txt",
@@ -492,10 +488,7 @@ async function downloadDataset(req, res) {
 
         var cocoData = JSON.stringify(coco);
 
-        fs.writeFileSync(
-            downloadsPath + "/" + PName + "_coco.json",
-            cocoData,
-        );
+        fs.writeFileSync(downloadsPath + "/" + PName + "_coco.json", cocoData);
 
         var output = fs.createWriteStream(downloadsPath + "/coco.zip");
         var archive = archiver("zip");

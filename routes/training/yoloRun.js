@@ -221,10 +221,7 @@ async function yoloRun(req, res) {
                     imagesPath,
                     existingImages.rows[i].IName,
                 );
-                abs_darknet_org_labels_path = path.join(
-                    imagesPath,
-                    labelFile,
-                );
+                abs_darknet_org_labels_path = path.join(imagesPath, labelFile);
                 abs_darknet_train_images_path = path.join(
                     abs_darknet_images_train,
                     existingImages.rows[i].IName,
@@ -267,10 +264,7 @@ async function yoloRun(req, res) {
                     imagesPath,
                     existingImages.rows[i].IName,
                 );
-                abs_darknet_org_lables_path = path.join(
-                    imagesPath,
-                    labelFile,
-                );
+                abs_darknet_org_lables_path = path.join(imagesPath, labelFile);
                 abs_darknet_train_val_path = path.join(
                     abs_darknet_images_val,
                     existingImages.rows[i].IName,
@@ -423,10 +417,7 @@ async function yoloRun(req, res) {
                     imagesPath,
                     existingImages.rows[i].IName,
                 );
-                abs_darknet_org_labels_path = path.join(
-                    imagesPath,
-                    labelFile,
-                );
+                abs_darknet_org_labels_path = path.join(imagesPath, labelFile);
                 abs_darknet_train_images_path = path.join(
                     abs_darknet_images_train,
                     existingImages.rows[i].IName,

@@ -84,12 +84,7 @@ async function boostrap(req, res) {
                     imagesPath + "/" + newFiles[i],
                 );
 
-                await queries.project.addImages(
-                    projectPath,
-                    newFiles[i],
-                    0,
-                    1,
-                );
+                await queries.project.addImages(projectPath, newFiles[i], 0, 1);
 
                 newImages.push(newFiles[i]);
                 bootstrapString += newFiles[i] + "\n";
@@ -115,4 +110,3 @@ async function boostrap(req, res) {
 }
 
 module.exports = boostrap;
-
