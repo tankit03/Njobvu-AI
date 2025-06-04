@@ -1,7 +1,5 @@
 async function test(req, res) {
-    console.log("test");
     let file = req.files.upload_project;
-    console.log(file);
 
     var username = req.cookies.Username;
 
@@ -10,7 +8,7 @@ async function test(req, res) {
             username +
             "'",
     );
-    console.log("numprojects: ", Numprojects.THING);
+
     res.send({ Success: "Test was successful" });
 }
 

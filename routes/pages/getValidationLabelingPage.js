@@ -248,13 +248,18 @@ async function getValidationLabelingPage(req, res) {
         }
     }
 
+    /*
     var rowid;
     for (var b = 0; b < results2.length; b++) {
         if (IName == results2[b].IName) {
             rowid = { rowid: b + 1 };
             break;
         }
-    }
+    }*/
+
+    var rowid = await ldb.getAsync(
+        `SELECT IName, display_id FROM (SELECT IName, ROW_NUMBER() OVER (ORDER BY rowid) AS display_id FROM Images) AS numbered WHERE IName = '${String(IName)}'`,
+    );
 
     await ldb.allAsync(
         "UPDATE Images SET reviewImage = 0 WHERE IName = '" + IName + "'",

@@ -75,6 +75,8 @@ const mergeTest = require("./tests/mergeTest");
 
 const changeValidation = require("./validation/changeValidation");
 const deleteLabelValidation = require("./validation/deleteValidation");
+const batchChangeClass = require("./validation/batchClass");
+const changeClass = require("./validation/changeClass");
 
 const bootstrapController = require("./bootstrap/bootstrapController");
 
@@ -136,6 +138,8 @@ api.post("/downloadRun", downloadRun);
 //VALIDATION ROUTES
 api.post("/changeValidation", changeValidation);
 api.post("/deleteLabelValidation", deleteLabelValidation);
+api.post("/batch-change-class", batchChangeClass);
+api.post("/solo-change-class", changeClass);
 
 // TEST ROUTES
 api.post("/test", test);

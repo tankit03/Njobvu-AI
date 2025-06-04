@@ -1,6 +1,4 @@
 async function downloadRun(req, res) {
-    console.log("downloadRun");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         IDX = req.body.IDX,

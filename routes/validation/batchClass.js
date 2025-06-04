@@ -1,6 +1,6 @@
-async function batchChangeClass(req, res){
+const queries = require("../../queries/queries");
 
-    console.log("Batch Change Class");
+async function batchChangeClass(req, res) {
     var projectName = req.body.PName,
         admin = req.body.Admin,
         class1 = req.body.class1,
@@ -10,98 +10,24 @@ async function batchChangeClass(req, res){
         mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         projectPath = mainPath + admin + "-" + projectName; // $LABELING_TOOL_PATH/public/projects/project_name
 
-    var aidb = new sqlite3.Database(
-        projectPath + "/" + projectName + ".db",
-        (err) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            console.log("Connected to aidb.");
-        },
-    );
-    aidb.getAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.get(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    //reject(err);
-                    aidb.close(function (err) {
-                        if (err) {
-                            console.error(err);
-                        } else {
-                            console.log("aidb closed");
-                        }
-                    });
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-            // res.send({"Success": "No"})
-            return res.send("ERROR! " + err);
-        });
-    };
-    aidb.allAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.all(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    //reject(err);
-                    aidb.close(function (err) {
-                        if (err) {
-                            console.error(err);
-                        } else {
-                            console.log("aidb closed");
-                        }
-                    });
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-            // res.send({"Success": "No"})
-            return res.send("ERROR! " + err);
-        });
-    };
-    aidb.runAsync = function (sql) {
-        var that = this;
-        return new Promise(function (resolve, reject) {
-            that.run(sql, function (err, row) {
-                if (err) {
-                    console.log("runAsync ERROR! ", err);
-                    aidb.close(function (err) {
-                        if (err) {
-                            console.error(err);
-                        } else {
-                            console.log("aidb closed");
-                        }
-                    });
-                    reject(err);
-                } else resolve(row);
-            });
-        }).catch((err) => {
-            console.error(err);
-            // res.send({"Success": "No"})
-            return res.send("ERROR! " + err);
-        });
-    };
+    console.log(class1, class2);
 
-    await aidb.runAsync(
-        "UPDATE Labels SET CName = '" +
-            class2 +
-            "' WHERE CName ='" +
-            class1 +
-            "'",
-    );
-    await aidb.runAsync(
-        "UPDATE Validation SET CName = '" +
-            class2 +
-            "' WHERE CName ='" +
-            class1 +
-            "'",
-    );
+    try {
+        await queries.project.sql(
+            projectPath,
+            "UPDATE Labels SET CName = ? WHERE CName = ?",
+            [class2, class1],
+        );
+        await queries.project.sql(
+            projectPath,
+            "UPDATE Validation SET CName = ? WHERE CName = ?",
+            [class2, class1],
+        );
+    } catch (err) {
+        console.error(err);
+        return res.stauts("Error batching classes");
+    }
+
     res.send({ Success: "Yes" });
 }
 
