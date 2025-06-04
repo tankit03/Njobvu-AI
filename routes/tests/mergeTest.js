@@ -3,6 +3,7 @@ const rimraf = require("../../public/libraries/rimraf");
 const path = require("path");
 const { Client } = require("../../queries/client");
 const queries = require("../../queries/queries");
+const fsPromises = require("fs").promises;
 
 async function mergeTest(req, res) {
     var uploadImages = req.files.upload_project,
@@ -79,7 +80,6 @@ async function mergeTest(req, res) {
     await zip.extract(null, mergePath);
     await zip.close();
 
-    var incomingImageFiles = await readdirAsync(currentImagesPath);
     var newFiles = await readdirAsync(mergePath);
 
     for (var i = 0; i < newFiles.length; i++) {
@@ -159,41 +159,39 @@ async function mergeTest(req, res) {
 
             var newFilePath = path.join(bootstrapPath, mergeFileName);
 
-            fs.rename(mergeFilePath, newFilePath, (error) => {
-                if (error) {
-                    console.log(error);
-                }
-            });
+            fs.renameSync(mergeFilePath, newFilePath);
         }
     }
 
     var mergeScriptsPath = `${mergePath}/training/python/`;
 
     if (fs.existsSync(mergeScriptsPath)) {
-        var mergeScripts = await readdirAsync(mergeScriptsPath);
+        const mergeScripts = await readdirAsync(mergeScriptsPath);
 
-        for (var i = 0; i < mergeScripts.length; i++) {
-            if (!mergeScripts[i].split(".").pop() == "py") {
-                continue;
-            }
+        for (let i = 0; i < mergeScripts.length; i++) {
+            const ext = mergeScripts[i].split(".").pop();
+            if (ext !== "py") continue;
 
-            var mergeScriptPath = path.join(mergeScriptsPath, mergeScripts[i]);
+            const mergeScriptPath = path.join(
+                mergeScriptsPath,
+                mergeScripts[i],
+            );
+            let mergeScriptName = mergeScripts[i];
+            let j = 1;
 
-            var curScripts = await readdirAsync(scriptsPath);
-            var mergeScriptName = mergeScripts[i];
-            var j = 1;
-
+            let curScripts = await readdirAsync(scriptsPath);
             while (curScripts.includes(mergeScriptName)) {
-                mergeScriptName = `${mergeScripts[i].split(".")[0]}${j}.py`;
+                mergeScriptName = `${mergeScripts[i].split(".")[0]}${j++}.py`;
+                curScripts = await readdirAsync(scriptsPath); // update!
             }
 
-            var newScriptPath = path.join(scriptsPath, mergeScriptName);
+            const newScriptPath = path.join(scriptsPath, mergeScriptName);
 
-            fs.rename(mergeScriptPath, newScriptPath, (error) => {
-                if (error) {
-                    console.log(error);
-                }
-            });
+            try {
+                await fsPromises.rename(mergeScriptPath, newScriptPath);
+            } catch (err) {
+                console.error("Rename error:", err);
+            }
         }
     }
 
@@ -293,8 +291,9 @@ async function mergeTest(req, res) {
     const newDbPath = path.normalize(mergePath);
 
     if (!Object.keys(global.projectDbClients).includes(newDbPath)) {
+        console.log(incomingDB);
         global.projectDbClients[newDbPath] = new Client(
-            projectPath + `/${projectName}.db`,
+            mergePath + `/${incomingDB}`,
         );
     }
 
@@ -379,7 +378,12 @@ async function mergeTest(req, res) {
 
         var ext = image.split(".").pop();
 
-        fs.renameSync(mergeImages + incomingImageFiles[j], mergeImages + image);
+        if (mergeImages + incomingImageFiles[j] != mergeImages + image) {
+            fs.renameSync(
+                mergeImages + incomingImageFiles[j],
+                mergeImages + image,
+            );
+        }
 
         if (imageNamesInDb.includes(oldimg)) {
             try {
@@ -416,8 +420,9 @@ async function mergeTest(req, res) {
         return res.status(500).send("Error fetching images");
     }
 
+    console.log(normalizedIncomingImages.rows);
+
     for (var i = 0; i < normalizedIncomingImages.rows.length; i++) {
-        console.log(existingImageFiles, normalizedIncomingImages.rows[i].IName);
         if (
             !existingImageFiles.includes(normalizedIncomingImages.rows[i].IName)
         ) {
@@ -440,7 +445,18 @@ async function mergeTest(req, res) {
                 continue;
             }
 
-            existingImageFiles.push(results4[i].IName);
+            existingImageFiles.push(normalizedIncomingImages.rows[i].IName);
+        } else {
+            try {
+                await queries.project.updateReviewImage(
+                    projectPath,
+                    normalizedIncomingImages.rows[i].reviewImage,
+                    normalizedIncomingImages.rows[i].IName,
+                );
+            } catch (err) {
+                console.error(err);
+                continue;
+            }
         }
     }
 
@@ -464,14 +480,14 @@ async function mergeTest(req, res) {
 
     var currentLabels = [];
     for (var i = 0; i < existingLabels.rows.length; i++) {
-        currentLabels.push([
-            existingLabels.rows[i].CName,
-            existingLabels.rows[i].X,
-            existingLabels.rows[i].Y,
-            existingLabels.rows[i].W,
-            existingLabels.rows[i].H,
-            existingLabels.rows[i].IName,
-        ]);
+        currentLabels.push({
+            CName: existingLabels.rows[i].CName,
+            X: existingLabels.rows[i].X,
+            Y: existingLabels.rows[i].Y,
+            W: existingLabels.rows[i].W,
+            H: existingLabels.rows[i].H,
+            IName: existingLabels.rows[i].IName,
+        });
     }
 
     let incomingLabels;
@@ -497,53 +513,48 @@ async function mergeTest(req, res) {
 
     var newLabels = [];
 
+    console.log(incomingLabels.rows, currentLabels);
+
     for (var i = 0; i < incomingLabels.rows.length; i++) {
-        let newLabel = true;
+        let candidate = {
+            CName: incomingLabels.rows[i].CName,
+            X: incomingLabels.rows[i].X,
+            Y: incomingLabels.rows[i].Y,
+            W: incomingLabels.rows[i].W,
+            H: incomingLabels.rows[i].H,
+            IName: incomingLabels.rows[i].IName,
+        };
 
-        newLabels.push([
-            incomingLabels.rows[i].CName,
-            incomingLabels.rows[i].X,
-            incomingLabels.rows[i].Y,
-            incomingLabels.rows[i].W,
-            incomingLabels.rows[i].H,
-            incomingLabels.rows[i].IName,
-        ]);
+        let isNew = true;
 
-        for (var j = 0; j < currentLabels.length; j++) {
+        for (let j = 0; j < currentLabels.length; j++) {
             if (
-                currentLabels[j][0] === newLabels[i][0] &&
-                currentLabels[j][1] === newLabels[i][1] &&
-                currentLabels[j][2] === newLabels[i][2] &&
-                currentLabels[j][3] === newLabels[i][3] &&
-                currentLabels[j][4] === newLabels[i][4] &&
-                currentLabels[j][5] === newLabels[i][5]
+                currentLabels[j].CName === candidate.CName &&
+                currentLabels[j].X === candidate.X &&
+                currentLabels[j].Y === candidate.Y &&
+                currentLabels[j].W === candidate.W &&
+                currentLabels[j].H === candidate.H &&
+                currentLabels[j].IName === candidate.IName
             ) {
-                newLabel = false;
+                isNew = false;
+                break;
             }
         }
 
-        if (!newLabel) {
-            continue;
-        }
+        if (!isNew) continue;
 
-        currentLabels.push([
-            incomingLabels.rows[i].CName,
-            incomingLabels.rows[i].X,
-            incomingLabels.rows[i].Y,
-            incomingLabels.rows[i].W,
-            incomingLabels.rows[i].H,
-            incomingLabels.rows[i].IName,
-        ]);
+        currentLabels.push(candidate);
+        newLabels.push(candidate);
 
         await queries.project.createLabel(
             projectPath,
             Number(newMax),
-            incomingLabels.rows[i].IName,
-            Number(incomingLabels.rows[i].X),
-            Number(incomingLabels.rows[i].Y),
-            Number(incomingLabels.rows[i].W),
-            Number(incomingLabels.rows[i].H),
-            incomingLabels.rows[i].CName,
+            candidate.CName,
+            Number(candidate.X),
+            Number(candidate.Y),
+            Number(candidate.W),
+            Number(candidate.H),
+            candidate.IName,
         );
 
         for (var v = 0; v < newValidations.length; v++) {
@@ -560,7 +571,7 @@ async function mergeTest(req, res) {
             }
         }
 
-        newMax = newMax + 1;
+        newMax++;
     }
 
     res.send("Merge successful");

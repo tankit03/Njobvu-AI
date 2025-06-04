@@ -12,7 +12,7 @@ async function updateLabels(req, res) {
     var user = req.body.user,
         CName = req.body.CName,
         IName = req.body.IName,
-        reviewImage = req.body.reviewImage,
+        reviewImage = req.body.rev_image,
         prev_IName = req.body.prev_IName,
         next_IName = req.body.next_IName,
         changeWidth = req.body.origin_image_width / req.body.image_width,
@@ -26,8 +26,6 @@ async function updateLabels(req, res) {
     var projectPath = mainPath + admin + "-" + PName;
 
     try {
-        console.log(reviewImage);
-
         await queries.project.updateReviewImage(
             projectPath,
             reviewImage,
@@ -38,8 +36,8 @@ async function updateLabels(req, res) {
             projectPath,
             IName,
         );
-        await queries.project.deleteAllLabelsForImage(IName);
-        await queries.project.deleteAllValidationsForImage(IName);
+        await queries.project.deleteAllLabelsForImage(projectPath, IName);
+        await queries.project.deleteAllValidationsForImage(projectPath, IName);
 
         var conf = {};
 
