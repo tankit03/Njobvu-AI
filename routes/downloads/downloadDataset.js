@@ -22,15 +22,6 @@ async function downloadDataset(req, res) {
         fs.mkdirSync(downloadsPath);
     }
 
-    var dddb = new sqlite3.Database(
-        projectPath + "/" + PName + ".db",
-        (err) => {
-            if (err) {
-                return console.error(err.message);
-            }
-        },
-    );
-
     var downloadFormat = parseInt(req.body.download_format);
 
     var cnames = [];

@@ -26,6 +26,8 @@ async function updateLabels(req, res) {
     var projectPath = mainPath + admin + "-" + PName;
 
     try {
+        console.log(reviewImage);
+
         await queries.project.updateReviewImage(
             projectPath,
             reviewImage,

@@ -1,11 +1,11 @@
 const fs = require("fs");
 const queries = require("../../queries/queries");
+const path = require("path");
 
 async function mergeLocal(req, res) {
     var PName = req.body.PName,
         Admin = req.body.Admin,
-        mergeName = String(req.body.mergeName).trim(),
-        mergeAdmin = String(req.body.mergeAdmin).trim(),
+        PName = String(req.body.PName).trim(),
         username = req.cookies.Username;
 
     var publicPath = currentPath,
@@ -20,8 +20,8 @@ async function mergeLocal(req, res) {
         pythonPathFile = trainingPath + "/Paths.txt",
         darknetPathFile = trainingPath + "/darknetPaths.txt";
 
-    var mergePath = mainPath + "/" + mergeAdmin + "-" + mergeName,
-        mergeDbPath = mergePath + "/" + mergeName + ".db",
+    var mergePath = mainPath + "/" + username + "-" + PName,
+        mergeDbPath = mergePath + "/" + PName + ".db",
         mergeImages = mergePath + "/images/",
         mergeTraining = mergePath + "/training",
         mergeLog = mergeTraining + "/logs/",
@@ -84,7 +84,7 @@ async function mergeLocal(req, res) {
                     fs.copyFileSync(mergeScriptPath, newScriptPath);
                 } catch (err) {
                     console.error(err);
-                    return res.status(500).send("Error mergin script");
+                    return res.status(500).send("Error merging script");
                 }
             }
         }
@@ -163,7 +163,7 @@ async function mergeLocal(req, res) {
                 }
                 darknetNewPaths = `${darknetNewPaths}${darknetMergePaths[i]}\n`;
             }
-            console.log("new darknet paths: ", darknetNewPaths);
+
             fs.appendFile(darknetPathFile, darknetNewPaths, (err) => {
                 if (err) {
                     console.log(err);
@@ -190,7 +190,7 @@ async function mergeLocal(req, res) {
                     mergeWeightName = `${mergeWeights[i].split(".")[0]}${j}.py`;
                 }
                 var newWeightPath = path.join(weightsPath, mergeWeightName);
-                fs.copyFile(merge_weight_path, newWeightPath, (error) => {
+                fs.copyFile(mergeWeightsPath, newWeightPath, (error) => {
                     if (error) {
                         console.log(error);
                     }
@@ -250,6 +250,9 @@ async function mergeLocal(req, res) {
         console.error(err);
         return res.status(500).send("Error fetching images");
     }
+
+    console.log(toMergeImages);
+    console.log(currentDbImages);
 
     for (var i = 0; i < toMergeImages.rows.length; i++) {
         if (!currentDbImages.includes(toMergeImages.rows[i].IName)) {

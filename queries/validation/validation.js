@@ -2,14 +2,14 @@ module.exports = {
     project: {
         getAllValidations: async function (projectPath) {
             const db = global.projectDbClients[projectPath];
-            const query = "SELECT * FROM Validations";
+            const query = "SELECT * FROM Validation";
             const result = await db.all(query);
 
             return result;
         },
         getAllValidationsForImage: async function (projectPath, imageName) {
             const db = global.projectDbClients[projectPath];
-            const query = "SELECT * FROM Validations WHERE IName = ?";
+            const query = "SELECT * FROM Validation WHERE IName = ?";
             const result = await db.all(query, [imageName]);
 
             return result;
