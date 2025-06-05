@@ -171,6 +171,10 @@ const {
     getValidationLabelingPage,
     getValidationConfigPage,
     getValidationStatsPage,
+    getInferencePage,
+    getCustomTrainingPage,
+    getYoloXInferenceSettingsPage,
+    getYoloXTrainingSettingsPage,
 } = require("./routes/pages");
 
 // configure middlewares
@@ -210,11 +214,15 @@ app.get("/config/mergeSettings", getMergeSettingsPage);
 app.get("/download", getDownloadPage);
 app.get("/labeling", getLabelingPage);
 app.get("/stats", getStatsPage);
+app.get("/customTraining", getCustomTrainingPage);
 app.get("/training", getTrainingPage);
-app.get("/processing", getProcessingPage);
+// app.get("/processing", getProcessingPage);
+app.get("/inference", getInferencePage);
 app.get("/yolo", getYoloPage);
 app.get("/yolo/yolov3Settings", getYolo3SettingsPage);
 app.get("/yolo/yolovXSettings", getYoloXSettingsPage);
+app.get("/yolo/yolovXInferenceSettings", getYoloXInferenceSettingsPage);
+app.get("/yolo/yolovXTrainingSettings", getYoloXTrainingSettingsPage);
 app.get("/user", getUserPage);
 app.get("/servstats", getServerStatsPage);
 app.get("/homeV", getValidationHomePage);

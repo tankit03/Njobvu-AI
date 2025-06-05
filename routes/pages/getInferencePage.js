@@ -428,8 +428,8 @@ async function getProcessingPage(req, res) {
         default_path = null;
     }
 
-    res.render("processing", {
-        title: "processing",
+    res.render("inference", {
+        title: "inference",
         user: req.cookies.Username,
         access: access,
         PName: PName,

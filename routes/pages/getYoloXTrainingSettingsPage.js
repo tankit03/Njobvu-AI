@@ -1,4 +1,4 @@
-async function getYoloXSettingsPage(req, res) {
+async function getYoloXInferencePage(req, res) {
     const readdir = util.promisify(fs.readdir);
     const readFile = util.promisify(fs.readFile);
 
@@ -271,4 +271,4 @@ async function getYoloXSettingsPage(req, res) {
     });
 }
 
-module.exports = getYoloXSettingsPage;
+module.exports = getYoloXInferencePage;

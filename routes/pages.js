@@ -1,4 +1,6 @@
 const getLoginPage = require("./pages/getLoginPage");
+const getTrainingPage = require("./pages/getTrainingPage");
+const getInferencePage = require("./pages/getInferencePage");
 const getProjectSettingsPage = require("./pages/getProjectSettingsPage");
 const getClassSettingsPage = require("./pages/getClassSettingsPage");
 const getAccessSettingsPage = require("./pages/getAccessSettingsPage");
@@ -18,13 +20,15 @@ const getValidationConfigPage = require("./pages/getValidationConfigPage");
 const getDownloadPage = require("./pages/getDownloadPage");
 const getLabelingPage = require("./pages/getLabelingPage");
 const getValidationLabelingPage = require("./pages/getValidationLabelingPage");
-const getTrainingPage = require("./pages/getTrainingPage");
+const getCustomTrainingPage = require("./pages/getCustomTrainingPage");
 const getServerStatsPage = require("./pages/getServerStatsPage");
 const getProcessingPage = require("./pages/getProcessingPage");
 const getYoloPage = require("./pages/getYoloPage");
 const getStatsPage = require("./pages/getStatsPage");
 const getValidationStatsPage = require("./pages/getValidationStatsPage");
 const getYoloXSettingsPage = require("./pages/getYoloXSettingsPage");
+const getYoloXInferenceSettingsPage = require("./pages/getYoloXInferenceSettingsPage");
+const getYoloXTrainingSettingsPage = require("./pages/getYoloXTrainingSettingsPage");
 const getServerInfoPage = require("./pages/getServerInfoPage");
 const getYolo3SettingsPage = require("./pages/getYolo3SettingsPage");
 const getUserPage = require("./pages/getUserPage");
@@ -51,15 +55,19 @@ module.exports = {
     getDownloadPage: getDownloadPage,
     getLabelingPage: getLabelingPage,
     getValidationLabelingPage: getValidationLabelingPage,
-    getTrainingPage: getTrainingPage,
+    getCustomTrainingPage: getCustomTrainingPage,
     getServerStatsPage: getServerStatsPage,
     getProcessingPage: getProcessingPage,
     getYoloPage: getYoloPage,
     getStatsPage: getStatsPage,
     getValidationStatsPage: getValidationStatsPage,
     getYoloXSettingsPage: getYoloXSettingsPage,
+    getYoloXInferenceSettingsPage: getYoloXInferenceSettingsPage,
+    getYoloXTrainingSettingsPage: getYoloXTrainingSettingsPage,
     getServerInfoPage: getServerInfoPage,
     getYolo3SettingsPage: getYolo3SettingsPage,
     getUserPage: getUserPage,
     get404Page: get404Page,
+    getInferencePage: getInferencePage,
+    getTrainingPage: getTrainingPage,
 };

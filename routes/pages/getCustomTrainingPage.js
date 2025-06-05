@@ -1,4 +1,6 @@
-async function getYoloXSettingsPage(req, res) {
+async function getTrainingPage(req, res) {
+    console.log("getTrainingPage");
+
     const readdir = util.promisify(fs.readdir);
     const readFile = util.promisify(fs.readFile);
 
@@ -14,7 +16,7 @@ async function getYoloXSettingsPage(req, res) {
         return res.redirect("/home");
     }
     if (user == undefined) {
-        return res.redirect("/l");
+        return res.redirect("/");
     }
 
     var projects = await db.allAsync(
@@ -35,37 +37,24 @@ async function getYoloXSettingsPage(req, res) {
         project_path = main_path + admin + "-" + PName,
         path = project_path + "/" + PName + ".db",
         training_path = project_path + "/training",
-        weights_path = training_path + "/weights",
-        inference_path = project_path + "/inference",
-        inference_upload_path = project_path + "/inference/uploads",
         log_path = training_path + "/logs/",
+        weights_path = training_path + "/weights",
         python_path = training_path + "/python",
-        python_path_file = training_path + "/Paths.txt",
-        yolovx_path_file = training_path + "/yolovxPaths.txt";
+        python_path_file = training_path + "/Paths.txt";
 
     if (!fs.existsSync(training_path)) {
         fs.mkdirSync(training_path);
         fs.mkdirSync(log_path);
         fs.mkdirSync(python_path);
         fs.mkdirSync(weights_path);
+
         fs.writeFile(python_path_file, "", function (err) {
-            if (err) {
-                console.log(err);
-            }
-        });
-        fs.writeFile(yolovx_path_file, "", function (err) {
             if (err) {
                 console.log(err);
             }
         });
     } else if (!fs.existsSync(weights_path)) {
         fs.mkdirSync(weights_path);
-    } else if (!fs.existsSync(yolovx_path_file)) {
-        fs.writeFile(yolovx_path_file, "", function (err) {
-            if (err) {
-                console.log(err);
-            }
-        });
     }
 
     // connect to project database
@@ -127,10 +116,8 @@ async function getYoloXSettingsPage(req, res) {
 
     //Get global weights///////////////////////////////////////////
     var global_weights = await readdirAsync(weights_path);
-    var global_inference = await readdirAsync(inference_path);
-    var global_inference_upload = await readdirAsync(inference_upload_path);
 
-    // get runs
+    // get runs ///////////////////////////////////////////////////
     var runs = await readdirAsync(log_path);
     runs = runs.reverse();
     // get logfiles
@@ -232,18 +219,17 @@ async function getYoloXSettingsPage(req, res) {
     // This places the entire file into memory
     // Will not work with large files, apx 10000000 lines
     var paths = fs
-        .readFileSync(yolovx_path_file, "utf-8")
+        .readFileSync(python_path_file, "utf-8")
         .split("\n")
         .filter(Boolean);
 
     // Get default python path
-    var default_path = configFile.default_yolo_path;
+    var default_path = configFile.default_python_path;
     if (!default_path) {
         default_path = null;
     }
-
-    res.render("training/yolovXTrainingSettings", {
-        title: "yolovXTrainingSettings",
+    res.render("customTraining", {
+        title: "customTraining",
         user: req.cookies.Username,
         access: access,
         PName: PName,
@@ -259,16 +245,14 @@ async function getYoloXSettingsPage(req, res) {
         paths: paths,
         scripts: scripts,
         global_weights: global_weights,
-        global_inference: global_inference,
-        global_inference_upload: global_inference_upload,
         weights: weights,
         weight_names: weights_files,
         run_status: run_status,
         run_paths: run_paths,
         log_contents: log_contents,
         logged: req.query.logged,
-        activePage: "yolovXSettings",
+        activePage: "Training",
     });
 }
 
-module.exports = getYoloXSettingsPage;
+module.exports = getTrainingPage;

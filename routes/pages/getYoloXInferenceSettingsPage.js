@@ -1,4 +1,4 @@
-async function getYoloXSettingsPage(req, res) {
+async function getYoloXInferencePage(req, res) {
     const readdir = util.promisify(fs.readdir);
     const readFile = util.promisify(fs.readFile);
 
@@ -129,6 +129,7 @@ async function getYoloXSettingsPage(req, res) {
     var global_weights = await readdirAsync(weights_path);
     var global_inference = await readdirAsync(inference_path);
     var global_inference_upload = await readdirAsync(inference_upload_path);
+    global_inference_upload.push(project_path + "/images");
 
     // get runs
     var runs = await readdirAsync(log_path);
@@ -242,8 +243,8 @@ async function getYoloXSettingsPage(req, res) {
         default_path = null;
     }
 
-    res.render("training/yolovXTrainingSettings", {
-        title: "yolovXTrainingSettings",
+    res.render("training/yolovXInferenceSettings", {
+        title: "yolovXInferenceSettings",
         user: req.cookies.Username,
         access: access,
         PName: PName,
@@ -271,4 +272,4 @@ async function getYoloXSettingsPage(req, res) {
     });
 }
 
-module.exports = getYoloXSettingsPage;
+module.exports = getYoloXInferencePage;
