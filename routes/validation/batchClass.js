@@ -10,8 +10,6 @@ async function batchChangeClass(req, res) {
         mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         projectPath = mainPath + admin + "-" + projectName; // $LABELING_TOOL_PATH/public/projects/project_name
 
-    console.log(class1, class2);
-
     try {
         await queries.project.sql(
             projectPath,

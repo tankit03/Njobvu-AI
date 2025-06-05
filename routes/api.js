@@ -59,6 +59,7 @@ const mergeLocal = require("./projects/mergeLocal");
 const removeAccess = require("./projects/removeAccess");
 const transferAdmin = require("./projects/transferAdmin");
 const script = require("./projects/script");
+const deleteImagesWithoutLabel = require("./projects/deleteImagesWithoutLabel");
 
 const updateLabels = require("./labelling/updateLabels");
 const deleteLabels = require("./labelling/deleteLabels");
@@ -122,6 +123,7 @@ api.post("/mergeLocal", mergeLocal);
 api.post("/removeAccess", removeAccess);
 api.post("/transferAdmin", transferAdmin);
 api.post("/script", script);
+api.post("/deleteImagesWithoutLabel", deleteImagesWithoutLabel);
 
 // LABELLING ROUTES
 api.post("/updateLabels", updateLabels);

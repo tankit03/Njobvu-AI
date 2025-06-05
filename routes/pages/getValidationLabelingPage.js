@@ -331,7 +331,7 @@ async function getValidationLabelingPage(req, res) {
 
         var list_counter = [];
 
-        curr_index = Number(rowid.rowid);
+        curr_index = Number(rowid.display_id);
 
         if (curr_index != 1) {
             prev_IName = results2[curr_index - 2]["IName"];
