@@ -81,6 +81,13 @@ const changeClass = require("./validation/changeClass");
 
 const bootstrapController = require("./bootstrap/bootstrapController");
 
+const yoloInference = require("./inference/yoloInference");
+const uploadInferenceFile = require("./inference/uploadInferenceFile");
+
+// INFERENCE ROUTES
+api.post("/yolo-inf", yoloInference);
+api.post("/upload_inference_file", uploadInferenceFile);
+
 // USER ROUTES
 api.post("/logout", logout);
 api.post("/login", login);

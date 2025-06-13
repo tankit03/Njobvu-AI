@@ -80,7 +80,7 @@
 		</form>
 		<br>
 		<br>
-		<form class="Configure Project For YOLO" action="/yolo-inf" enctype="multipart/form-data" id="yolo-inf">
+		<form class="Configure Project For YOLO" action="/yolo-inf" enctype="multipart/form-data" id="yolo-inf" method=post>
 			<input type="hidden" id="yolo_version" name="height" value="5">
 
 			<div class="form-row">
@@ -175,211 +175,216 @@
 </div>
 <% } %>
 <script>
-	document.forms['add-inference'].addEventListener('submit', (event) => {
-			event.preventDefault();
-				
-			console.log("Import inference:");
-			var formData = new FormData();
-			const upload_project = document.getElementById('upload-inference');
-			const files = upload_project.files[0];
-			console.log(files.size)
-			if( !files.size > 0 )
-			{
-				alert("File must have a size > 0")
-			}
-			else
-			{
-				formData.append('upload_inference', files);
-				
-				formData.append("PName", "<%= PName %>");
-				formData.append("Admin", "<%= Admin %>");
+    document.addEventListener("DOMContentLoaded", () => {
+        document.forms['add-inference'].addEventListener('submit', (event) => {
+                event.preventDefault();
+                    
+                console.log("Import inference:");
+                var formData = new FormData();
+                const upload_project = document.getElementById('upload-inference');
+                const files = upload_project.files[0];
+                console.log(files.size)
+                if( !files.size > 0 )
+                {
+                    alert("File must have a size > 0")
+                }
+                else
+                {
+                    formData.append('upload_inference', files);
+                    
+                    formData.append("PName", "<%= PName %>");
+                    formData.append("Admin", "<%= Admin %>");
 
 
-				fetch(event.target.action, {
-					method: 'POST',
-					body: formData 
-				}).then((resp) => {
-					return resp.json();
-				}).then((body) => {
-					console.log(body);
-					alert(body.Success);
-					window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
-		
-				}).catch((error) => {
-					console.log(error);
-				});
-			}
-	});
+                    fetch(event.target.action, {
+                        method: 'POST',
+                        body: formData 
+                    }).then((resp) => {
+                        return resp.json();
+                    }).then((body) => {
+                        console.log(body);
+                        alert(body.Success);
+                        window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
+            
+                    }).catch((error) => {
+                        console.log(error);
+                    });
+                }
+        });
 
-	document.forms['add-weights'].addEventListener('submit', (event) => {
-			event.preventDefault();
-				
-			console.log("handleImport");
-			var formData = new FormData();
-			const upload_project = document.getElementById('upload-weights');
-			const files = upload_project.files[0];
-			console.log(files.size)
-			if( !files.size > 0 )
-			{
-				alert("File must have a size > 0")
-			}
-			else
-			{
-				formData.append('upload_weights', files);
-				
-				formData.append("PName", "<%= PName %>");
-				formData.append("Admin", "<%= Admin %>");
-
-
-				fetch(event.target.action, {
-					method: 'POST',
-					body: formData 
-				}).then((resp) => {
-					return resp.json();
-				}).then((body) => {
-					console.log(body);
-					alert(body.Success);
-					window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
-		
-				}).catch((error) => {
-					console.log(error);
-				});
-			}
-	});
-
-	document.forms['yolovxForm'].addEventListener('submit', (event) => {
-		event.preventDefault();
-			
-		console.log("handleImport");
-		var formData = new FormData();
-
-		formData.append("yolovx_path", document.getElementById("yolovx_path").value);
-		formData.append("PName", "<%= PName %>");
-		formData.append("Admin", "<%= Admin %>");
+        document.forms['add-weights'].addEventListener('submit', (event) => {
+                event.preventDefault();
+                    
+                console.log("handleImport");
+                var formData = new FormData();
+                const upload_project = document.getElementById('upload-weights');
+                const files = upload_project.files[0];
+                console.log(files.size)
+                if( !files.size > 0 )
+                {
+                    alert("File must have a size > 0")
+                }
+                else
+                {
+                    formData.append('upload_weights', files);
+                    
+                    formData.append("PName", "<%= PName %>");
+                    formData.append("Admin", "<%= Admin %>");
 
 
-		fetch(event.target.action, {
-			method: 'POST',
-			body: formData 
-		}).then((resp) => {
-			return resp.json();
-		}).then((body) => {
-			console.log(body);
+                    fetch(event.target.action, {
+                        method: 'POST',
+                        body: formData 
+                    }).then((resp) => {
+                        return resp.json();
+                    }).then((body) => {
+                        console.log(body);
+                        alert(body.Success);
+                        window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
+            
+                    }).catch((error) => {
+                        console.log(error);
+                    });
+                }
+        });
 
-			alert(body.Success);
-			window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
-  
-		}).catch((error) => {
-			console.log(error);
-		});
-	});
+        document.forms['yolovxForm'].addEventListener('submit', (event) => {
+            event.preventDefault();
+                
+            console.log("handleImport");
+            var formData = new FormData();
 
-	var slider = document.getElementById("TrainingRange");
-	var sliderval = document.getElementById("demo");
-	sliderval.innerHTML = slider.value;
-	slider.oninput = function(){
-		sliderval.innerHTML = this.value;
-	}
+            formData.append("yolovx_path", document.getElementById("yolovx_path").value);
+            formData.append("PName", "<%= PName %>");
+            formData.append("Admin", "<%= Admin %>");
 
-	document.forms['yolo-inf'].addEventListener('submit', (event) => {
-		event.preventDefault();
-		console.log('From for yolo-inf handler')
 
-		var yolovx_path = document.getElementById("Yolo").value;
-		var weights_file = document.getElementById("Weights_inf").value;
-		var inference_file = document.getElementById("Inference").value;
+            fetch(event.target.action, {
+                method: 'POST',
+                body: formData 
+            }).then((resp) => {
+                return resp.json();
+            }).then((body) => {
+                console.log(body);
 
-		console.log("weights_file: ", weights_file)
-		if(weights_file == "")
-		{
-			alert("Must select a weights file")
-			return;
-		}
+                alert(body.Success);
+                window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
+    
+            }).catch((error) => {
+                console.log(error);
+            });
+        });
 
-		console.log("inference_file: ", inference_file)
-		if(inference_file == "")
-		{
-			alert("Must select a inference file")
-			return;
-		}
+        var slider = document.getElementById("TrainingRange");
+        var sliderval = document.getElementById("demo");
+        if (slider && sliderval) {
+            sliderval.innerHTML = slider.value;
+            slider.oninput = function(){
+                sliderval.innerHTML = this.value;
+            }
+        }
 
-		var formData = new FormData();
-		formData.append("PName", "<%= PName %>");
-		formData.append("Admin", "<%= Admin %>");
-		formData.append("yolovx_path", document.getElementById("Yolo").value);
-		formData.append("weights", document.getElementById("Weights_inf").value);
-		formData.append("inference_file", document.getElementById("Inference").value);
-		formData.append("yolo_version", document.getElementById("yolo_version").value);
-		formData.append("yolo_task", document.getElementById("yolo_task").value);
-		formData.append("yolo_mode", document.getElementById("yolo_mode").value);
-		formData.append("options", document.getElementById("options").value);
-		formData.append("device", document.getElementById("device").value);
+        document.getElementById("yolo-inf").addEventListener('submit', (event) => {
+            event.preventDefault();
+            console.log('Form for yolo-inf handler')
 
-		fetch(event.target.action, {
-			method: 'POST',
-			body: formData 
-		}).then((resp) => {
-			return resp.json();
-		}).then((body) => {
-			console.log(body);
+            var yolovx_path = document.getElementById("Yolo").value;
+            var weights_file = document.getElementById("Weights_inf").value;
+            var inference_file = document.getElementById("Inference").value;
 
-			alert(body.Success);
-			window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
-  
-		}).catch((error) => {
-			console.log(error);
-		});
-	});
-	
-	
-	document.forms['yolo-run'].addEventListener('submit', (event) => {
-		event.preventDefault();
-		console.log('Form for yolo-run handler')
+            if(weights_file == "")
+            {
+                alert("Must select a weights file")
+                return;
+            }
 
-		var yolovx_path = document.getElementById("Yolo").value;
-		var weights_file = document.getElementById("Weights").value;
-		var inference_file = document.getElementById("Inference").value;
+            console.log("inference_file: ", inference_file)
+            if(inference_file == "")
+            {
+                alert("Must select a inference file")
+                return;
+            }
 
-		console.log("weights_file: ", weights_file)
-		if(weights_file == "")
-		{
-			alert("Must select a weights file")
-			return;
-		}
+            var formData = new FormData();
+            formData.append("PName", "<%= PName %>");
+            formData.append("Admin", "<%= Admin %>");
+            formData.append("yolovx_path", document.getElementById("Yolo").value);
+            formData.append("weights", document.getElementById("Weights_inf").value);
+            formData.append("inference_file", document.getElementById("Inference").value);
+            formData.append("yolo_version", document.getElementById("yolo_version").value);
+            formData.append("yolo_task", document.getElementById("yolo_task").value);
+            formData.append("yolo_mode", document.getElementById("yolo_mode").value);
+            // formData.append("options", document.getElementById("options").value);
+            // formData.append("device", document.getElementById("device").value);
 
-		var formData = new FormData();
-		formData.append("PName", "<%= PName %>");
-		formData.append("Admin", "<%= Admin %>");
-		formData.append("TrainingPercent", document.getElementById("TrainingRange").value);
-		formData.append("batch", document.getElementById("batch").value);
-		formData.append("subdiv", document.getElementById("subdiv").value);
-		formData.append("yolovx_path", document.getElementById("Yolo").value);
-		formData.append("weights", document.getElementById("Weights").value);
-		formData.append("width", document.getElementById("width").value);
-		formData.append("height", document.getElementById("height").value);
-		formData.append("yolo_version", document.getElementById("yolo_version").value);
-		formData.append("yolo_task", document.getElementById("yolo_task").value);
-		formData.append("yolo_mode", document.getElementById("yolo_mode").value);
-		formData.append("epochs", document.getElementById("epochs").value);
-		formData.append("options", document.getElementById("options").value);
-		formData.append("imgsz", document.getElementById("imgsz").value);
-		formData.append("device", document.getElementById("device").value);
+            console.log(formData);
 
-		fetch(event.target.action, {
-			method: 'POST',
-			body: formData 
-		}).then((resp) => {
-			return resp.json();
-		}).then((body) => {
-			console.log(body);
+            fetch(event.target.action, {
+                method: 'POST',
+                body: formData 
+            }).then((resp) => {
+                return resp.json();
+            }).then((body) => {
+                console.log(body);
 
-			alert(body.Success);
-			window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
-  
-		}).catch((error) => {
-			console.log(error);
-		});
-	});
+                alert(body.Success);
+                window.location.replace("/yolo/yolovXInferenceSettings?IDX=<%= IDX %>");
+    
+            }).catch((error) => {
+                console.log(error);
+            });
+        });
+        
+        
+        document.forms['yolo-run'].addEventListener('submit', (event) => {
+            event.preventDefault();
+            console.log('Form for yolo-run handler')
+
+            var yolovx_path = document.getElementById("Yolo").value;
+            var weights_file = document.getElementById("Weights").value;
+            var inference_file = document.getElementById("Inference").value;
+
+            console.log("weights_file: ", weights_file)
+            if(weights_file == "")
+            {
+                alert("Must select a weights file")
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append("PName", "<%= PName %>");
+            formData.append("Admin", "<%= Admin %>");
+            formData.append("TrainingPercent", document.getElementById("TrainingRange").value);
+            formData.append("batch", document.getElementById("batch").value);
+            formData.append("subdiv", document.getElementById("subdiv").value);
+            formData.append("yolovx_path", document.getElementById("Yolo").value);
+            formData.append("weights", document.getElementById("Weights").value);
+            formData.append("width", document.getElementById("width").value);
+            formData.append("height", document.getElementById("height").value);
+            formData.append("yolo_version", document.getElementById("yolo_version").value);
+            formData.append("yolo_task", document.getElementById("yolo_task").value);
+            formData.append("yolo_mode", document.getElementById("yolo_mode").value);
+            formData.append("epochs", document.getElementById("epochs").value);
+            formData.append("options", document.getElementById("options").value);
+            formData.append("imgsz", document.getElementById("imgsz").value);
+            formData.append("device", document.getElementById("device").value);
+
+            fetch(event.target.action, {
+                method: 'POST',
+                body: formData 
+            }).then((resp) => {
+                return resp.json();
+            }).then((body) => {
+                console.log(body);
+
+                alert(body.Success);
+                window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
+    
+            }).catch((error) => {
+                console.log(error);
+            });
+        });
+    });
 	
 </script>
 <%- include('../includes/footer') %>

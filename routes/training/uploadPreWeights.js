@@ -35,6 +35,7 @@ async function uploadPreWeights(req, res) {
                 }
             });
         }
+
         res.send({ Success: "Your weight file has been uploaded and saved" });
     }
 }
