@@ -317,7 +317,7 @@ elif yolo_version == 5:
 	print("Ultralytics Version of YOLO Requested:")
 
 	#Command to start running ultralytics using the training files
-	cmd = darknet_path + " detect train data=" + name_path + " project=" + data_path + " epochs=" + epochs + " imgsz=" + imgsz + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
+	cmd = darknet_path + " detect train data=" + name_path + " project=" + data_path + " epochs=" + str(epochs) + " imgsz=" + str(imgsz) + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
 	print(cmd)
 
 	# process_code,process_output,process_err,process_mix = call_command(cmd)

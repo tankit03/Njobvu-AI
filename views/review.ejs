@@ -71,7 +71,7 @@
                                             </td>
                                             <td>
                                                 <button type="button" class="btn btn-danger delete-button" data-admin="<%= admin %>" data-pname="<%= PName %>" data-lid="<%= label.LID %>"> Delete</button>
-                                                <form class="SwitchForm" action="/switch-class" method="POST">
+                                                <form class="SwitchForm" action="/api/switchLabels" method="PUT">
                                                     <label for="switchClasses_<%= label.LID %>">Switch to:</label>
                                                     <select name="switchClasses_<%= label.LID %>" class="switchClasses" data-label-id="<%= label.LID %>">
                                                         <% classes.forEach(function(classItem){ %>
@@ -362,17 +362,23 @@
         const projectName = document.getElementById("ProjectName").value;
         const selectElement = document.querySelector(`select[data-label-id='${labelId}']`);
         const selectedClass = selectElement.value;
+        let currentClass = '<%= CName %>';
+
+        console.log("selectedElement", selectElement);
+        console.log("class", selectedClass);
 
         const data = {
-            "username": username,
-            "class": selectedClass,
+            "selectedLabels": labelId,
+            "selectedClass": selectedClass,
+            "currentClass": currentClass,
             "PName": projectName,
-            "LabelID": labelId
+            "Admin": username
+            
         };
 
         try {
-            const response = await fetch('/switch-class', {
-                method: 'POST',
+            const response = await fetch('/api/switchLabels', {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
