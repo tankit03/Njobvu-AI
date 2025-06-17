@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////
 // Set up:
 ////////////////////////////////////////////////////////
+const app = require('./app'); 
 const { Client } = require("./queries/client");
-const path = require("path");
-
 global.configFile = require("./config.json");
+const port = configFile.port;
+const hostname = configFile.hostname;
 
-const port = configFile.port,
-    hostname = configFile.hostname;
+
 // global imported libraries
 global.fs = require("fs");
 global.unzip = require("unzip-stream");
@@ -58,11 +58,11 @@ if (ssl_key_path && ssl_cert_path) {
     };
 }
 
-const express = require("express"),
+// const express = require("express"),
     sys = require("util"),
-    cookieParser = require("cookie-parser"),
-    upload = require("express-fileupload"),
-    app = express();
+    // cookieParser = require("cookie-parser"),
+    // upload = require("express-fileupload"),
+    // app = express();
 
 global.currentPath = process.cwd() + "/";
 global.dataFolder = currentPath + "/data/";
@@ -139,43 +139,43 @@ const fileUpload = require("express-fileupload");
 
 const api = require("./routes/api");
 
-const {
-    getClassificationPage,
-    getLoginPage,
-    getSignupPage,
-    getHomePage,
-    getCreatePage,
-    getProjectPage,
-    getAnnotatePage,
-    getReviewPage,
-    getConfigPage,
-    getDownloadPage,
-    getLabelingPage,
-    getStatsPage,
-    getTrainingPage,
-    getProcessingPage,
-    getYolo3SettingsPage,
-    getYoloXSettingsPage,
-    getServerInfoPage,
-    getYoloPage,
-    getUserPage,
-    getProjectSettingsPage,
-    getClassSettingsPage,
-    getAccessSettingsPage,
-    getImageSettingsPage,
-    getMergeSettingsPage,
-    getServerStatsPage,
-    get404Page,
-    getValidationHomePage,
-    getValidationProjectPage,
-    getValidationLabelingPage,
-    getValidationConfigPage,
-    getValidationStatsPage,
-    getInferencePage,
-    getCustomTrainingPage,
-    getYoloXInferenceSettingsPage,
-    getYoloXTrainingSettingsPage,
-} = require("./routes/pages");
+// const {
+//     getClassificationPage,
+//     getLoginPage,
+//     getSignupPage,
+//     getHomePage,
+//     getCreatePage,
+//     getProjectPage,
+//     getAnnotatePage,
+//     getReviewPage,
+//     getConfigPage,
+//     getDownloadPage,
+//     getLabelingPage,
+//     getStatsPage,
+//     getTrainingPage,
+//     getProcessingPage,
+//     getYolo3SettingsPage,
+//     getYoloXSettingsPage,
+//     getServerInfoPage,
+//     getYoloPage,
+//     getUserPage,
+//     getProjectSettingsPage,
+//     getClassSettingsPage,
+//     getAccessSettingsPage,
+//     getImageSettingsPage,
+//     getMergeSettingsPage,
+//     getServerStatsPage,
+//     get404Page,
+//     getValidationHomePage,
+//     getValidationProjectPage,
+//     getValidationLabelingPage,
+//     getValidationConfigPage,
+//     getValidationStatsPage,
+//     getInferencePage,
+//     getCustomTrainingPage,
+//     getYoloXInferenceSettingsPage,
+//     getYoloXTrainingSettingsPage,
+// } = require("./routes/pages");
 
 // configure middlewares
 // set
@@ -183,57 +183,57 @@ app.set("port", process.env.port || port); // set express to use this port
 app.set("views", __dirname + "/views"); // set express to look in this folder to render our view
 app.set("view engine", "ejs"); // configure template engine
 
-// use
-app.use(express.urlencoded({ extended: false }));
-app.use(fileUpload());
-app.use(express.json()); // parse form data client
-app.use(express.static(path.join(__dirname, "public"))); // configure express to use public folder
-app.use(cookieParser());
-//app.use(session({secret:"Secret Code Don't Tell Anyone", cookie: { maxAge: 30 * 1000 }})); // configure fileupload
-app.use("/", api);
+// // use
+// app.use(express.urlencoded({ extended: false }));
+// app.use(fileUpload());
+// app.use(express.json()); // parse form data client
+// app.use(express.static(path.join(__dirname, "public"))); // configure express to use public folder
+// app.use(cookieParser());
+// //app.use(session({secret:"Secret Code Don't Tell Anyone", cookie: { maxAge: 30 * 1000 }})); // configure fileupload
+// app.use("/", api);
 
 ////////////////////////////////////////////////////////
 // Routes for the App:
 ////////////////////////////////////////////////////////
 
-// get
+// // get
 
-app.get("/", getLoginPage);
-app.get("/signup", getSignupPage);
-app.get("/home", getHomePage);
-app.get("/create", getCreatePage);
-app.get("/annotate", getAnnotatePage);
-app.get("/review", getReviewPage);
-app.get("/project", getProjectPage);
-app.get("/config", getConfigPage);
-app.get("/config/projSettings", getProjectSettingsPage);
-app.get("/config/classSettings", getClassSettingsPage);
-app.get("/config/accessSettings", getAccessSettingsPage);
-app.get("/config/imageSettings", getImageSettingsPage);
-app.get("/config/mergeSettings", getMergeSettingsPage);
-app.get("/download", getDownloadPage);
-app.get("/labeling", getLabelingPage);
-app.get("/stats", getStatsPage);
-app.get("/customTraining", getCustomTrainingPage);
-app.get("/training", getTrainingPage);
-// app.get("/processing", getProcessingPage);
-app.get("/inference", getInferencePage);
-app.get("/yolo", getYoloPage);
-app.get("/yolo/yolov3Settings", getYolo3SettingsPage);
-app.get("/yolo/yolovXSettings", getYoloXSettingsPage);
-app.get("/yolo/yolovXInferenceSettings", getYoloXInferenceSettingsPage);
-app.get("/yolo/yolovXTrainingSettings", getYoloXTrainingSettingsPage);
-app.get("/user", getUserPage);
-app.get("/servstats", getServerStatsPage);
-app.get("/homeV", getValidationHomePage);
-app.get("/projectV", getValidationProjectPage);
-app.get("/labelingV", getValidationLabelingPage);
-app.get("/configV", getValidationConfigPage);
-app.get("/statsV", getValidationStatsPage);
-app.get("/createClassification", getClassificationPage);
-app.get("/api/gpuinfo");
-// everything else -> 404
-app.get("*", get404Page);
+// app.get("/", getLoginPage);
+// app.get("/signup", getSignupPage);
+// app.get("/home", getHomePage);
+// app.get("/create", getCreatePage);
+// app.get("/annotate", getAnnotatePage);
+// app.get("/review", getReviewPage);
+// app.get("/project", getProjectPage);
+// app.get("/config", getConfigPage);
+// app.get("/config/projSettings", getProjectSettingsPage);
+// app.get("/config/classSettings", getClassSettingsPage);
+// app.get("/config/accessSettings", getAccessSettingsPage);
+// app.get("/config/imageSettings", getImageSettingsPage);
+// app.get("/config/mergeSettings", getMergeSettingsPage);
+// app.get("/download", getDownloadPage);
+// app.get("/labeling", getLabelingPage);
+// app.get("/stats", getStatsPage);
+// app.get("/customTraining", getCustomTrainingPage);
+// app.get("/training", getTrainingPage);
+// // app.get("/processing", getProcessingPage);
+// app.get("/inference", getInferencePage);
+// app.get("/yolo", getYoloPage);
+// app.get("/yolo/yolov3Settings", getYolo3SettingsPage);
+// app.get("/yolo/yolovXSettings", getYoloXSettingsPage);
+// app.get("/yolo/yolovXInferenceSettings", getYoloXInferenceSettingsPage);
+// app.get("/yolo/yolovXTrainingSettings", getYoloXTrainingSettingsPage);
+// app.get("/user", getUserPage);
+// app.get("/servstats", getServerStatsPage);
+// app.get("/homeV", getValidationHomePage);
+// app.get("/projectV", getValidationProjectPage);
+// app.get("/labelingV", getValidationLabelingPage);
+// app.get("/configV", getValidationConfigPage);
+// app.get("/statsV", getValidationStatsPage);
+// app.get("/createClassification", getClassificationPage);
+// app.get("/api/gpuinfo");
+// // everything else -> 404
+// app.get("*", get404Page);
 
 ////////////////////////////////////////////////////////
 // Start Server:
