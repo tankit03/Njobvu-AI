@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest",
     "dev": "nodemon server.js"
+
   },
   "repository": {
     "type": "git",

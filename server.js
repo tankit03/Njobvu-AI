@@ -7,7 +7,6 @@ global.configFile = require("./config.json");
 const port = configFile.port;
 const hostname = configFile.hostname;
 
-
 // global imported libraries
 global.fs = require("fs");
 global.unzip = require("unzip-stream");
