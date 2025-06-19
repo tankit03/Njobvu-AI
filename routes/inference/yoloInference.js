@@ -6,8 +6,6 @@ async function yoloInference(req, res) {
 
         var date = Date.now();
 
-        console.log(req.body);
-
         var PName = req.body.PName,
             Admin = req.body.Admin,
             user = req.cookies.Username,
@@ -34,7 +32,7 @@ async function yoloInference(req, res) {
             runPath = `${logsPath}/${date}`,
             classesPath = runPath + "/coco_classes.yaml",
             weightPath = trainingPath + "/weights/" + weightName,
-            yoloScript = publicPath + "controllers/training/datatovalues.py";
+            yoloScript = publicPath + "controllers/inference/datatovalues.py";
 
         if (!fs.existsSync(logsPath)) {
             fs.mkdirSync(logsPath);
@@ -143,7 +141,7 @@ async function yoloInference(req, res) {
 
         ultralyticsProjectRun = runPath;
 
-        var cmd = `python3 ${yoloScript} -d ${runPath} -i ${inferenceFilePath} -n ${classesPath} -l ${absUltralyticsProjectRun}/${log} -f ${ultralyticsPath} -w ${weightPath} -v 5`;
+        var cmd = `python3 ${yoloScript} -d ${runPath} -i ${inferenceFilePath} -n ${classesPath} -l ${absUltralyticsProjectRun}/${log} -f ${ultralyticsPath} -w ${weightPath}`;
 
         var success = "";
         var error = "";
