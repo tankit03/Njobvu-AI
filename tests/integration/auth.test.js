@@ -43,11 +43,19 @@ describe('GET /signup', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  /* 
+  * this just tests if the signup route responds.
+  * This test expects a status code 200.
+  */
   it('should return 200 OK', async () => {
     const res = await request(app).get('/signup');
     expect(res.statusCode).toBe(200);
   });
 
+  /* 
+  * this tests if the signup form elements are rendered.
+  * This test expects a status code 200 and form fields to be present.
+  */
   it('should render the signup page', async () => {
     const res = await request(app).get('/signup');
     expect(res.statusCode).toBe(200);
@@ -70,6 +78,10 @@ describe('GET /signup', () => {
 describe('POST /login', () => {
   afterEach(() => jest.clearAllMocks());
 
+  /* 
+  * this tests if the login route responds with success for valid credentials.
+  * This test expects a status code 200 and Success: 'Yes' in response body.
+  */
   it('should respond with success for valid credentials', async () => {
     const res = await request(app).post('/login').send({
       username: 'testuser',
@@ -85,7 +97,7 @@ describe('POST /login - invalid credentials', () => {
     // tell the same mocked compareSync to fail this time
     bcrypt.compareSync.mockReturnValue(false);
 
-    // override the user query to return a “real” hash
+    // override the user query to return a "real" hash
     jest.mock('../../queries/queries', () => ({
       managed: {
         getUser: jest.fn().mockResolvedValue({
@@ -97,6 +109,10 @@ describe('POST /login - invalid credentials', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  /* 
+  * this tests if the login route handles invalid credentials properly.
+  * This test expects a status code 200 or 401 and Success: 'No' in response body.
+  */
   it('should respond with 200 (or 401) and error message on invalid credentials', async () => {
     const res = await request(app).post('/login').send({
       username: 'testuser',
@@ -123,6 +139,10 @@ describe('POST /signup – valid new user', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  /* 
+  * this tests if the signup route creates a new user successfully.
+  * This test expects a status code 302 (redirect) to the home page.
+  */
   it('returns 302 redirect on successful signup', async () => {
     const res = await request(app).post('/signup').send({
       Fname:    'Alice',
@@ -154,6 +174,10 @@ describe('POST /signup – existing user', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  /* 
+  * this tests if the signup route handles existing usernames properly.
+  * This test expects a status code 409 and validation message about user already existing.
+  */
   it('returns 409 and validation message "user exists"', async () => {
     const res = await request(app).post('/signup').send({
       Fname:    'Bob',

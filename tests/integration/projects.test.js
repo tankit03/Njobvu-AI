@@ -122,6 +122,10 @@ describe('Project Routes - Basic Tests', () => {
     jest.clearAllMocks();
   });
 
+  /* 
+  * this tests if the createP route responds to project creation requests.
+  * This test expects a status code 200.
+  */
   it('should respond to createP route', async () => {
     const res = await request(app)
       .post('/createP')
@@ -135,6 +139,10 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.statusCode).toBe(200);
   });
 
+  /* 
+  * this tests if the deleteProject route responds to project deletion requests.
+  * This test expects a status code 302 (redirect).
+  */
   it('should respond to deleteProject route', async () => {
     const res = await request(app)
       .post('/deleteProject')
@@ -148,6 +156,10 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.statusCode).toBe(302);
   });
 
+  /* 
+  * this tests if the removeAccess route responds to access removal requests.
+  * This test expects a status code 302 (redirect).
+  */
   it('should respond to removeAccess route', async () => {
     const res = await request(app)
       .post('/removeAccess')
@@ -161,6 +173,10 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.statusCode).toBe(302);
   });
 
+  /* 
+  * this tests if the transferAdmin route responds to admin transfer requests.
+  * This test expects a status code 302 (redirect).
+  */
   it('should respond to transferAdmin route', async () => {
     const res = await request(app)
       .post('/transferAdmin')
