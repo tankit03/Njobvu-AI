@@ -1,4 +1,5 @@
 const fs = require("fs");
+const bcrypt = require("bcryptjs");
 const queries = require("../../queries/queries");
 
 async function signup(req, res) {
@@ -12,54 +13,41 @@ async function signup(req, res) {
         const userExists = await queries.managed.checkUserExists(username);
 
         if (userExists.row.ExistingUsers > 0) {
-            res.status(409).send("User with that username already exists");
-            return;
+            return res.status(409).send("User with that username already exists");
         }
+
+        // Hash password and create user
+        const hash = await new Promise((resolve, reject) => {
+            bcrypt.hash(password, 10, (err, hash) => {
+                if (err) reject(err);
+                else resolve(hash);
+            });
+        });
+
+        await queries.managed.createUser(
+            username,
+            hash,
+            firstName,
+            lastName,
+            email,
+        );
+
+        // Create user directory
+        var publicPath = global.currentPath;
+        var mainPath = publicPath + "public/projects/",
+            downloadsPath = mainPath + username + "_Downloads";
+
+        if (!fs.existsSync(downloadsPath)) {
+            fs.mkdirSync(downloadsPath, { recursive: true });
+        }
+
+        return res.redirect("/");
+
     } catch (err) {
         console.error(err);
         res.status(500).send("Error signing up");
         return;
     }
-
-    let error = null;
-
-    bcrypt.hash(password, 10, async function (err, hash) {
-        if (err) {
-            console.error(err);
-        } else {
-            try {
-                await queries.managed.createUser(
-                    username,
-                    hash,
-                    firstName,
-                    lastName,
-                    email,
-                );
-            } catch (err) {
-                console.error(err);
-                res.status(500).send("Error creating user");
-                error = err;
-            }
-        }
-    });
-
-    if (error !== null) {
-        return;
-    }
-
-    var publicPath = currentPath;
-    var mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
-        downloadsPath = mainPath + username + "_Downloads";
-
-    if (!fs.existsSync(downloadsPath)) {
-        fs.mkdir(downloadsPath, (err) => {
-            if (err) {
-                console.log(err);
-            }
-        });
-    }
-
-    return res.redirect("/");
 }
 
 module.exports = signup;

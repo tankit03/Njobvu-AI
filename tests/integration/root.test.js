@@ -1,17 +1,6 @@
 const request = require('supertest');
 const app = require('../../app');
 
-// beforeAll(() => {
-//   global.db = {
-//     runAsync: jest.fn().mockResolvedValue(undefined),
-//   };
-// });
-
-// afterEach(() => {
-//   jest.clearAllMocks();
-// });
-
-
 describe('GET /', () => {
 
   beforeAll(() => {
