@@ -15,6 +15,7 @@ async function yoloInference(req, res) {
             inferenceFile = req.body.inference_file,
             device = req.body.device,
             options = req.body.options,
+            yoloTask = req.body.yolo_task,
             weightName = req.body.weights;
 
         var errFile = `${date}-error.log`;
@@ -141,7 +142,7 @@ async function yoloInference(req, res) {
 
         ultralyticsProjectRun = runPath;
 
-        var cmd = `python3 ${yoloScript} -d ${runPath} -i ${inferenceFilePath} -n ${classesPath} -l ${absUltralyticsProjectRun}/${log} -f ${ultralyticsPath} -w ${weightPath}`;
+        var cmd = `python3 ${yoloScript} -d ${runPath} -i ${inferenceFilePath} -n ${classesPath} -l ${absUltralyticsProjectRun}/${log} -f ${ultralyticsPath} -w ${weightPath} -t ${yoloTask}`;
 
         var success = "";
         var error = "";
