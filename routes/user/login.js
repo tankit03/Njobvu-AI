@@ -1,9 +1,13 @@
 const fs = require("fs");
 const queries = require("../../queries/queries");
+const bcrypt = require('bcryptjs'); 
+
 
 async function login(req, res) {
     var username = req.body.username,
         password = req.body.password;
+
+    
 
     var publicPath = currentPath;
     var mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/

@@ -21,7 +21,7 @@ global.archiver = require("archiver");
 (global.sqlite3 = require("sqlite3").verbose()),
     (global.readline = require("readline")),
     (global.path = require("path"));
-global.bcrypt = require("bcryptjs");
+// global.bcrypt = require("bcryptjs");
 global.readdirAsync = util.promisify(fs.readdir);
 global.removeDir = util.promisify(fs.rmdir);
 
