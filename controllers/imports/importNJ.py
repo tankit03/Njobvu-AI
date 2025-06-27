@@ -103,11 +103,13 @@ def create_project(db_name, txt_file, nj_path, class_label, img_dir, classificat
                 shutil.copy(src,dst)
     else:
         for dir_name in os.listdir(img_dir):
-            for img in os.listdir(os.path.join(img_dir,dir_name)):
-                src = os.path.join(img_dir, dir_name, img)
-                dst = os.path.join(project_path, 'images', img)
-                if os.path.isfile(src):
-                    shutil.copy(src,dst)
+            class_path = os.path.join(img_dir, dir_name)
+            if os.path.isdir(class_path):
+                for img in os.listdir(class_path):
+                    src = os.path.join(class_path, img)
+                    if os.path.isfile(src):
+                        dst = os.path.join(project_path, 'images', img)
+                        shutil.copy(src,dst)
 
     print(f"this is the db name", db_name);
             

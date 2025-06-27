@@ -29,6 +29,13 @@ def classification_plus_import(db_name, input_dir, output):
     # Ensure output directory exists
     if not os.path.exists(output):
         os.makedirs(output)
+    
+    # Check if input_dir contains a single directory, and if so, use it as the new input_dir
+    items = os.listdir(input_dir)
+    if len(items) == 1 and os.path.isdir(os.path.join(input_dir, items[0])):
+        input_dir = os.path.join(input_dir, items[0])
+    
+    project_path = os.path.dirname(output)
         
     # Create labels.txt in the output directory instead of root
     labels_path = os.path.join(output, 'labels.txt')
@@ -36,20 +43,21 @@ def classification_plus_import(db_name, input_dir, output):
         #for each directory of imgs under a class, we are going to get each img, open it get all the data and write that too labels file
         if os.path.exists(input_dir):
             for directory in os.listdir(input_dir):
-                if os.path.exists(os.path.join(input_dir,directory)):
-                    dir_path = os.path.join(input_dir, directory)
+                dir_path = os.path.join(input_dir, directory)
+                if os.path.isdir(dir_path):
                     for img in os.listdir(dir_path):
                         input_image_path = os.path.join(dir_path, img)
-                        img_to_open = Image.open(input_image_path)
-                        width, height = img_to_open.size
-                        x = 0
-                        y = 0
-                        f.write(f"{directory} {x} {y} {width} {height} {img}\n")
+                        if os.path.isfile(input_image_path):
+                            img_to_open = Image.open(input_image_path)
+                            width, height = img_to_open.size
+                            x = 0
+                            y = 0
+                            f.write(f"{directory} {x} {y} {width} {height} {img}\\n")
                  
     script_dir = os.path.dirname(os.path.abspath(__file__))
     import_nj_script = os.path.join(script_dir, "importNJ.py")
     # Update command to use the new labels path
-    command = f'python3 {import_nj_script} -n new -i {input_dir} -t {labels_path} -p {output} -z {output} -C yes -d {db_name}'
+    command = f'python3 {import_nj_script} -n new -i {input_dir} -t {labels_path} -p {project_path} -z {project_path} -C yes -d {db_name}'
     os.system(command)
 
 
