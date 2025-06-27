@@ -2,6 +2,7 @@ import os
 from ultralytics import YOLO
 import sys
 from PIL import Image
+import subprocess
 #classes need to be of form X_Y or X or X_y_z or X-y X-y-z if there are spaces in the class name it will give errors
 
 runs = ''
@@ -52,16 +53,37 @@ def classification_plus_import(db_name, input_dir, output):
                             width, height = img_to_open.size
                             x = 0
                             y = 0
-                            f.write(f"{directory} {x} {y} {width} {height} {img}\\n")
+                            new_img_name = f"{directory}_{img}"
+                            f.write(f"{directory} {x} {y} {width} {height} {new_img_name}\n")
                  
     script_dir = os.path.dirname(os.path.abspath(__file__))
     import_nj_script = os.path.join(script_dir, "importNJ.py")
     # Update command to use the new labels path
-    command = f'python3 {import_nj_script} -n new -i {input_dir} -t {labels_path} -p {project_path} -z {project_path} -C yes -d {db_name}'
-    os.system(command)
+    command = [
+        'python3', 
+        import_nj_script, 
+        '-n', 'new', 
+        '-i', input_dir, 
+        '-t', labels_path, 
+        '-p', project_path, 
+        '-z', project_path, 
+        '-C', 'yes', 
+        '-d', db_name
+    ]
+    
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        print(result.stdout)
+        if result.stderr:
+            print(f"importNJ.py stderr:\\n{result.stderr}", file=sys.stderr)
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing importNJ.py. Return code: {e.returncode}", file=sys.stderr)
+        print(f"Stdout: {e.stdout}", file=sys.stderr)
+        print(f"Stderr: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
 
 
-def inference_into_classification(input_dir, output, weights_file, classification_dir):
+def inference_into_classification(db_name, input_dir, output, weights_file, classification_dir):
 
     model = YOLO(weights_file)
 
@@ -99,7 +121,7 @@ def inference_into_classification(input_dir, output, weights_file, classificatio
                     cropped_img_path = os.path.join(class_dir, cropped_img_name)
                     cropped_img.save(cropped_img_path)
 
-    classification_plus_import(classification_dir, output)
+    classification_plus_import(db_name, classification_dir, output)
 
 #need to save images then save them into dir based on class id then ask chris what else he wants
 
@@ -118,11 +140,11 @@ def inference_plus_import(input_dir, output, weights_file):
                         x2 = x2 - x1
                         y2 = y2 - y1
                         class_id = int(box.cls.item())
-                        f.write(f"{class_id} {x1} {y1} {x2} {y2} {img}\n")
+                        f.write(f"{class_id} {x1} {y1} {x2} {y2} {img}\\n")
 
     f.close()
 
-    command = f'python3 importNJ.py -n new -i {input_Dir} -t labels.txt -p {output} -z {output}'
+    command = f'python3 importNJ.py -n new -i "{input_Dir}" -t "labels.txt" -p "{output}" -z "{output}"'
     os.system(command)
 
 for i in range(1, len(sys.argv)):
@@ -131,9 +153,6 @@ for i in range(1, len(sys.argv)):
 
     elif sys.argv[i] == '-w':
         weights_file = sys.argv[i+1]
-
-    elif sys.argv[i] == '-l':
-        label_file = sys.argv[i+1]
 
     elif sys.argv[i] == '-c':
         classification_dir = sys.argv[i+1]
@@ -151,7 +170,7 @@ for i in range(1, len(sys.argv)):
         elif runs == 'inf':
             inference_plus_import(input_dir, output, weights_file)
         elif runs == 'ci':
-            inference_into_classification(input_dir, output, weights_file, classification_dir)
+            inference_into_classification(db_name, input_dir, output, weights_file, classification_dir)
         else:
             print("invalid run type")
 

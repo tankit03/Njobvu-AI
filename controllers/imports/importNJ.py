@@ -108,7 +108,8 @@ def create_project(db_name, txt_file, nj_path, class_label, img_dir, classificat
                 for img in os.listdir(class_path):
                     src = os.path.join(class_path, img)
                     if os.path.isfile(src):
-                        dst = os.path.join(project_path, 'images', img)
+                        new_img_name = f"{dir_name}_{img}"
+                        dst = os.path.join(project_path, 'images', new_img_name)
                         shutil.copy(src,dst)
 
     print(f"this is the db name", db_name);
@@ -169,7 +170,7 @@ if __name__ == '__main__':
     for i in range(1, len(sys.argv)):
         if sys.argv[i] == '-n':
             if sys.argv[i + 1] != ("new" or "existing"):
-                print("error in -n flag input: required input = 'new' or 'existing'\n")
+                print("error in -n flag input: required input = 'new' or 'existing'\\n")
             else:
                 nj_decision = sys.argv[i+1]
         elif sys.argv[i] == '-i':
@@ -191,15 +192,6 @@ if __name__ == '__main__':
 
     #Creating new Project
     if nj_decision == "new":
-
-    #     print(f"db_name:{db_name}")
-    
-    # # Extract just the project name without username prefix
-    #     basename = os.path.basename(nj_path)
-    #     if '-' in basename:
-    #         db_name = basename.split('-', 1)[1]  # Get everything after the first dash
-    #     else:
-    #         db_name = basename
             
         print(f"Using database name: {db_name}")
         create_project(db_name, txt_file, nj_path, class_label, img_dir, classification)
@@ -207,7 +199,7 @@ if __name__ == '__main__':
     #Adding to an existing project - Don't know how useful this is yet
     elif nj_decision == "existing":
         #need to enter these values beforehand either in config or cmdline
-        nj_userName = input("Enter your Njobvu UserName: \n")
+        nj_userName = input("Enter your Njobvu UserName: \\n")
         nj_project = input("Enter the name of your existing Njobvu project: ")
         result = findNjProject(nj_project,nj_path, nj_userName)
         if result != "":

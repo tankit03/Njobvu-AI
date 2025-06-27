@@ -31,13 +31,6 @@
                     </div>
                 </div>
                 
-                <div id="inference-classification-fields" style="display: none;">
-                     <div class="form-group">
-                        <label for="classification-dir">Classification Directory</label>
-                        <input type="text" class="form-control" id="classification-dir" name="classificationDir">
-                    </div>
-                </div>
-
                 <button type="submit" class="btn btn-primary">Import</button>
             </form>
             <div id="response-message" class="mt-3"></div>
@@ -48,25 +41,17 @@
 <script>
     document.getElementById('import-type').addEventListener('change', function() {
         var inferenceFields = document.getElementById('inference-fields');
-        var inferenceClassificationFields = document.getElementById('inference-classification-fields');
         var weightsFileInput = document.getElementById('weights-file');
-        var classificationDirInput = document.getElementById('classification-dir');
 
         if (this.value === 'classification') {
             inferenceFields.style.display = 'none';
-            inferenceClassificationFields.style.display = 'none';
             weightsFileInput.required = false;
-            classificationDirInput.required = false;
         } else if (this.value === 'inference-classification') {
             inferenceFields.style.display = 'block';
-            inferenceClassificationFields.style.display = 'block';
             weightsFileInput.required = true;
-            classificationDirInput.required = true;
         } else if (this.value === 'inference') {
             inferenceFields.style.display = 'block';
-            inferenceClassificationFields.style.display = 'none';
             weightsFileInput.required = true;
-            classificationDirInput.required = false;
         }
     });
     // Set initial state
@@ -88,7 +73,8 @@
 		}
 
         var formData = new FormData(this);
-        if (document.getElementById('import-type').value === 'classification') {
+        const importType = document.getElementById('import-type').value;
+        if (importType === 'classification' || importType === 'inference-classification') {
             formData.append('dbName', projectName);
         }
 

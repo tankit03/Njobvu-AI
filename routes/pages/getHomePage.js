@@ -105,20 +105,20 @@ async function getHomePage(req, res) {
                     });
                 };
 
-                var numimg = await hdb.getAsync("SELECT COUNT(*) FROM Images");
-                var numLabeled = await hdb.allAsync(
-                    "SELECT DISTINCT IName FROM Labels",
-                );
+                    var numimg = await hdb.getAsync("SELECT COUNT(*) FROM Images");
+                    var numLabeled = await hdb.allAsync(
+                        "SELECT DISTINCT IName FROM Labels",
+                    );
                 var complete = Math.trunc(
-                    100 * (numLabeled.length / numimg["COUNT(*)"]),
-                );
-                var found_review = await hdb.getAsync(
-                    "SELECT COUNT(*) FROM Images WHERE reviewImage = 1",
-                );
-                counter = await hdb.getAsync("SELECT COUNT(*) FROM Labels");
+                            100 * (numLabeled.length / numimg["COUNT(*)"]),
+                        );
+                    var found_review = await hdb.getAsync(
+                        "SELECT COUNT(*) FROM Images WHERE reviewImage = 1",
+                    );
+                    counter = await hdb.getAsync("SELECT COUNT(*) FROM Labels");
 
                 if (Number(found_review["COUNT(*)"]) == 0) {
-                    review_counter.push(0);
+                        review_counter.push(0);
                 } else {
                     review_counter.push(1);
                     results1[i][2] = 1;

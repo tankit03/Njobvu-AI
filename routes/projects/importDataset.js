@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const unzip = require('../../utils/unzipFile');
 const queries = require('../../queries/queries');
 const { Client } = require('../../queries/client');
@@ -60,13 +60,13 @@ const importDataset = async (req, res) => {
         }
 
         const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'import_options.py');
-        let command = `python3 "${scriptPath}" -i "${unzippedPath}" -o "${imagesPath}"`;
+        const args = [scriptPath, '-i', unzippedPath, '-o', imagesPath];
 
         if (importType === 'classification') {
             if (!dbName) {
                 return res.status(400).json({ success: false, message: 'Database name is required for classification import.' });
             }
-            command += ` -d "${dbName}" -r class`;
+            args.push('-d', dbName, '-r', 'class');
         } else if (importType === 'inference' || importType === 'inference-classification') {
             if (!req.files.weights) {
                 return res.status(400).json({ success: false, message: 'Weights file is required for inference.' });
@@ -74,26 +74,38 @@ const importDataset = async (req, res) => {
             const weightsFile = req.files.weights;
             const weightsPath = path.join(uploadPath, Date.now() + '-' + weightsFile.name);
             await weightsFile.mv(weightsPath);
-            command += ` -w "${weightsPath}"`;
+            args.push('-w', weightsPath);
 
             if (importType === 'inference-classification') {
-                if (!classificationDir) {
-                   return res.status(400).json({ success: false, message: 'Classification directory is required.' });
-                }
-                command += ` -c "${classificationDir}" -r ci`;
+                const classificationTempDir = path.join(uploadPath, Date.now() + '-classified');
+                fs.mkdirSync(classificationTempDir, { recursive: true });
+                args.push('-c', classificationTempDir, '-r', 'ci', '-d', dbName);
             } else {
-                command += ' -r inf';
+                args.push('-r', 'inf');
             }
         } else {
             return res.status(400).json({ success: false, message: 'Invalid import type.' });
         }
         
-        exec(command, async (error, stdout, stderr) => {
-            if (error) {
-                console.error(`exec error: ${error}`);
+        const pythonProcess = spawn('python3', args);
+        let stdout = '';
+        let stderr = '';
+
+        pythonProcess.stdout.on('data', (data) => {
+            stdout += data.toString();
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        pythonProcess.on('close', async (code) => {
+            if (code !== 0) {
+                console.error(`python script exited with code ${code}:`);
+                console.error(stderr);
                 return res.status(500).json({ success: false, message: stderr });
             }
-            
+
             try {
                 const projectDescription = "Imported Project";
                 const autoSave = 1;
@@ -111,7 +123,7 @@ const importDataset = async (req, res) => {
                     path.join(projectPath, `${dbName}.db`)
                 );
 
-                res.json({ success: true, message: 'Import process started.', output: stdout });
+                res.json({ success: true, message: 'Import process completed.', output: stdout });
             } catch (dbError) {
                 console.error('Database update failed after import:', dbError);
                 return res.status(500).json({ success: false, message: 'Project imported but failed to update main database.' });
