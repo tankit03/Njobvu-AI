@@ -50,6 +50,7 @@ batch = ""
 subdiv = ""
 width = ""
 height = ""
+yolo_task = ""
 yolo_version = 3
 epochs = 100
 imgsz = 640
@@ -65,10 +66,10 @@ python_options = ""
 argumentList = sys.argv[1:]
 
 # Options
-options = "d:f:i:n:p:l:f:w:b:s:x:y:v:e:I:D:o:h"
+options = "d:f:t:m:i:n:p:l:f:w:b:s:x:y:v:e:I:D:o:h"
 
 # Long options
-long_options = ["Data Path", "Images Path", "Name Path", "Percentage", "Log Path", "Darknet Path", "Weight Path", "Batch", "Subdivision", "Width", "Height", "YOLO Version", "EPOCHS", "Image Size", "Device", "Advanced Options", "Help"]
+long_options = ["Data Path", "Images Path", "Name Path", "YOLO Task", "YOLO Mode", "Percentage", "Log Path", "Darknet Path", "Weight Path", "Batch", "Subdivision", "Width", "Height", "YOLO Version", "EPOCHS", "Image Size", "Device", "Advanced Options", "Help"]
 
 #########################################################
 # Help Information - NOT USED					#
@@ -89,6 +90,8 @@ def showHelpInfo(err):
 	print ("  -x\tSet the width value")
 	print ("  -y\tSet the height value")
 	print ("  -v\tSet the YOLO version number")
+	print ("  -t\tSet the YOLO Task")
+	print ("  -m\tSet the YOLO Mode")
 	print ("  -e\tSet the EPOCH value (default 100)")
 	print ("  -I\tSet the Image Size value (default 640)")
 	print ("  -D\tSet the Device value (cpu, gpu#, mps)")
@@ -274,6 +277,10 @@ try:
 			device = currentValue
 		elif currentArgument in ("-o", "--adv_options"):
 			adv_options = currentValue
+		elif currentArgument in ("-t", "--yolo_task"):
+			yolo_task = currentValue
+		elif currentArgument in ("-m", "--yolo_mode"):
+			yolo_mode = currentValue
 		elif currentArgument in ("-v", "--yolo_version"):
 			yolo_version = int(currentValue)
 #Generate Train.txt
@@ -308,35 +315,54 @@ if yolo_version == 3:
 	objCfg = data_path + '/obj.cfg'
 
 	cmd = "cd " + darknet_path + "; ./darknet detector train " + objData + " " + objCfg + " " + weight_path + " -dont_show 2>&1 > " + log_file
-	print(cmd)
 
+	print("Darknet Command: ", cmd)
 	# process_code,process_output,process_err,process_mix = call_command(cmd)
 	call_command(cmd)
 
 elif yolo_version == 5:
-	print("Ultralytics Version of YOLO Requested:")
+    cmd = ""
+    print("Ultralytics Version of YOLO Requested:")
 
-	#Command to start running ultralytics using the training files
-	cmd = darknet_path + " detect train data=" + name_path + " project=" + data_path + " epochs=" + epochs + " imgsz=" + imgsz + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
-	print(cmd)
+    if yolo_task == "detect":
+        #Command to start running ultralytics using the training files
+        cmd = darknet_path + " detect train data=" + name_path + " project=" + data_path + " epochs=" + epochs + " imgsz=" + imgsz + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
 
-	# process_code,process_output,process_err,process_mix = call_command(cmd)
-	call_command(cmd)
+    elif yolo_task == "classify":
+        cmd = darknet_path + " classify train data=" + name_path + " project=" + data_path + " epochs=" + epochs + " imgsz=" + imgsz + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
 
-	destination_dir = data_path 
-	source_dir = data_path + "/train/weights"
-	files = os.listdir(source_dir)
-	for file_name in files:
-		source_path = os.path.join(source_dir, file_name)
-		destination_path = os.path.join(destination_dir, file_name)
-		shutil.move(source_path, destination_path)
+    elif yolo_task == "pose":
+        cmd = darknet_path + " pose train data=" + name_path + " project=" + data_path + " epochs=" + epochs + " imgsz=" + imgsz + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
 
-	source_dir = data_path + "/train"
-	files = os.listdir(source_dir)
-	for file_name in files:
-		source_path = os.path.join(source_dir, file_name)
-		destination_path = os.path.join(destination_dir, file_name)
-		shutil.move(source_path, destination_path)
+
+    elif yolo_task == "segment":
+        cmd = darknet_path + " segment train data=" + name_path + " project=" + data_path + " epochs=" + epochs + " imgsz=" + imgsz + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
+
+
+    elif yolo_task == "obb":
+        cmd = darknet_path + " obb train data=" + name_path + " project=" + data_path + " epochs=" + epochs + " imgsz=" + imgsz + " device=" + device + " model=" + weight_path + " " + adv_options + " 2>&1 > " + log_file
+
+
+
+    print("YOLO Command: ", cmd)
+    print("Running YOLO Task: ", yolo_task)
+    # process_code,process_output,process_err,process_mix = call_command(cmd)
+    call_command(cmd)
+
+    destination_dir = data_path 
+    source_dir = data_path + "/train/weights"
+    files = os.listdir(source_dir)
+    for file_name in files:
+        source_path = os.path.join(source_dir, file_name)
+        destination_path = os.path.join(destination_dir, file_name)
+        shutil.move(source_path, destination_path)
+
+    source_dir = data_path + "/train"
+    files = os.listdir(source_dir)
+    for file_name in files:
+        source_path = os.path.join(source_dir, file_name)
+        destination_path = os.path.join(destination_dir, file_name)
+        shutil.move(source_path, destination_path)
 
 
 
