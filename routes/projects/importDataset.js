@@ -35,6 +35,13 @@ const importDataset = async (req, res) => {
         
         const mainPath = path.join(__dirname, '..', '..', 'public', 'projects');
         const projectPath = path.join(mainPath, `${username}-${projectName}`);
+
+        // If a project with the same name exists, delete it to ensure a fresh import.
+        if (fs.existsSync(projectPath)) {
+            console.log(`Project directory ${projectPath} already exists. Removing for a fresh import.`);
+            fs.rmSync(projectPath, { recursive: true, force: true });
+        }
+
         const imagesPath = path.join(projectPath, 'images');
         const bootstrapPath = path.join(projectPath, 'bootstrap');
         const trainingPath = path.join(projectPath, 'training');
@@ -44,29 +51,25 @@ const importDataset = async (req, res) => {
         const pythonPathFile = path.join(trainingPath, 'Paths.txt');
         const darknetPathFile = path.join(trainingPath, 'darknetPaths.txt');
 
-        if (!fs.existsSync(mainPath)) {
-            fs.mkdirSync(mainPath);
-        }
-        if (!fs.existsSync(projectPath)) {
-            fs.mkdirSync(projectPath);
-            fs.mkdirSync(imagesPath);
-            fs.mkdirSync(bootstrapPath);
-            fs.mkdirSync(trainingPath);
-            fs.mkdirSync(weightsPath);
-            fs.mkdirSync(logsPath);
-            fs.mkdirSync(pythonPathDir);
-            fs.writeFileSync(pythonPathFile, "");
-            fs.writeFileSync(darknetPathFile, "");
-        }
+        // Create the project directory structure
+        fs.mkdirSync(projectPath, { recursive: true });
+        fs.mkdirSync(imagesPath);
+        fs.mkdirSync(bootstrapPath);
+        fs.mkdirSync(trainingPath);
+        fs.mkdirSync(weightsPath);
+        fs.mkdirSync(logsPath);
+        fs.mkdirSync(pythonPathDir);
+        fs.writeFileSync(pythonPathFile, "");
+        fs.writeFileSync(darknetPathFile, "");
 
         const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'import_options.py');
-        const args = [scriptPath, '-i', unzippedPath, '-o', imagesPath];
+        const args = ['-u', scriptPath, '-i', unzippedPath, '-o', projectPath];
 
         if (importType === 'classification') {
             if (!dbName) {
                 return res.status(400).json({ success: false, message: 'Database name is required for classification import.' });
             }
-            args.push('-d', dbName, '-r', 'class');
+            args.push('-d', projectName, '-r', 'class');
         } else if (importType === 'inference' || importType === 'inference-classification') {
             if (!req.files.weights) {
                 return res.status(400).json({ success: false, message: 'Weights file is required for inference.' });
@@ -79,9 +82,9 @@ const importDataset = async (req, res) => {
             if (importType === 'inference-classification') {
                 const classificationTempDir = path.join(uploadPath, Date.now() + '-classified');
                 fs.mkdirSync(classificationTempDir, { recursive: true });
-                args.push('-c', classificationTempDir, '-r', 'ci', '-d', dbName);
+                args.push('-c', classificationTempDir, '-r', 'ci', '-d', projectName);
             } else {
-                args.push('-r', 'inf');
+                args.push('-r', 'inf', '-d', projectName);
             }
         } else {
             return res.status(400).json({ success: false, message: 'Invalid import type.' });
@@ -92,11 +95,15 @@ const importDataset = async (req, res) => {
         let stderr = '';
 
         pythonProcess.stdout.on('data', (data) => {
-            stdout += data.toString();
+            const log_data = data.toString();
+            console.log('Python Script:', log_data);
+            stdout += log_data;
         });
 
         pythonProcess.stderr.on('data', (data) => {
-            stderr += data.toString();
+            const log_data = data.toString();
+            console.error('Python Script Error:', log_data);
+            stderr += log_data;
         });
 
         pythonProcess.on('close', async (code) => {
@@ -119,9 +126,15 @@ const importDataset = async (req, res) => {
 
                 await queries.managed.grantUserAccess(username, projectName, username);
 
-                global.projectDbClients[projectPath] = new Client(
-                    path.join(projectPath, `${dbName}.db`)
-                );
+                // Add the new project's database client to the global pool of active clients
+                const newDbPath = path.join(projectPath, `${projectName}.db`);
+                global.projectDbClients[projectPath] = new Client(newDbPath);
+                
+                // You might need to explicitly open the new connection if the Client class doesn't do it automatically.
+                const newClient = global.projectDbClients[projectPath];
+                if (newClient && typeof newClient.open === 'function') {
+                    newClient.open();
+                }
 
                 res.json({ success: true, message: 'Import process completed.', output: stdout });
             } catch (dbError) {
