@@ -1,3 +1,5 @@
+const sqlite3 = require("sqlite3");
+
 async function getHomePage(req, res) {
     console.log("getHomePage");
 
@@ -6,7 +8,7 @@ async function getHomePage(req, res) {
         user = req.cookies.Username;
 
     var public_path = currentPath;
-    var project_path = public_path + "public/projects/";
+    var project_path = path.join(public_path, "public", "projects");
 
     if (page == undefined) {
         page = 1;
@@ -56,15 +58,25 @@ async function getHomePage(req, res) {
             var counter = 0;
 
             for (var i = 0; i < results1.length; i++) {
-                var dbpath =
-                    project_path +
-                    "/" +
-                    results1[i][0].Admin +
-                    "-" +
-                    results1[i][0].PName +
-                    "/" +
-                    results1[i][0].PName +
-                    ".db";
+                var dbpath = path.join(
+                    project_path,
+                    results1[i][0].Admin + "-" + results1[i][0].PName,
+                    results1[i][0].PName + ".db"
+                );
+
+                console.log("Attempting to connect to database:", dbpath);
+                
+                // Check if database file exists
+                const fs = require('fs');
+                if (!fs.existsSync(dbpath)) {
+                    console.log("Database file does not exist:", dbpath);
+                    // Add default values for this project
+                    review_counter.push(0);
+                    results1[i][3] = 0;
+                    results1[i][4] = 0;
+                    list_counter.push(0);
+                    continue;
+                }
 
                 // Connect to project databases
                 var hdb = new sqlite3.Database(dbpath, (err) => {
@@ -75,6 +87,17 @@ async function getHomePage(req, res) {
                         );
                     }
                     console.log("Connected to hdb.");
+                });
+
+                // Test database connection by checking if tables exist
+                hdb.get("SELECT name FROM sqlite_master WHERE type='table' AND name='Images'", (err, row) => {
+                    if (err) {
+                        console.error("Error checking Images table:", err);
+                    } else if (row) {
+                        console.log("Images table exists");
+                    } else {
+                        console.log("Images table does not exist");
+                    }
                 });
 
                 // create async database object functions
@@ -89,6 +112,7 @@ async function getHomePage(req, res) {
                         });
                     }).catch((err) => {
                         console.log(err);
+                        return null;
                     });
                 };
                 hdb.allAsync = function (sql) {
@@ -102,31 +126,38 @@ async function getHomePage(req, res) {
                         });
                     }).catch((err) => {
                         console.log(err);
+                        return [];
                     });
                 };
+
+                // Wait a moment for the connection to be fully established
+                await new Promise(resolve => setTimeout(resolve, 100));
 
                 var numimg = await hdb.getAsync("SELECT COUNT(*) FROM Images");
                 var numLabeled = await hdb.allAsync(
                     "SELECT DISTINCT IName FROM Labels",
                 );
-                var complete = Math.trunc(
-                    100 * (numLabeled.length / numimg["COUNT(*)"]),
-                );
+                var complete = 0;
+                if (numLabeled && numLabeled.length > 0 && numimg && numimg["COUNT(*)"] > 0) {
+                    complete = Math.trunc(
+                        100 * (numLabeled.length / numimg["COUNT(*)"]),
+                    );
+                }
                 var found_review = await hdb.getAsync(
                     "SELECT COUNT(*) FROM Images WHERE reviewImage = 1",
                 );
-                counter = await hdb.getAsync("SELECT COUNT(*) FROM Labels");
+                var counter = await hdb.getAsync("SELECT COUNT(*) FROM Labels");
 
-                if (Number(found_review["COUNT(*)"]) == 0) {
+                if (!found_review || Number(found_review["COUNT(*)"]) == 0) {
                     review_counter.push(0);
                 } else {
                     review_counter.push(1);
                     results1[i][2] = 1;
                 }
-                results1[i][3] = Number(numimg["COUNT(*)"]);
+                results1[i][3] = numimg ? Number(numimg["COUNT(*)"]) : 0;
                 results1[i][4] = complete;
 
-                list_counter.push(counter["COUNT(*)"]);
+                list_counter.push(counter ? counter["COUNT(*)"] : 0);
 
                 hdb.close(function (err) {
                     if (err) {

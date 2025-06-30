@@ -30,22 +30,24 @@ async function getProjectPage(req, res) {
     var PName = projects[num].PName;
     var admin = projects[num].Admin;
 
-    var public_path = currentPath;
-    var db_path =
-        public_path +
-        "public/projects/" +
-        admin +
-        "-" +
-        PName +
-        "/" +
-        PName +
-        ".db";
+    var project_path = path.join(currentPath, "public", "projects");
+    var db_path = path.join(
+        project_path,
+        admin + "-" + PName,
+        PName + ".db",
+    );
 
     if (page == undefined) {
         page = 1;
     }
     if (perPage == undefined) {
         perPage = 10;
+    }
+
+    if (!fs.existsSync(db_path)) {
+        console.error("Database file does not exist:", db_path);
+        // Redirect or render an error page, as the project is not correctly set up.
+        return res.redirect("/home?error=project_not_found");
     }
 
     var pdb = new sqlite3.Database(db_path, (err) => {
@@ -67,6 +69,7 @@ async function getProjectPage(req, res) {
             });
         }).catch((err) => {
             console.log(err);
+            return null;
         });
     };
     pdb.allAsync = function (sql) {
@@ -80,6 +83,7 @@ async function getProjectPage(req, res) {
             });
         }).catch((err) => {
             console.log(err);
+            return [];
         });
     };
 
@@ -93,15 +97,17 @@ async function getProjectPage(req, res) {
     var results2 = await pdb.getAsync("SELECT COUNT(*) FROM Images");
 
     var list_counter = [];
-    for (var i = 0; i < results1.length; i++) {
-        var results3 = await pdb.getAsync(
-            "SELECT COUNT(*) FROM `Labels` WHERE IName = '" +
-                results1[i].IName +
-                "'",
-        );
-        list_counter.push(results3["COUNT(*)"]);
+    if (results1) {
+        for (var i = 0; i < results1.length; i++) {
+            var results3 = await pdb.getAsync(
+                "SELECT COUNT(*) FROM `Labels` WHERE IName = '" +
+                    results1[i].IName +
+                    "'",
+            );
+            list_counter.push(results3 ? results3["COUNT(*)"] : 0);
+        }
     }
-    // var acc = await db.allAsync("SELECT * FROM `Access` WHERE PName = '" + PName + "'");
+    
     var acc = await db.allAsync(
         "SELECT * FROM `Access` WHERE PName = '" +
             PName +
@@ -127,10 +133,10 @@ async function getProjectPage(req, res) {
         Admin: admin,
         IDX: IDX,
         access: access,
-        images: results1,
+        images: results1 || [],
         list_counter: list_counter,
         current: page,
-        pages: Math.ceil(results2["COUNT(*)"] / perPage),
+        pages: results2 ? Math.ceil(results2["COUNT(*)"] / perPage) : 0,
         perPage: perPage,
         logged: req.query.logged,
         activePage: "project",

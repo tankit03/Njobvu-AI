@@ -116,6 +116,7 @@ async function createClassification(req, res) {
             projectDescription,
             autoSave,
             username,
+            'classification',
         );
 
         console.log(

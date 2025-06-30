@@ -3,24 +3,10 @@ const fs = require("fs");
 
 async function cleanDirectory(directory) {
     try {
-        // Clean the directory path itself first
-        const dirName = path.basename(directory);
-        const parentDir = path.dirname(directory);
-        const cleanedDirName = dirName.trim().replace(/[ 0+]/g, "_");
-
-        // If directory name needs cleaning, rename it first
-        let currentDirectory = directory;
-        if (dirName !== cleanedDirName) {
-            const newDirPath = path.join(parentDir, cleanedDirName);
-            await fs.promises.rename(directory, newDirPath);
-            currentDirectory = newDirPath;
-            console.log(`Renamed directory: ${directory} -> ${newDirPath}`);
-        }
-
-        const files = await fs.promises.readdir(currentDirectory);
+        const files = await fs.promises.readdir(directory);
 
         for (const file of files) {
-            const filePath = path.join(currentDirectory, file);
+            const filePath = path.join(directory, file);
             const stats = await fs.promises.stat(filePath);
 
             // Process subdirectories
@@ -35,7 +21,7 @@ async function cleanDirectory(directory) {
                     file.includes("+")
                 ) {
                     const newDirName = file.trim().replace(/[ 0+]/g, "_");
-                    const newDirPath = path.join(currentDirectory, newDirName);
+                    const newDirPath = path.join(directory, newDirName);
                     await fs.promises.rename(filePath, newDirPath);
                     await cleanDirectory(newDirPath);
                 } else {
@@ -64,14 +50,14 @@ async function cleanDirectory(directory) {
                 file.includes("+")
             ) {
                 const newFileName = file.trim().replace(/[ 0+]/g, "_");
-                const newFilePath = path.join(currentDirectory, newFileName);
+                const newFilePath = path.join(directory, newFileName);
 
                 await fs.promises.rename(filePath, newFilePath);
             }
         }
 
-        //   console.log(`Directory cleaned: ${currentDirectory}`);
-        return currentDirectory;
+        //   console.log(`Directory cleaned: ${directory}`);
+        return directory;
     } catch (error) {
         console.error(`Error cleaning directory ${directory}:`, error);
         throw error;
