@@ -59,7 +59,7 @@ module.exports = {
         ) {
             const db = global.projectDbClients[projectPath];
             const query =
-                "INSERT INTO Labels (LID, Cname, X, Y, W, H, IName) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                "INSERT INTO Labels (LID, CName, X, Y, W, H, IName) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
             const result = await db.run(query, [
                 labelId,

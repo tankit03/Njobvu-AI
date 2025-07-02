@@ -288,8 +288,10 @@ async function importProject(req, res) {
                         currentLabel[0],
                         currentLabel[1],
                         currentLabel[2],
+                        currentLabel[3],
                         currentLabel[4],
                         currentLabel[5],
+
                     );
 
                     if (currentConf.length != 0) {
