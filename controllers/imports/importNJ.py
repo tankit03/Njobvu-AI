@@ -31,17 +31,32 @@ def insert_data(conn, data):
 
 def read_file_and_store_in_db(project_path, db_name, txt_file, class_label):
     conn = sqlite3.connect(os.path.join(project_path, f'{db_name}.db'))
-
     with open(txt_file, 'r') as file:
         for line in file:
-            data = line.strip().split(' ')
-            #add in the cpp file It is not like this on the main version(hpc)
-            #data.append(class_label) have user use a flag for this
-            #data.append(img_name)
-            #if the user didnt define a class then it is from inference which puts class into the first slot
-            if class_label != '':
-                data.insert(0,class_label)
-            insert_data(conn, data)
+            line = line.strip()
+            if not line: # Skip empty lines
+                continue
+
+            parts = []
+            try:
+                if class_label != '':
+                    # Format is: X Y W H IName. We expect 5 parts.
+                    parts_from_file = line.split(' ', 4)
+                    if len(parts_from_file) != 5:
+                        print(f"WARNING: Malformed line (expected 5 parts), skipping: {line}", file=sys.stderr)
+                        continue
+                    parts = [class_label] + parts_from_file
+                else:
+                    # Format is: CName X Y W H IName. We expect 6 parts.
+                    parts = line.split(' ', 5)
+                    if len(parts) != 6:
+                        print(f"WARNING: Malformed line (expected 6 parts), skipping: {line}", file=sys.stderr)
+                        continue
+                
+                insert_data(conn, parts)
+
+            except Exception as e:
+                print(f"ERROR: Could not process line '{line}'. Error: {e}", file=sys.stderr)
 
     conn.close()
 
@@ -62,9 +77,17 @@ def findNjProject(nj_project, nj_path):
 
 
 def create_project(db_name, txt_file, nj_path, class_label, img_dir, classification):
+    print(f"=== create_project called with ===")
+    print(f"db_name: '{db_name}'")
+    print(f"txt_file: '{txt_file}'")
+    print(f"nj_path: '{nj_path}'")
+    print(f"class_label: '{class_label}'")
+    print(f"img_dir: '{img_dir}'")
+    print(f"classification: '{classification}'")
+    print(f"==================================")
 
     # Inserts the project dir
-    project_path = nj_path 
+    project_path = nj_path
 
     unique_classes = set()
     #not working in controller bc normal csv isnt getting class data
@@ -94,32 +117,40 @@ def create_project(db_name, txt_file, nj_path, class_label, img_dir, classificat
     with open(os.path.join(training_path, 'darknetPaths.txt'), 'w') as f:
         pass
 
-
+    print(f"img_dir: {img_dir}")
+    print(f"classification: {classification}")
+    
     if classification == '':
+        print("Copying images for non-classification mode...")
         for img_name in os.listdir(img_dir):
             src = os.path.join(img_dir, img_name)
             dst = os.path.join(project_path, 'images', img_name)
             if os.path.isfile(src):
                 shutil.copy(src,dst)
+                print(f"Copied: {src} -> {dst}")
     else:
+        print("Copying images for classification mode...")
         for dir_name in os.listdir(img_dir):
-            for img in os.listdir(os.path.join(img_dir,dir_name)):
-                src = os.path.join(img_dir, dir_name, img)
-                dst = os.path.join(project_path, 'images', img)
-                if os.path.isfile(src):
-                    shutil.copy(src,dst)
+            class_path = os.path.join(img_dir, dir_name)
+            if os.path.isdir(class_path):
+                print(f"Processing class directory: {class_path}")
+                for img in os.listdir(class_path):
+                    src = os.path.join(class_path, img)
+                    if os.path.isfile(src):
+                        new_img_name = f"{dir_name}_{img}"
+                        dst = os.path.join(project_path, 'images', new_img_name)
+                        shutil.copy(src,dst)
+                        print(f"Copied: {src} -> {dst}")
 
     print(f"this is the db name", db_name);
+    print(f"project_path: {project_path}");
+    print(f"database file: {os.path.join(project_path, f'{db_name}.db')}");
             
-    conn = sqlite3.connect(os.path.join(project_path, f'{db_name}.db'))
-    conn.close()
-    print(f"New project created with directory and database: {project_path}")
-
-    # populating the database
-
+    # Create and populate the database in one step
     conn = sqlite3.connect(os.path.join(project_path, f'{db_name}.db'))
     cursor = conn.cursor()
 
+    print("Creating Classes table...")
     cursor.execute('''
     CREATE TABLE Classes (CName VARCHAR NOT NULL PRIMARY KEY)
     ''')
@@ -130,18 +161,25 @@ def create_project(db_name, txt_file, nj_path, class_label, img_dir, classificat
         VALUES (?)
         ''',(val,))
         conn.commit()
+    print(f"Inserted {len(unique_classes)} classes: {list(unique_classes)}")
  
+    print("Creating Images table...")
     cursor.execute('''
     CREATE TABLE Images (IName VARCHAR NOT NULL PRIMARY KEY, reviewImage INTEGER NOT NULL DEFAULT 0, validateImage INTEGER NOT NULL DEFAULT 0)
     ''')
 
+    print("Creating Labels table...")
     cursor.execute('''
     CREATE TABLE Labels (LID INTEGER PRIMARY KEY, CName VARCHAR NOT NULL, X INTEGER NOT NULL, Y INTEGER NOT NULL, W INTEGER NOT NULL, H INTEGER NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(CName) REFERENCES Classes(CName), FOREIGN KEY(IName) REFERENCES Images(IName))
     ''')
 
+    print("Creating Validation table...")
     cursor.execute('''
     CREATE TABLE Validation (Confidence INTEGER NOT NULL, LID INTEGER NOT NULL PRIMARY KEY, CName VARCHAR NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(LID) REFERENCES Labels(LID), FOREIGN KEY(IName) REFERENCES Images(IName), FOREIGN KEY(CName) REFERENCES Classes(CName))
     ''')
+    
+    # Insert images into the Images table
+    images_count = 0
     for img_name in os.listdir(os.path.join(project_path, 'images')):
         if os.path.isfile(os.path.join(project_path, 'images', img_name)):
             cursor.execute('''
@@ -149,8 +187,15 @@ def create_project(db_name, txt_file, nj_path, class_label, img_dir, classificat
             VALUES (?,?,?)
             ''',(img_name, 0, 0))
             conn.commit()
+            images_count += 1
+    print(f"Inserted {images_count} images into Images table")
+    
+    # Read and store labels data
+    print("Reading labels file and storing data...")
     read_file_and_store_in_db(project_path, db_name, txt_file, class_label)
-    #Copy the image to the images folder
+    
+    conn.close()
+    print(f"New project created with directory and database: {project_path}")
 
 if __name__ == '__main__':
 
@@ -167,7 +212,7 @@ if __name__ == '__main__':
     for i in range(1, len(sys.argv)):
         if sys.argv[i] == '-n':
             if sys.argv[i + 1] != ("new" or "existing"):
-                print("error in -n flag input: required input = 'new' or 'existing'\n")
+                print("error in -n flag input: required input = 'new' or 'existing'\\n")
             else:
                 nj_decision = sys.argv[i+1]
         elif sys.argv[i] == '-i':
@@ -189,15 +234,6 @@ if __name__ == '__main__':
 
     #Creating new Project
     if nj_decision == "new":
-
-    #     print(f"db_name:{db_name}")
-    
-    # # Extract just the project name without username prefix
-    #     basename = os.path.basename(nj_path)
-    #     if '-' in basename:
-    #         db_name = basename.split('-', 1)[1]  # Get everything after the first dash
-    #     else:
-    #         db_name = basename
             
         print(f"Using database name: {db_name}")
         create_project(db_name, txt_file, nj_path, class_label, img_dir, classification)
@@ -205,7 +241,7 @@ if __name__ == '__main__':
     #Adding to an existing project - Don't know how useful this is yet
     elif nj_decision == "existing":
         #need to enter these values beforehand either in config or cmdline
-        nj_userName = input("Enter your Njobvu UserName: \n")
+        nj_userName = input("Enter your Njobvu UserName: \\n")
         nj_project = input("Enter the name of your existing Njobvu project: ")
         result = findNjProject(nj_project,nj_path, nj_userName)
         if result != "":

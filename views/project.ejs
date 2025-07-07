@@ -134,13 +134,8 @@
 			fetch('/deleteImage', {
 					method: 'POST',
 					body: formData 
-			}).then((resp) => {
-				return resp.json();
-			}).then((body) => {
-				console.log(body);
-
+			}).then(() => {
 				window.location.reload();
-			
 			}).catch((error) => {
 				console.log(error);
 			});
