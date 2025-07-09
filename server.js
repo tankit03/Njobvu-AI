@@ -32,9 +32,6 @@ managedDbClient.migrate();
 
 const allProjectsPath = path.join(__dirname, "public", "projects");
 
-console.log("hello");
-console.log("this is project path: ", allProjectsPath);
-
 try {
     if (!fs.existsSync(allProjectsPath)) {
         fs.mkdirSync(allProjectsPath, { recursive: true }); // recursive: true creates parent directories if they don't exist
@@ -91,10 +88,10 @@ global.db = new sqlite3.Database("./db/manage.db", (err) => {
     console.log("Connected to the main database.");
 });
 
-global.db.getAsync = function (sql) {
+global.db.getAsync = function(sql) {
     var that = this;
     return new Promise((resolve, reject) => {
-        that.get(sql, function (err, row) {
+        that.get(sql, function(err, row) {
             if (err) {
                 console.log("getAsync ERROR! ", err);
                 reject(err);
@@ -105,10 +102,10 @@ global.db.getAsync = function (sql) {
     });
 };
 
-global.db.allAsync = function (sql) {
+global.db.allAsync = function(sql) {
     var that = this;
-    return new Promise(function (resolve, reject) {
-        that.all(sql, function (err, row) {
+    return new Promise(function(resolve, reject) {
+        that.all(sql, function(err, row) {
             if (err) {
                 console.log("allAsync ERROR! ", err);
                 reject(err);
@@ -119,10 +116,10 @@ global.db.allAsync = function (sql) {
     });
 };
 
-global.db.runAsync = function (sql) {
+global.db.runAsync = function(sql) {
     var that = this;
-    return new Promise(function (resolve, reject) {
-        that.run(sql, function (err, row) {
+    return new Promise(function(resolve, reject) {
+        that.run(sql, function(err, row) {
             if (err) {
                 console.log("runAsync ERROR! ", err);
                 reject(err);
@@ -133,10 +130,10 @@ global.db.runAsync = function (sql) {
     });
 };
 
-global.db.execAsync = function (sql) {
+global.db.execAsync = function(sql) {
     var that = this;
-    return new Promise(function (resolve, reject) {
-        that.exec(sql, function (err, row) {
+    return new Promise(function(resolve, reject) {
+        that.exec(sql, function(err, row) {
             if (err) {
                 console.log("execAsync ERROR! ", err);
                 reject(err);

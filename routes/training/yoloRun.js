@@ -84,6 +84,8 @@ async function yoloRun(req, res) {
         absDarknetLabelsPath = path.join(absDarknetProjectPath, "labels");
         absDarknetLabelsTrain = path.join(absDarknetLabelsPath, "train");
         absDarknetLabelsVal = path.join(absDarknetLabelsPath, "val");
+        absDarknetTrainPath = path.join(absDarknetProjectPath, "train");
+        absDarknetWeightsPath = path.join(absDarknetTrainPath, "weights");
 
         if (!fs.existsSync(absDarknetImagesPath)) {
             fs.mkdirSync(absDarknetImagesPath, (err) => {
@@ -111,21 +113,28 @@ async function yoloRun(req, res) {
                 if (err) {
                     console.log(err);
                 } else {
-                    console.log("YOLO Lables Directory created");
+                    console.log("YOLO Labels Directory created");
                 }
             });
             fs.mkdirSync(absDarknetLabelsTrain, (err) => {
                 if (err) {
                     console.log(err);
                 } else {
-                    console.log("YOLO Lables Train Directory created");
+                    console.log("YOLO Labels Train Directory created");
                 }
             });
             fs.mkdirSync(absDarknetLabelsVal, (err) => {
                 if (err) {
                     console.log(err);
                 } else {
-                    console.log("YOLO Lables Validate Directory created");
+                    console.log("YOLO Labels Validate Directory created");
+                }
+            });
+            fs.mkdirSync(absDarknetWeightsPath, { recursive: true }, (err) => {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log("YOLO Weights Directory created");
                 }
             });
         }
@@ -270,7 +279,7 @@ async function yoloRun(req, res) {
                     imagesPath,
                     existingImages.rows[i].IName,
                 );
-                absDarknetOrgLablesPath = path.join(imagesPath, labelFile);
+                absDarknetOrgLabelsPath = path.join(imagesPath, labelFile);
                 absDarknetTrainValPath = path.join(
                     absDarknetImagesVal,
                     existingImages.rows[i].IName,
@@ -294,7 +303,7 @@ async function yoloRun(req, res) {
                     },
                 );
                 fs.symlink(
-                    absDarknetOrgLablesPath,
+                    absDarknetOrgLabelsPath,
                     absDarknetTrainLabelsPath,
                     "file",
                     (err) => {
@@ -484,6 +493,8 @@ async function yoloRun(req, res) {
         cmd = `python3 --version`;
         console.log("YOLO python script not for training");
     }
+
+    console.log(cmd);
 
     var success = "";
     var error = "";
