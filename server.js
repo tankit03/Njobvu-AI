@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////
 // Set up:
 ////////////////////////////////////////////////////////
-const app = require('./app'); 
+const app = require('./app');
 const { Client } = require("./queries/client");
 global.configFile = require("./config.json");
 const port = configFile.port;
@@ -32,15 +32,18 @@ managedDbClient.migrate();
 
 const allProjectsPath = path.join(__dirname, "public", "projects");
 
+console.log("hello");
+console.log("this is project path: ", allProjectsPath);
+
 try {
-  if (!fs.existsSync(allProjectsPath)) {
-    fs.mkdirSync(allProjectsPath, { recursive: true }); // recursive: true creates parent directories if they don't exist
-    console.log(`Directory '${allProjectsPath}' created.`);
-  } else {
-    console.log(`Directory '${allProjectsPath}' already exists.`);
-  }
+    if (!fs.existsSync(allProjectsPath)) {
+        fs.mkdirSync(allProjectsPath, { recursive: true }); // recursive: true creates parent directories if they don't exist
+        console.log(`Directory '${allProjectsPath}' created.`);
+    } else {
+        console.log(`Directory '${allProjectsPath}' already exists.`);
+    }
 } catch (err) {
-  console.error(`Error creating directory: ${err.message}`);
+    console.error(`Error creating directory: ${err.message}`);
 }
 
 for (const project of fs.readdirSync(allProjectsPath)) {
@@ -69,12 +72,12 @@ if (ssl_key_path && ssl_cert_path) {
 }
 
 // const express = require("express"),
-    sys = require("util"),
+sys = require("util"),
     // cookieParser = require("cookie-parser"),
     // upload = require("express-fileupload"),
     // app = express();
 
-global.currentPath = process.cwd() + "/";
+    global.currentPath = process.cwd() + "/";
 global.dataFolder = currentPath + "/data/";
 
 global.colorsJSON = JSON.parse(

@@ -1,13 +1,15 @@
 const path = require("path");
 const { exec } = require("child_process");
 
+
+
 async function pythonScript(inputDir, outputDir, runType, db_name) {
     const pyScript = path.join(
         __dirname,
         "../controllers/imports/import_options.py",
     );
 
-    const command = `python3 ${pyScript} -i ${inputDir} -o ${outputDir} -d ${db_name} -r ${runType}`;
+    const command = `${pythonPath} ${pyScript} -i ${inputDir} -o ${outputDir} -d ${db_name} -r ${runType}`;
 
     console.log("python", pyScript);
     console.log("command", command);

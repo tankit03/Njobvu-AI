@@ -1,3 +1,5 @@
+import sys
+print("Python executable:", sys.executable);
 import os
 from ultralytics import YOLO
 import sys

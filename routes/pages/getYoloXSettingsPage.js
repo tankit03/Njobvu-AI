@@ -1,4 +1,5 @@
 async function getYoloXSettingsPage(req, res) {
+    console.log("get yolo X Setting Page");
     const readdir = util.promisify(fs.readdir);
     const readFile = util.promisify(fs.readFile);
 
@@ -26,13 +27,17 @@ async function getYoloXSettingsPage(req, res) {
         valid = 1;
         return res.redirect("/home");
     }
+
     var PName = projects[num].PName;
-    var admin = projects[num].Admin;
+    var Admin = projects[num].Admin;
+
+    console.log("PName", PName);
+    console.log("Admin", Admin);
 
     // set paths
     var public_path = currentPath,
         main_path = public_path + "public/projects/",
-        project_path = main_path + admin + "-" + PName,
+        project_path = main_path + Admin + "-" + PName,
         path = project_path + "/" + PName + ".db",
         training_path = project_path + "/training",
         weights_path = training_path + "/weights",
@@ -106,19 +111,19 @@ async function getYoloXSettingsPage(req, res) {
 
     var results1 = await db.getAsync(
         "SELECT * FROM `Projects` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        Admin +
+        "'",
     );
     var results2 = await tdb.allAsync("SELECT * FROM `Classes`");
 
     var acc = await db.allAsync(
         "SELECT * FROM `Access` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        Admin +
+        "'",
     );
     var access = [];
     for (var i = 0; i < acc.length; i++) {
@@ -247,7 +252,7 @@ async function getYoloXSettingsPage(req, res) {
         user: req.cookies.Username,
         access: access,
         PName: PName,
-        Admin: admin,
+        Admin: Admin,
         IDX: IDX,
         PDescription: results1.PDescription,
         AutoSave: results1.AutoSave,

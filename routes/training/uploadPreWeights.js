@@ -1,8 +1,11 @@
 async function uploadPreWeights(req, res) {
     var PName = req.body.PName,
         Admin = req.body.Admin,
-        user = req.cookies.Username,
+        user = req.body.user,
         weightsFile = req.files.upload_weights;
+
+    console.log("Admin: ", Admin);
+    console.log("User: ", user);
 
     var publicPath = currentPath,
         mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
@@ -13,6 +16,8 @@ async function uploadPreWeights(req, res) {
         logsPath = trainingPath + "/logs",
         weightsPath = trainingPath + "/weights/",
         weightsFilePath = weightsPath + weightsFile.name;
+
+    console.log("weightsFilePath: ", weightsFilePath);
 
     if (
         weightsFile.name.split(".").pop() != "137" &&

@@ -4,6 +4,8 @@ const { spawn } = require('child_process');
 const unzip = require('../../utils/unzipFile');
 const queries = require('../../queries/queries');
 const { Client } = require('../../queries/client');
+const config = require('../../config.json');
+const pythonPath = config.default_python_path;
 
 const importDataset = async (req, res) => {
     try {
@@ -32,7 +34,7 @@ const importDataset = async (req, res) => {
         } catch (error) {
             return res.status(500).json({ success: false, message: 'Failed to unzip dataset.' });
         }
-        
+
         const mainPath = path.join(__dirname, '..', '..', 'public', 'projects');
         const projectPath = path.join(mainPath, `${username}-${projectName}`);
 
@@ -89,8 +91,9 @@ const importDataset = async (req, res) => {
         } else {
             return res.status(400).json({ success: false, message: 'Invalid import type.' });
         }
-        
-        const pythonProcess = spawn('python3', args);
+
+        const pythonProcess = spawn(`${pythonPath}`, args);
+
         let stdout = '';
         let stderr = '';
 
@@ -129,7 +132,7 @@ const importDataset = async (req, res) => {
                 // Add the new project's database client to the global pool of active clients
                 const newDbPath = path.join(projectPath, `${projectName}.db`);
                 global.projectDbClients[projectPath] = new Client(newDbPath);
-                
+
                 // You might need to explicitly open the new connection if the Client class doesn't do it automatically.
                 const newClient = global.projectDbClients[projectPath];
                 if (newClient && typeof newClient.open === 'function') {

@@ -1,4 +1,5 @@
 async function getYoloXInferencePage(req, res) {
+    console.log("get yolo (ultralytics) X training Setting Page");
     const readdir = util.promisify(fs.readdir);
     const readFile = util.promisify(fs.readFile);
 
@@ -28,6 +29,9 @@ async function getYoloXInferencePage(req, res) {
     }
     var PName = projects[num].PName;
     var admin = projects[num].Admin;
+
+    console.log("this is PName :", PName);
+    console.log("this is PName :", admin);
 
     // set paths
     var public_path = currentPath,
@@ -106,19 +110,19 @@ async function getYoloXInferencePage(req, res) {
 
     var results1 = await db.getAsync(
         "SELECT * FROM `Projects` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
     var results2 = await tdb.allAsync("SELECT * FROM `Classes`");
 
     var acc = await db.allAsync(
         "SELECT * FROM `Access` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
     var access = [];
     for (var i = 0; i < acc.length; i++) {

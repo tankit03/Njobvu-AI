@@ -1,5 +1,7 @@
 const { exec } = require("child_process");
 const queries = require("../../queries/queries");
+const path = require("path");
+
 
 async function yoloRun(req, res) {
     var date = Date.now();
@@ -153,8 +155,8 @@ async function yoloRun(req, res) {
 
         for (var i = 0; i < existingImages.rows.length; i++) {
             var img = fs.readFileSync(
-                    `${imagesPath}/${existingImages.rows[i].IName}`,
-                ),
+                `${imagesPath}/${existingImages.rows[i].IName}`,
+            ),
                 imgData = probe.sync(img),
                 imgW = imgData.width,
                 imgH = imgData.height;
@@ -310,6 +312,8 @@ async function yoloRun(req, res) {
 
         ///////////////////Create symbolic link from darknet to run///////////////////////////////
         absDarknetProjectRun = absDarknetProjectPath;
+
+        console.log(`all path training path: ${trainingPath}, weightname: ${weightName}`);
         absWeightProjectPath = path.join(
             trainingPath,
             "logs",
