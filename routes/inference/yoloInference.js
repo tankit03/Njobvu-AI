@@ -72,8 +72,8 @@ async function yoloInference(req, res) {
 
         for (var i = 0; i < existingImages.rows.length; i++) {
             var img = fs.readFileSync(
-                    `${imagesPath}/${existingImages.rows[i].IName}`,
-                ),
+                `${imagesPath}/${existingImages.rows[i].IName}`,
+            ),
                 imgData = probe.sync(img),
                 imgW = imgData.width,
                 imgH = imgData.height;
@@ -141,6 +141,13 @@ async function yoloInference(req, res) {
         }
 
         ultralyticsProjectRun = runPath;
+
+        if (!fs.existsSync(inferenceFilePath)) {
+            const fallbackInferenceFilePath = path.join(inferenceUploadPath, inferenceFilePath);
+            if (fs.existsSync(fallbackInferenceFilePath)) {
+                inferenceFilePath = fallbackInferenceFilePath;
+            }
+        }
 
         var cmd = `python3 ${yoloScript} -d ${runPath} -i ${inferenceFilePath} -n ${classesPath} -l ${absUltralyticsProjectRun}/${log} -f ${ultralyticsPath} -w ${weightPath} -t ${yoloTask}`;
 
