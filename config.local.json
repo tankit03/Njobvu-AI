@@ -1,9 +1,0 @@
-{
-  "port": 3000,
-  "hostname": "http://localhost",
-  "default_python_path": "/usr/bin/python3",
-  "default_darknet_path": "/usr/local/darknet",
-  "default_yolo_path": "/usr/local/bin/yolo",
-  "ssl_key_path": "",
-  "ssl_cert_path": ""
-}
