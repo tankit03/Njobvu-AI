@@ -334,4 +334,132 @@
 					});
 
 				</script>
-				<%- include('../includes/footer') %>
+				<!-- Training Results Section -->
+		<% if(logs.length > 0) { %>
+		<div id="training-results" style="width: 100%">
+			<div class="container">
+				<div class="col-12">
+					<table class="table table-striped">
+						<thead class="thead-dark">
+							<tr>
+								<th scope="col">Run Name</th>
+								<th class="text-center">Status</th>
+								<th class="text-center" scope="col">Files</th>
+								<th></th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody>
+							<% for(var i=0; i<logs.length; i++) {%>
+							<tr>
+								<td scope="row">
+									<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#log_modal<%= i%>">
+										<%= logs[i] %>
+									</button>
+								</td>
+								<% if(run_status[i] == "FAILED"){ %>
+									<td class="text-center">
+										<button type="button" class="btn" style="background-color: red; color: white;" data-toggle="modal" data-target="#error_modal<%= i%>">
+											<%= run_status[i] %>
+										</button>
+									</td>
+								<% } else if(run_status[i] == "DONE"){ %>
+									<td class="text-center">
+										<button type="button" class="btn" style="background-color: green; color: white;">
+											<%= run_status[i] %>
+										</button>
+									</td>
+								<% } else { %>
+									<td class="text-center">
+										<button type="button" class="btn" style="background-color: orange; color: white;">
+											<%= run_status[i] %>
+										</button>
+									</td>
+								<% } %>
+								<td>
+									<!-- Debug output -->
+									<% if(typeof all_run_files !== 'undefined') { %>
+										<!-- all_run_files is defined -->
+										<% if(all_run_files && all_run_files[i] && all_run_files[i].length > 0) { %>
+											<ul style="margin: 0; padding-left: 15px;">
+												<% all_run_files[i].forEach(function(file) { %>
+													<li style="margin-bottom: 3px;">
+														<% if(file.type === 'graph' || file.type === 'sample_image' || file.type === 'image') { %>
+															<a href="/projects/<%= Admin %>-<%= PName %>/training/logs/<%= logs[i].replace('.log', '') %>/<%= file.relativePath %>" target="_blank" style="color: #007bff; text-decoration: none;">
+																<%= file.name %>
+															</a>
+															<small style="color: #6c757d;"> (image)</small>
+														<% } else if(file.type === 'weights') { %>
+															<a href="/projects/<%= Admin %>-<%= PName %>/training/logs/<%= logs[i].replace('.log', '') %>/<%= file.relativePath %>" download style="color: #28a745; text-decoration: none;">
+																<%= file.name %>
+															</a>
+															<small style="color: #6c757d;"> (weights)</small>
+														<% } else if(file.type === 'log') { %>
+															<span style="color: #dc3545;">
+																<%= file.name %>
+															</span>
+															<small style="color: #6c757d;"> (log)</small>
+														<% } else if(file.type === 'config') { %>
+															<a href="/projects/<%= Admin %>-<%= PName %>/training/logs/<%= logs[i].replace('.log', '') %>/<%= file.relativePath %>" target="_blank" style="color: #17a2b8; text-decoration: none;">
+																<%= file.name %>
+															</a>
+															<small style="color: #6c757d;"> (config)</small>
+														<% } else if(file.type === 'data') { %>
+															<a href="/projects/<%= Admin %>-<%= PName %>/training/logs/<%= logs[i].replace('.log', '') %>/<%= file.relativePath %>" target="_blank" style="color: #6f42c1; text-decoration: none;">
+																<%= file.name %>
+															</a>
+															<small style="color: #6c757d;"> (data)</small>
+														<% } else { %>
+															<span style="color: #6c757d;">
+																<%= file.name %>
+															</span>
+															<small style="color: #6c757d;"> (other)</small>
+														<% } %>
+													</li>
+												<% }); %>
+											</ul>
+										<% } else { %>
+											<p style="color: #6c757d; font-style: italic;">No training files found</p>
+										<% } %>
+									<% } else { %>
+										<!-- Fallback to old display method -->
+										<ul>
+											<%for(var j=0; j<weights[i].length; j++) {%>
+												<li><%=weight_names[i][j]%></li>
+											<% } %>
+										</ul>
+									<% } %>
+								</td>	
+								<td class="text-center">
+									<form action="downloadRun" method="POST" enctype="multipart/form-data" style="display: inline;">
+										<input type="hidden" name="PName" value="<%= PName %>">
+										<input type="hidden" name="Admin" value="<%= Admin %>">
+										<input type="hidden" name="IDX" value="<%= IDX %>">
+										<input type="hidden" name="log_file" value="<%= logs[i] %>">
+										<input type="hidden" name="run_path" value="<%= run_paths[i] %>">
+										<button type="submit" name="form_action" value="download" class="btn btn-primary">Download</button>
+									</form>
+								</td>
+								<td class="text-right">
+									<% if(run_status[i] != "RUNNING"){ %>
+										<form action="deleteRun" method="POST" enctype="multipart/form-data" style="display: inline;">
+											<input type="hidden" name="PName" value="<%= PName %>">
+											<input type="hidden" name="Admin" value="<%= Admin %>">
+											<input type="hidden" name="IDX" value="<%= IDX %>">
+											<input type="hidden" name="weights" value="<%= weights[i] %>">
+											<input type="hidden" name="log_file" value="<%= logs[i] %>">
+											<input type="hidden" name="run_path" value="<%= run_paths[i] %>">
+											<button type="submit" name="form_action" value="delete" class="btn btn-danger">Delete</button>
+										</form>
+									<% } %>
+								</td>
+							</tr>
+							<% } %>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<% } %>
+		<!-- End Training Results Section -->
+		<%- include('../includes/footer') %>
