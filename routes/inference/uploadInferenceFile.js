@@ -4,7 +4,7 @@ async function uploadInferenceFile(req, res) {
         user = req.cookies.Username,
         inferenceFile = req.files.upload_inference;
 
-    var publicPath = __dirname.replace("routes", ""),
+    var publicPath = currentPath,
         mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/
         projectPath = mainPath + Admin + "-" + PName, // $LABELING_TOOL_PATH/public/projects/project_name
         trainingPath = projectPath + "/training",
