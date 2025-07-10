@@ -3,7 +3,9 @@
 ////////////////////////////////////////////////////////
 const app = require('./app');
 const { Client } = require("./queries/client");
-global.configFile = require("./config.local.json");
+
+global.configFile = require("./config.json");
+
 const port = configFile.port;
 const hostname = configFile.hostname;
 

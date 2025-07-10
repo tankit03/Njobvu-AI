@@ -10,13 +10,13 @@ const os = require("os");
 async function detectBestDevice() {
     return new Promise((resolve) => {
         console.log("=== DETECTING BEST DEVICE ===");
-        
+
         // Check system platform
         const platform = os.platform();
         const arch = os.arch();
-        
+
         console.log(`System: ${platform} ${arch}`);
-        
+
         // Create a test Python script to check available devices
         const deviceCheckScript = `
 import sys
@@ -49,14 +49,14 @@ except Exception as e:
         // Execute the device detection script
         exec(`python3 -c "${deviceCheckScript}"`, { timeout: 10000 }, (err, stdout, stderr) => {
             let bestDevice = "cpu"; // Default fallback
-            
+
             if (err) {
                 console.log("Device detection error:", err.message);
                 console.log("Falling back to CPU");
             } else if (stdout) {
                 console.log("Device detection output:");
                 console.log(stdout);
-                
+
                 // Extract the best device from output
                 const lines = stdout.split('\n');
                 const deviceLine = lines.find(line => line.startsWith('BEST_DEVICE:'));
@@ -64,11 +64,11 @@ except Exception as e:
                     bestDevice = deviceLine.split(':')[1].trim();
                 }
             }
-            
+
             if (stderr) {
                 console.log("Device detection stderr:", stderr);
             }
-            
+
             console.log(`Selected device: ${bestDevice}`);
             resolve(bestDevice);
         });
@@ -126,7 +126,7 @@ async function yoloRun(req, res) {
     let device;
     try {
         const detectedDevice = await detectBestDevice();
-        
+
         // If user requested a specific device and it's available, honor it
         if (requestedDevice && requestedDevice !== "auto" && requestedDevice !== "") {
             // Validate requested device against system capabilities
@@ -152,18 +152,18 @@ async function yoloRun(req, res) {
         console.log("Device detection failed, falling back to CPU:", error.message);
         device = "cpu";
     }
-    
+
     // Final safety check
     if (!device || (device !== "cpu" && device !== "mps" && device !== "cuda")) {
         console.log(`Invalid device '${device}', defaulting to CPU`);
         device = "cpu";
     }
-    
+
     console.log(`Using device: ${device} (requested: ${requestedDevice})`);
-    
+
     // Map device to YOLO-compatible format
     const mappedDevice = mapDeviceForYolo(device);
-    console.log(`Mapped device for YOLO: ${mappedDevice}`);  
+    console.log(`Mapped device for YOLO: ${mappedDevice}`);
 
     var errFile = `${date}-error.log`;
 
@@ -235,8 +235,6 @@ async function yoloRun(req, res) {
         absDarknetLabelsPath = path.join(absDarknetProjectPath, "labels");
         absDarknetLabelsTrain = path.join(absDarknetLabelsPath, "train");
         absDarknetLabelsVal = path.join(absDarknetLabelsPath, "val");
-        absDarknetTrainPath = path.join(absDarknetProjectPath, "train");
-        absDarknetWeightsPath = path.join(absDarknetTrainPath, "weights");
 
         if (!fs.existsSync(absDarknetImagesPath)) {
             fs.mkdirSync(absDarknetImagesPath, (err) => {
@@ -279,13 +277,6 @@ async function yoloRun(req, res) {
                     console.log(err);
                 } else {
                     console.log("YOLO Labels Validate Directory created");
-                }
-            });
-            fs.mkdirSync(absDarknetWeightsPath, { recursive: true }, (err) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log("YOLO Weights Directory created");
                 }
             });
         }
@@ -385,7 +376,7 @@ async function yoloRun(req, res) {
                     absDarknetLabelsTrain,
                     labelFile,
                 );
-                
+
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgImagesPath,
@@ -396,7 +387,7 @@ async function yoloRun(req, res) {
                 } catch (err) {
                     console.log("Error creating image training symlink:", err);
                 }
-                
+
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgLabelsPath,
@@ -421,7 +412,7 @@ async function yoloRun(req, res) {
                     absDarknetLabelsVal,
                     labelFile,
                 );
-                
+
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgImagesPath,
@@ -432,7 +423,7 @@ async function yoloRun(req, res) {
                 } catch (err) {
                     console.log("Error creating image validation symlink:", err);
                 }
-                
+
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgLabelsPath,
@@ -465,8 +456,6 @@ async function yoloRun(req, res) {
                 console.log("Error creating symlink:", err);
             }
         }
-
-        console.log("I am here bro hello");
 
         var classes = "# Train/val/test sets\n";
         classes = classes + "path: " + runPath + "\n";
@@ -547,7 +536,7 @@ async function yoloRun(req, res) {
                     console.log("YOLO Images Validate Directory created");
                 }
             });
-            
+
             fs.mkdirSync(absDarknetLabelsPath, (err) => {
                 if (err) {
                     console.log(err);
@@ -555,7 +544,7 @@ async function yoloRun(req, res) {
                     console.log("YOLO Labels Directory created");
                 }
             });
-            
+
             fs.mkdirSync(absDarknetLabelsTrain, (err) => {
                 if (err) {
                     console.log(err);
@@ -563,7 +552,7 @@ async function yoloRun(req, res) {
                     console.log("YOLO Labels Train Directory created");
                 }
             });
-            
+
             fs.mkdirSync(absDarknetLabelsVal, (err) => {
                 if (err) {
                     console.log(err);
@@ -598,7 +587,7 @@ async function yoloRun(req, res) {
                     absDarknetLabelsTrain,
                     labelFile,
                 );
-                
+
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgImagesPath,
@@ -609,7 +598,7 @@ async function yoloRun(req, res) {
                 } catch (err) {
                     console.log("Error creating image training symlink:", err);
                 }
-                
+
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgLabelsPath,
@@ -629,7 +618,7 @@ async function yoloRun(req, res) {
                     absDarknetImagesVal,
                     existingImages.rows[i].IName,
                 );
-                
+
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgImagesPath,
@@ -664,26 +653,26 @@ async function yoloRun(req, res) {
 
     // Use spawn instead of exec to handle long-running processes better
     const { spawn } = require('child_process');
-    
+
     console.log("=== STARTING PYTHON SCRIPT ===");
-    
+
     exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
         console.log("=== PYTHON SCRIPT COMPLETED ===");
-        
+
         if (stdout) {
             console.log("STDOUT:", stdout);
             fs.appendFile(`${absDarknetProjectRun}/${log}`, stdout, (err) => {
                 if (err) console.log("Error writing stdout to log:", err);
             });
         }
-        
+
         if (stderr) {
             console.log("STDERR:", stderr);
             fs.appendFile(`${absDarknetProjectRun}/${log}`, stderr, (err) => {
                 if (err) console.log("Error writing stderr to log:", err);
             });
         }
-        
+
         if (err) {
             console.log(`Python script error: ${err.message}`);
             error = err.message;

@@ -13,4 +13,3 @@ db/manage.db
 .viminfo
 tmp/
 config.json
-config.local.jso
