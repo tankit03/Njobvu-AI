@@ -7,97 +7,97 @@ const os = require("os");
 
 
 // Function to detect the best available device for YOLO training
-async function detectBestDevice() {
-    return new Promise((resolve) => {
-        console.log("=== DETECTING BEST DEVICE ===");
+// async function detectBestDevice() {
+//     return new Promise((resolve) => {
+//         console.log("=== DETECTING BEST DEVICE ===");
 
-        // Check system platform
-        const platform = os.platform();
-        const arch = os.arch();
+//         // Check system platform
+//         const platform = os.platform();
+//         const arch = os.arch();
 
-        console.log(`System: ${platform} ${arch}`);
+//         console.log(`System: ${platform} ${arch}`);
 
-        // Create a test Python script to check available devices
-        const deviceCheckScript = `
-import sys
-try:
-    import torch
-    print(f"PyTorch available: True")
-    print(f"CUDA available: {torch.cuda.is_available()}")
-    print(f"CUDA device count: {torch.cuda.device_count()}")
+//         // Create a test Python script to check available devices
+//         const deviceCheckScript = `
+// import sys
+// try:
+//     import torch
+//     print(f"PyTorch available: True")
+//     print(f"CUDA available: {torch.cuda.is_available()}")
+//     print(f"CUDA device count: {torch.cuda.device_count()}")
     
-    // Check for MPS (Apple Silicon)
-    mps_available = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
-    print(f"MPS available: {mps_available}")
+//     // Check for MPS (Apple Silicon)
+//     mps_available = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
+//     print(f"MPS available: {mps_available}")
     
-    // Determine best device
-    if torch.cuda.is_available() and torch.cuda.device_count() > 0:
-        print("BEST_DEVICE:cuda")
-    elif mps_available:
-        print("BEST_DEVICE:mps") 
-    else:
-        print("BEST_DEVICE:cpu")
+//     // Determine best device
+//     if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+//         print("BEST_DEVICE:cuda")
+//     elif mps_available:
+//         print("BEST_DEVICE:mps") 
+//     else:
+//         print("BEST_DEVICE:cpu")
         
-except ImportError:
-    print("PyTorch not available")
-    print("BEST_DEVICE:cpu")
-except Exception as e:
-    print(f"Error: {e}")
-    print("BEST_DEVICE:cpu")
-`;
+// except ImportError:
+//     print("PyTorch not available")
+//     print("BEST_DEVICE:cpu")
+// except Exception as e:
+//     print(f"Error: {e}")
+//     print("BEST_DEVICE:cpu")
+// `;
 
-        // Execute the device detection script
-        exec(`python3 -c "${deviceCheckScript}"`, { timeout: 10000 }, (err, stdout, stderr) => {
-            let bestDevice = "cpu"; // Default fallback
+//         // Execute the device detection script
+//         exec(`python3 -c "${deviceCheckScript}"`, { timeout: 10000 }, (err, stdout, stderr) => {
+//             let bestDevice = "cpu"; // Default fallback
 
-            if (err) {
-                console.log("Device detection error:", err.message);
-                console.log("Falling back to CPU");
-            } else if (stdout) {
-                console.log("Device detection output:");
-                console.log(stdout);
+//             if (err) {
+//                 console.log("Device detection error:", err.message);
+//                 console.log("Falling back to CPU");
+//             } else if (stdout) {
+//                 console.log("Device detection output:");
+//                 console.log(stdout);
 
-                // Extract the best device from output
-                const lines = stdout.split('\n');
-                const deviceLine = lines.find(line => line.startsWith('BEST_DEVICE:'));
-                if (deviceLine) {
-                    bestDevice = deviceLine.split(':')[1].trim();
-                }
-            }
+//                 // Extract the best device from output
+//                 const lines = stdout.split('\n');
+//                 const deviceLine = lines.find(line => line.startsWith('BEST_DEVICE:'));
+//                 if (deviceLine) {
+//                     bestDevice = deviceLine.split(':')[1].trim();
+//                 }
+//             }
 
-            if (stderr) {
-                console.log("Device detection stderr:", stderr);
-            }
+//             if (stderr) {
+//                 console.log("Device detection stderr:", stderr);
+//             }
 
-            console.log(`Selected device: ${bestDevice}`);
-            resolve(bestDevice);
-        });
-    });
-}
+//             console.log(`Selected device: ${bestDevice}`);
+//             resolve(bestDevice);
+//         });
+//     });
+// }
 
 
 // Function to map device values to YOLO-compatible format
-function mapDeviceForYolo(device) {
-    switch (device) {
-        case "mps":
-            return "mps";
-        case "cuda":
-        case "gpu":
-            return "0"; // Use first CUDA device
-        case "0":
-        case "1":
-        case "2":
-        case "3":
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-            return device.toString(); // Keep GPU index as string
-        case "cpu":
-        default:
-            return "cpu";
-    }
-}
+// function mapDeviceForYolo(device) {
+//     switch (device) {
+//         case "mps":
+//             return "mps";
+//         case "cuda":
+//         case "gpu":
+//             return "0"; // Use first CUDA device
+//         case "0":
+//         case "1":
+//         case "2":
+//         case "3":
+//         case 0:
+//         case 1:
+//         case 2:
+//         case 3:
+//             return device.toString(); // Keep GPU index as string
+//         case "cpu":
+//         default:
+//             return "cpu";
+//     }
+// }
 
 async function yoloRun(req, res) {
     var date = Date.now();
@@ -121,49 +121,50 @@ async function yoloRun(req, res) {
         requestedDevice = req.body.device, // Original requested device
         options = req.body.options,
         weightName = req.body.weights;
+        device = req.body.device;
 
     // Detect the best available device dynamically
-    let device;
-    try {
-        const detectedDevice = await detectBestDevice();
+    // let device;
+    // try {
+    //     const detectedDevice = await detectBestDevice();
 
-        // If user requested a specific device and it's available, honor it
-        if (requestedDevice && requestedDevice !== "auto" && requestedDevice !== "") {
-            // Validate requested device against system capabilities
-            if (requestedDevice === "mps" && detectedDevice === "mps") {
-                device = "mps";
-                console.log("Using requested MPS device");
-            } else if ((requestedDevice === "cuda" || requestedDevice === "0" || requestedDevice === "1") && detectedDevice === "cuda") {
-                device = "0"; // Use first CUDA device
-                console.log("Using requested CUDA device (mapped to device 0)");
-            } else if (requestedDevice === "cpu") {
-                device = "cpu";
-                console.log("Using requested CPU device");
-            } else {
-                console.log(`Requested device '${requestedDevice}' not available or invalid, using detected device: ${detectedDevice}`);
-                device = detectedDevice;
-            }
-        } else {
-            // Use auto-detected device
-            device = detectedDevice;
-            console.log(`Auto-detected and using device: ${device}`);
-        }
-    } catch (error) {
-        console.log("Device detection failed, falling back to CPU:", error.message);
-        device = "cpu";
-    }
+    //     // If user requested a specific device and it's available, honor it
+    //     if (requestedDevice && requestedDevice !== "auto" && requestedDevice !== "") {
+    //         // Validate requested device against system capabilities
+    //         if (requestedDevice === "mps" && detectedDevice === "mps") {
+    //             device = "mps";
+    //             console.log("Using requested MPS device");
+    //         } else if ((requestedDevice === "cuda" || requestedDevice === "0" || requestedDevice === "1") && detectedDevice === "cuda") {
+    //             device = "0"; // Use first CUDA device
+    //             console.log("Using requested CUDA device (mapped to device 0)");
+    //         } else if (requestedDevice === "cpu") {
+    //             device = "cpu";
+    //             console.log("Using requested CPU device");
+    //         } else {
+    //             console.log(`Requested device '${requestedDevice}' not available or invalid, using detected device: ${detectedDevice}`);
+    //             device = detectedDevice;
+    //         }
+    //     } else {
+    //         // Use auto-detected device
+    //         device = detectedDevice;
+    //         console.log(`Auto-detected and using device: ${device}`);
+    //     }
+    // } catch (error) {
+    //     console.log("Device detection failed, falling back to CPU:", error.message);
+    //     device = "cpu";
+    // }
 
     // Final safety check
-    if (!device || (device !== "cpu" && device !== "mps" && device !== "cuda")) {
-        console.log(`Invalid device '${device}', defaulting to CPU`);
-        device = "cpu";
-    }
+    // if (!device || (device !== "cpu" && device !== "mps" && device !== "cuda")) {
+    //     console.log(`Invalid device '${device}', defaulting to CPU`);
+    //     device = "cpu";
+    // }
 
-    console.log(`Using device: ${device} (requested: ${requestedDevice})`);
+    // console.log(`Using device: ${device} (requested: ${requestedDevice})`);
 
-    // Map device to YOLO-compatible format
-    const mappedDevice = mapDeviceForYolo(device);
-    console.log(`Mapped device for YOLO: ${mappedDevice}`);
+    // // Map device to YOLO-compatible format
+    // const mappedDevice = mapDeviceForYolo(device);
+    // console.log(`Mapped device for YOLO: ${mappedDevice}`);
 
     var errFile = `${date}-error.log`;
 
@@ -640,7 +641,7 @@ async function yoloRun(req, res) {
     var cmd = "";
 
     if (yoloMode == "train") {
-        cmd = `python3 ${yoloScript} -d ${runPath} -t ${yoloTask} -m ${yoloMode} -i ${darknetImagesPath} -n ${classesPath} -p ${trainDataPer} -l ${absDarknetProjectRun}/${log} -f ${darknetPath} -w ${weightPath} -b ${batch} -s ${subdiv} -x ${width} -y ${height} -v ${yoloVersion} -e ${epochs} -I ${imgsz} -D ${mappedDevice} -o "${options}"`;
+        cmd = `python3 ${yoloScript} -d ${runPath} -t ${yoloTask} -m ${yoloMode} -i ${darknetImagesPath} -n ${classesPath} -p ${trainDataPer} -l ${absDarknetProjectRun}/${log} -f ${darknetPath} -w ${weightPath} -b ${batch} -s ${subdiv} -x ${width} -y ${height} -v ${yoloVersion} -e ${epochs} -I ${imgsz} -D ${device} -o "${options}"`;
     } else {
         cmd = `python3 --version`;
         console.log("YOLO python script not for training");

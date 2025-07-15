@@ -17,15 +17,15 @@ db_name = ''
 
 
 def help():
-    print('\t\tCLASSIFICATION')
+    print('\t\tUpload CLASSIFICATION dataset')
     print('\t\texample run for classification [import_options.py -i input_dir -o output -r class]')
     print('\t\tinput should be a directory of sub directories used for classification\n')
 
-    print('\t\tINFERENCE + CLASSIFICATION')
+    print('\t\tClassify + predict')
     print('\t\texample run for classification [import_options.py -i input_dir -o output -w weights_file -r ci]')
     print('\t\tinput should be a directory of sub directories used for classification\n')
 
-    print('\t\tINFERENCE')
+    print('\t\tDetect + predict')
     print('\t\tExample run for inference [import_options.py -i input_dir -o output -w weights_file.pt -r inf]')
     print('\t\tinput should be a directory of images used for inference and the weights file should be the weights file related to your project')
 
