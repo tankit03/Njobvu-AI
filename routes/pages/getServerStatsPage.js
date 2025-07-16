@@ -1,3 +1,7 @@
+const { exec } = require("child_process");
+const { promisify } = require("util");
+const execAsync = promisify(exec);
+
 async function getServerStatsPage(req, res) {
     console.log("getServerStatsPage");
 
@@ -30,17 +34,17 @@ async function getServerStatsPage(req, res) {
 
     var results1 = await db.getAsync(
         "SELECT * FROM `Projects` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
     var acc = await db.allAsync(
         "SELECT * FROM `Access` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
 
     var access = [];
@@ -49,22 +53,23 @@ async function getServerStatsPage(req, res) {
     }
 
     process.env.TERM = "xterm";
-    var top_stdout,
+    var top_stdout = "",
         nvidia_smi,
         gpu_info = [];
 
     try {
         // const { stdout, stderr } = await exec( "uptime");
-        const { stdout, stderr } = await exec("top -bn1|head -20");
+        const { stdout, stderr } = await execAsync("top -bn1|head -20");
         top_stdout = stdout;
         console.log("this is top_stdout: ", top_stdout);
     } catch (error) {
         console.log(error);
+        top_stdout = ""; // Set default value on error
     }
 
     try {
         // Fetch GPU information using CSV format
-        const { stdout } = await exec(
+        const { stdout } = await execAsync(
             "nvidia-smi --format=csv,noheader,nounits --query-gpu=name,temperature.gpu,power.draw,power.limit,memory.used,memory.total,utilization.gpu",
         );
 
@@ -96,6 +101,7 @@ async function getServerStatsPage(req, res) {
         });
     } catch (error) {
         console.log("Error fetching GPU stats:", error);
+        gpu_info = []; // Set default value on error
     }
 
     // var g_stdout;
