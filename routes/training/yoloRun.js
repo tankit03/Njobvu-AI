@@ -4,100 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const probe = require("probe-image-size");
 const os = require("os");
-
-
-// Function to detect the best available device for YOLO training
-// async function detectBestDevice() {
-//     return new Promise((resolve) => {
-//         console.log("=== DETECTING BEST DEVICE ===");
-
-//         // Check system platform
-//         const platform = os.platform();
-//         const arch = os.arch();
-
-//         console.log(`System: ${platform} ${arch}`);
-
-//         // Create a test Python script to check available devices
-//         const deviceCheckScript = `
-// import sys
-// try:
-//     import torch
-//     print(f"PyTorch available: True")
-//     print(f"CUDA available: {torch.cuda.is_available()}")
-//     print(f"CUDA device count: {torch.cuda.device_count()}")
-    
-//     // Check for MPS (Apple Silicon)
-//     mps_available = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
-//     print(f"MPS available: {mps_available}")
-    
-//     // Determine best device
-//     if torch.cuda.is_available() and torch.cuda.device_count() > 0:
-//         print("BEST_DEVICE:cuda")
-//     elif mps_available:
-//         print("BEST_DEVICE:mps") 
-//     else:
-//         print("BEST_DEVICE:cpu")
-        
-// except ImportError:
-//     print("PyTorch not available")
-//     print("BEST_DEVICE:cpu")
-// except Exception as e:
-//     print(f"Error: {e}")
-//     print("BEST_DEVICE:cpu")
-// `;
-
-//         // Execute the device detection script
-//         exec(`python3 -c "${deviceCheckScript}"`, { timeout: 10000 }, (err, stdout, stderr) => {
-//             let bestDevice = "cpu"; // Default fallback
-
-//             if (err) {
-//                 console.log("Device detection error:", err.message);
-//                 console.log("Falling back to CPU");
-//             } else if (stdout) {
-//                 console.log("Device detection output:");
-//                 console.log(stdout);
-
-//                 // Extract the best device from output
-//                 const lines = stdout.split('\n');
-//                 const deviceLine = lines.find(line => line.startsWith('BEST_DEVICE:'));
-//                 if (deviceLine) {
-//                     bestDevice = deviceLine.split(':')[1].trim();
-//                 }
-//             }
-
-//             if (stderr) {
-//                 console.log("Device detection stderr:", stderr);
-//             }
-
-//             console.log(`Selected device: ${bestDevice}`);
-//             resolve(bestDevice);
-//         });
-//     });
-// }
-
-
-// Function to map device values to YOLO-compatible format
-// function mapDeviceForYolo(device) {
-//     switch (device) {
-//         case "mps":
-//             return "mps";
-//         case "cuda":
-//         case "gpu":
-//             return "0"; // Use first CUDA device
-//         case "0":
-//         case "1":
-//         case "2":
-//         case "3":
-//         case 0:
-//         case 1:
-//         case 2:
-//         case 3:
-//             return device.toString(); // Keep GPU index as string
-//         case "cpu":
-//         default:
-//             return "cpu";
-//     }
-// }
+const { spawn } = require('child_process');
 
 async function yoloRun(req, res) {
     var date = Date.now();
@@ -122,50 +29,6 @@ async function yoloRun(req, res) {
         options = req.body.options,
         weightName = req.body.weights;
         device = req.body.device;
-
-    // Detect the best available device dynamically
-    // let device;
-    // try {
-    //     const detectedDevice = await detectBestDevice();
-
-    //     // If user requested a specific device and it's available, honor it
-    //     if (requestedDevice && requestedDevice !== "auto" && requestedDevice !== "") {
-    //         // Validate requested device against system capabilities
-    //         if (requestedDevice === "mps" && detectedDevice === "mps") {
-    //             device = "mps";
-    //             console.log("Using requested MPS device");
-    //         } else if ((requestedDevice === "cuda" || requestedDevice === "0" || requestedDevice === "1") && detectedDevice === "cuda") {
-    //             device = "0"; // Use first CUDA device
-    //             console.log("Using requested CUDA device (mapped to device 0)");
-    //         } else if (requestedDevice === "cpu") {
-    //             device = "cpu";
-    //             console.log("Using requested CPU device");
-    //         } else {
-    //             console.log(`Requested device '${requestedDevice}' not available or invalid, using detected device: ${detectedDevice}`);
-    //             device = detectedDevice;
-    //         }
-    //     } else {
-    //         // Use auto-detected device
-    //         device = detectedDevice;
-    //         console.log(`Auto-detected and using device: ${device}`);
-    //     }
-    // } catch (error) {
-    //     console.log("Device detection failed, falling back to CPU:", error.message);
-    //     device = "cpu";
-    // }
-
-    // Final safety check
-    // if (!device || (device !== "cpu" && device !== "mps" && device !== "cuda")) {
-    //     console.log(`Invalid device '${device}', defaulting to CPU`);
-    //     device = "cpu";
-    // }
-
-    // console.log(`Using device: ${device} (requested: ${requestedDevice})`);
-
-    // // Map device to YOLO-compatible format
-    // const mappedDevice = mapDeviceForYolo(device);
-    // console.log(`Mapped device for YOLO: ${mappedDevice}`);
-
     var errFile = `${date}-error.log`;
 
     var publicPath = currentPath,
@@ -653,45 +516,86 @@ async function yoloRun(req, res) {
     var error = "";
 
     // Use spawn instead of exec to handle long-running processes better
-    const { spawn } = require('child_process');
 
     console.log("=== STARTING PYTHON SCRIPT ===");
 
-    exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
-        console.log("=== PYTHON SCRIPT COMPLETED ===");
+    fs.writeFileSync(`${absDarknetProjectRun}/${log}`, cmd);
 
-        if (stdout) {
+    exec(cmd, (err, stdout, stderr) => {
+        if(stdout){
             console.log("STDOUT:", stdout);
             fs.appendFile(`${absDarknetProjectRun}/${log}`, stdout, (err) => {
                 if (err) console.log("Error writing stdout to log:", err);
             });
         }
-
-        if (stderr) {
-            console.log("STDERR:", stderr);
-            fs.appendFile(`${absDarknetProjectRun}/${log}`, stderr, (err) => {
-                if (err) console.log("Error writing stderr to log:", err);
-            });
-        }
-
         if (err) {
-            console.log(`Python script error: ${err.message}`);
-            error = err.message;
-            fs.writeFile(
-                `${darknetProjectRun}/${errFile}`,
-                error,
-                (err) => {
-                    if (err) throw err;
-                },
-            );
-        } else {
-            success = "Training completed successfully";
+            console.error(err);
+            console.log(`This is the error: ${err.message}`);
+
+            if (err.message != "stdout maxBuffer length exceeded") {
+                success = err.message;
+
+                fs.writeFile(
+                    `${absDarknetProjectRun}/${errFile}`,
+                    success,
+                    (err) => {
+                        if (err) throw err;
+                    },
+                );
+            }
+        } else if (stderr) {
+            console.log(`This is the stderr: ${stderr}`);
+
+            if (stderr != "stdout maxBuffer length exceeded") {
+                fs.writeFile(
+                    `${absDarknetProjectRun}/${errFile}`,
+                    stderr,
+                    (err) => {
+                        if (err) throw err;
+                    },
+                );
+            }
         }
 
-        fs.writeFile(`${runPath}/done.log`, success || "Process completed", (err) => {
-            if (err) throw err;
-        });
+        fs.writeFileSync(`${runPath}/done.log`, success);
     });
+
+
+
+    // exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
+    //     console.log("=== PYTHON SCRIPT COMPLETED ===");
+
+    //     if (stdout) {
+    //         console.log("STDOUT:", stdout);
+    //         fs.appendFile(`${absDarknetProjectRun}/${log}`, stdout, (err) => {
+    //             if (err) console.log("Error writing stdout to log:", err);
+    //         });
+    //     }
+    //     if (stderr) {
+    //         console.log("STDERR:", stderr);
+    //         fs.appendFile(`${absDarknetProjectRun}/${log}`, stderr, (err) => {
+    //             if (err) console.log("Error writing stderr to log:", err);
+    //         });
+    //     }
+
+    //     if (err) {
+    //         console.log(`Python script error: ${err.message}`);
+    //         error = err.message;
+    //         fs.writeFile(
+    //             `${darknetProjectRun}/${errFile}`,
+    //             error,
+    //             (err) => {
+    //                 if (err) throw err;
+    //             },
+    //         );
+    //     } else {
+    //         success = "Training completed successfully";
+    //     }
+
+    //     fs.writeFile(`${runPath}/done.log`, success || "Process completed", (err) => {
+    //         if (err) throw err;
+    //     });
+    // });
     res.send({ Success: `YOLO Training Started` });
 }
 
