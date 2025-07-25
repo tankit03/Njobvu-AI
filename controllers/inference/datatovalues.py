@@ -58,6 +58,8 @@ parser.add_argument("-o", "--adv_options",  default="",
                     help="Advanced YOLO options")
 parser.add_argument("-t", "--task",         required=True, choices=["detect", "segment", "classify", "pose", "obb"],
                     help="YOLO task to run")
+parser.add_argument("-m", "--mode", default="predict", choices=["predict", "track"],
+                    help="YOLO mode to run")
 args = parser.parse_args()
 
 data_path = args.data_path
@@ -69,6 +71,7 @@ weight_path = args.weight_path
 device = args.device
 adv_options = args.adv_options
 yolo_task = args.task
+yolo_mode = args.mode
 
 #########################################################
 # Call command function to run the code			#
@@ -107,6 +110,7 @@ print("Ultralytics Version of YOLO Requested:")
 cmd = (
     darknet_path
     + f" {yolo_task}"
+    + f" {yolo_mode}"
     + " predict model="
     + weight_path
     + " source="
