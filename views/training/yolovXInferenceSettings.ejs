@@ -201,8 +201,8 @@
                             <h4 class="modal-title" id="myModalLabel">
                                 <%= logs[i]%>
                             </h4>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                                    aria-hidden="true">&times;</span></button>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span></button>
                         </div>
                         <pre><%=err_contents[i]%></pre>
                     </div>
@@ -237,7 +237,7 @@
                                 }).then((body) => {
                                     console.log(body);
                                     alert(body.Success);
-                                    window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
+                                    window.location.replace("/yolo/yolovXInferenceSettings?IDX=<%= IDX %>");
 
                                 }).catch((error) => {
                                     console.log(error);
@@ -271,7 +271,7 @@
                                 }).then((body) => {
                                     console.log(body);
                                     alert(body.Success);
-                                    window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
+                                    window.location.replace("/yolo/yolovXInferenceSettings?IDX=<%= IDX %>");
 
                                 }).catch((error) => {
                                     console.log(error);
@@ -299,7 +299,7 @@
                                 console.log(body);
 
                                 alert(body.Success);
-                                window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
+                                window.location.replace("/yolo/yolovXInferenceSettings?IDX=<%= IDX %>");
 
                             }).catch((error) => {
                                 console.log(error);
@@ -406,7 +406,7 @@
                                 console.log(body);
 
                                 alert(body.Success);
-                                window.location.replace("/yolo/yolovXSettings?IDX=<%= IDX %>");
+                                window.location.replace("/inference?IDX=<%= IDX %>");
 
                             }).catch((error) => {
                                 console.log(error);

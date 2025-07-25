@@ -13,3 +13,4 @@ db/manage.db
 .viminfo
 tmp/
 config.json
+*.pt

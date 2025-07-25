@@ -39,11 +39,6 @@ import subprocess
 import unicodedata
 import shutil
 
-# Add debugging output
-print(f"=== DATATOVALUES.PY STARTING ===")
-print(f"Script arguments: {sys.argv}")
-print(f"=== PARSING ARGUMENTS ===")
-
 directory_path = os.path.dirname(os.path.realpath(__file__)) + '/'
 data_path = ""
 image_path = ""
@@ -56,7 +51,6 @@ subdiv = ""
 width = ""
 height = ""
 yolo_task = ""
-yolo_mode = ""
 yolo_version = 3
 epochs = 100
 imgsz = 640
@@ -264,7 +258,9 @@ def call_command(final_command, debug_mode=""):
 
     except Exception as err:
         print("EXCEPTION!!!!")
-        print(f'Error: {err}')
+        print('Error (Return Code {})'.format(err.returncode))
+        print('Command: {}'.format(err.cmd))
+        print('Output: {}'.format(err.output))
         sys.exit(1)
 
 
@@ -277,7 +273,6 @@ try:
 
     # checking each argument
     for currentArgument, currentValue in arguments:
-        print(f"Processing argument: {currentArgument} = {currentValue}")
         if currentArgument in ("-h", "--Help"):
             err = "Display Help Message"
             showHelpInfo(err)
@@ -329,7 +324,6 @@ else:
     print(f"yolo_version: {yolo_version}")
     print(f"yolo_task: {yolo_task}")
     print(f"yolo_mode: {yolo_mode}")
-
     if data_path == "":
         err = "You need more options to run the tool"
         showHelpInfo(err)
@@ -372,16 +366,14 @@ elif yolo_version == 5:
     print(f"weight_path: {weight_path}")
     print(f"adv_options: {adv_options}")
     print(f"log_file: {log_file}")
-
     cmd = ""
     print("Ultralytics Version of YOLO Requested:")
 
     if yolo_task == "detect":
         # Command to start running ultralytics using the training files
-        cmd = darknet_path + " detect train data=" + name_path + " project=" + data_path + " epochs=" + str(epochs) + \
-            " imgsz=" + str(imgsz) + " device=" + str(device) + " model=" + \
-            weight_path + " " + adv_options
-        print(f"Detect command constructed: {cmd}")
+        cmd = darknet_path + " detect train data=" + name_path + " project=" + data_path + " epochs=" + epochs + \
+            " imgsz=" + imgsz + " device=" + device + " model=" + \
+            weight_path + " " + adv_options + " 2>&1 > " + log_file
 
     elif yolo_task == "classify":
         cmd = darknet_path + " classify train data=" + data_path + " project=" + data_path + " epochs=" + str(epochs) + \
@@ -390,22 +382,19 @@ elif yolo_version == 5:
         print(f"Classify command constructed: {cmd}")
 
     elif yolo_task == "pose":
-        cmd = darknet_path + " pose train data=" + name_path + " project=" + data_path + " epochs=" + str(epochs) + \
-            " imgsz=" + str(imgsz) + " device=" + str(device) + " model=" + \
-            weight_path + " " + adv_options
-        print(f"Pose command constructed: {cmd}")
+        cmd = darknet_path + " pose train data=" + name_path + " project=" + data_path + " epochs=" + epochs + \
+            " imgsz=" + imgsz + " device=" + device + " model=" + \
+            weight_path + " " + adv_options + " 2>&1 > " + log_file
 
     elif yolo_task == "segment":
-        cmd = darknet_path + " segment train data=" + name_path + " project=" + data_path + " epochs=" + str(epochs) + \
-            " imgsz=" + str(imgsz) + " device=" + str(device) + " model=" + \
-            weight_path + " " + adv_options
-        print(f"Segment command constructed: {cmd}")
+        cmd = darknet_path + " segment train data=" + name_path + " project=" + data_path + " epochs=" + epochs + \
+            " imgsz=" + imgsz + " device=" + device + " model=" + \
+            weight_path + " " + adv_options + " 2>&1 > " + log_file
 
     elif yolo_task == "obb":
-        cmd = darknet_path + " obb train data=" + name_path + " project=" + data_path + " epochs=" + str(epochs) + \
-            " imgsz=" + str(imgsz) + " device=" + str(device) + " model=" + \
-            weight_path + " " + adv_options
-        print(f"OBB command constructed: {cmd}")
+        cmd = darknet_path + " obb train data=" + name_path + " project=" + data_path + " epochs=" + epochs + \
+            " imgsz=" + imgsz + " device=" + device + " model=" + \
+            weight_path + " " + adv_options + " 2>&1 > " + log_file
 
     print("YOLO Command: ", cmd)
     print("Running YOLO Task: ", yolo_task)
