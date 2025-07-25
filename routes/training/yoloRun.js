@@ -610,6 +610,10 @@ async function yoloRun(req, res) {
 
     console.log(cmd);
 
+    fs.appendFile(`${absDarknetProjectRun}/${log}`, `${cmd}\n\n`, (err) => {
+        if (err) console.log("Error writing initial command to log:", err);
+    });
+
     var success = "";
     var error = "";
 

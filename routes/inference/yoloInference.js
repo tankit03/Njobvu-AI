@@ -154,7 +154,7 @@ async function yoloInference(req, res) {
         var success = "";
         var error = "";
 
-        fs.writeFileSync(`${absUltralyticsProjectRun}/${log}`, cmd);
+        fs.writeFileSync(`${absUltralyticsProjectRun}/${log}`, `${cmd}\n\n`);
 
         exec(cmd, (err, stdout, stderr) => {
             if (err) {
