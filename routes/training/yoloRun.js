@@ -121,7 +121,7 @@ async function yoloRun(req, res) {
         requestedDevice = req.body.device, // Original requested device
         options = req.body.options,
         weightName = req.body.weights;
-        device = req.body.device;
+    device = req.body.device;
     var errFile = `${date}-error.log`;
 
     var publicPath = currentPath,
@@ -617,8 +617,8 @@ async function yoloRun(req, res) {
 
     fs.writeFileSync(`${absDarknetProjectRun}/${log}`, cmd);
 
-    exec(cmd, (err, stdout, stderr) => {
-        if(stdout){
+    exec(cmd, { maxBuffer: 1024 * 1024 * 1024 * configFile["training_max_buffer_size"] }, (err, stdout, stderr) => {
+        if (stdout) {
             console.log("STDOUT:", stdout);
             fs.appendFile(`${absDarknetProjectRun}/${log}`, stdout, (err) => {
                 if (err) console.log("Error writing stdout to log:", err);
