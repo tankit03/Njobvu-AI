@@ -228,11 +228,35 @@ def createConfig(data_path, batch, subdiv, width, height):
 
 
 def call_command(final_command, debug_mode=""):
-    # """Wrapper for subprocess.check_output that implements error handling"""
-    try:
-        os.system(final_command)
+    """Wrapper for subprocess.check_output that implements error handling"""
+    print(f"=== EXECUTING COMMAND ===")
+    print(f"Command: {final_command}")
+    print(f"=== COMMAND OUTPUT START ===")
 
-    except subprocess.CalledProcessError as err:  # Return code was non-zero
+    try:
+        # Use subprocess to capture output and show it in real-time
+        process = subprocess.Popen(final_command, shell=True, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, universal_newlines=True)
+
+        # Print output in real-time
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
+
+        # Wait for process to complete
+        process.wait()
+
+        print(f"=== COMMAND OUTPUT END ===")
+        print(f"Return code: {process.returncode}")
+
+        if process.returncode != 0:
+            print(f"Command failed with return code: {process.returncode}")
+            sys.exit(1)
+
+    except Exception as err:
         print("EXCEPTION!!!!")
         print('Error (Return Code {})'.format(err.returncode))
         print('Command: {}'.format(err.cmd))
@@ -295,6 +319,11 @@ except getopt.error as err:
     showHelpInfo(err)
 
 else:
+    print(f"=== VALIDATION CHECKS ===")
+    print(f"data_path: {data_path}")
+    print(f"yolo_version: {yolo_version}")
+    print(f"yolo_task: {yolo_task}")
+    print(f"yolo_mode: {yolo_mode}")
     if data_path == "":
         err = "You need more options to run the tool"
         showHelpInfo(err)
@@ -327,6 +356,16 @@ if yolo_version == 3:
     call_command(cmd)
 
 elif yolo_version == 5:
+    print(f"=== YOLO VERSION 5 PROCESSING ===")
+    print(f"darknet_path: {darknet_path}")
+    print(f"name_path: {name_path}")
+    print(f"data_path: {data_path}")
+    print(f"epochs: {epochs}")
+    print(f"imgsz: {imgsz}")
+    print(f"device: {device}")
+    print(f"weight_path: {weight_path}")
+    print(f"adv_options: {adv_options}")
+    print(f"log_file: {log_file}")
     cmd = ""
     print("Ultralytics Version of YOLO Requested:")
 
@@ -337,9 +376,10 @@ elif yolo_version == 5:
             weight_path + " " + adv_options + " 2>&1 > " + log_file
 
     elif yolo_task == "classify":
-        cmd = darknet_path + " classify train data=" + name_path + " project=" + data_path + " epochs=" + epochs + \
-            " imgsz=" + imgsz + " device=" + device + " model=" + \
-            weight_path + " " + adv_options + " 2>&1 > " + log_file
+        cmd = darknet_path + " classify train data=" + data_path + " project=" + data_path + " epochs=" + str(epochs) + \
+            " imgsz=" + str(imgsz) + " device=" + str(device) + " model=" + \
+            weight_path + " " + adv_options
+        print(f"Classify command constructed: {cmd}")
 
     elif yolo_task == "pose":
         cmd = darknet_path + " pose train data=" + name_path + " project=" + data_path + " epochs=" + epochs + \
@@ -362,16 +402,49 @@ elif yolo_version == 5:
     call_command(cmd)
 
     destination_dir = data_path
-    source_dir = data_path + "/train/weights"
-    files = os.listdir(source_dir)
-    for file_name in files:
-        source_path = os.path.join(source_dir, file_name)
+
+    yolo_project_base_dir = data_path
+
+    run_dirs_pattern = os.path.join(yolo_project_base_dir, "train*")
+    found_run_dirs = sorted(glob.glob(run_dirs_pattern))
+
+    if not found_run_dirs:
+        print(f"""Error: No YOLO run directories (e.g., 'train', 'train2') found in {
+              yolo_project_base_dir}. Cannot locate weights.""")
+        sys.exit(1)
+
+    latest_yolo_run_dir = found_run_dirs[-1]
+
+    source_weights_dir = os.path.join(latest_yolo_run_dir, "weights")
+
+    if not os.path.exists(source_weights_dir):
+        print(f"Error: Weights directory not found: {source_weights_dir}")
+        sys.exit(1)
+
+    files_to_move = os.listdir(source_weights_dir)
+
+    for file_name in files_to_move:
+        source_path = os.path.join(source_weights_dir, file_name)
         destination_path = os.path.join(destination_dir, file_name)
         shutil.move(source_path, destination_path)
 
-    source_dir = data_path + "/train"
-    files = os.listdir(source_dir)
-    for file_name in files:
-        source_path = os.path.join(source_dir, file_name)
-        destination_path = os.path.join(destination_dir, file_name)
-        shutil.move(source_path, destination_path)
+    files_to_move_artifacts = os.listdir(latest_yolo_run_dir)
+    excluded_items = ["weights", "args.yaml", "results.csv"]
+
+    for file_name in files_to_move_artifacts:
+        if file_name not in excluded_items:
+            source_path = os.path.join(latest_yolo_run_dir, file_name)
+            destination_path = os.path.join(destination_dir, file_name)
+
+            if os.path.isfile(source_path):
+                shutil.move(source_path, destination_path)
+            elif os.path.isdir(source_path):
+                try:
+                    shutil.move(source_path, destination_path)
+                except shutil.Error as e:
+                    print(f"Warning: Could not move directory {
+                          source_path} to {destination_path}: {e}")
+                    print(
+                        "This often happens if the destination directory already exists. Skipping move for this directory.")
+            else:
+                print(f"Skipping unknown item type: {source_path}")

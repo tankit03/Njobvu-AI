@@ -4,7 +4,100 @@ const path = require("path");
 const fs = require("fs");
 const probe = require("probe-image-size");
 const os = require("os");
-const { spawn } = require('child_process');
+const sharp = require("sharp");
+
+// Function to detect the best available device for YOLO training
+async function detectBestDevice() {
+    return new Promise((resolve) => {
+        console.log("=== DETECTING BEST DEVICE ===");
+
+        // Check system platform
+        const platform = os.platform();
+        const arch = os.arch();
+
+        console.log(`System: ${platform} ${arch}`);
+
+        // Create a test Python script to check available devices
+        const deviceCheckScript = `
+import sys
+try:
+    import torch
+    print(f"PyTorch available: True")
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    print(f"CUDA device count: {torch.cuda.device_count()}")
+    
+    // Check for MPS (Apple Silicon)
+    mps_available = hasattr(torch.backends, 'mps') and torch.backends.mps.is_available()
+    print(f"MPS available: {mps_available}")
+    
+    // Determine best device
+    if torch.cuda.is_available() and torch.cuda.device_count() > 0:
+        print("BEST_DEVICE:cuda")
+    elif mps_available:
+        print("BEST_DEVICE:mps") 
+    else:
+        print("BEST_DEVICE:cpu")
+        
+except ImportError:
+    print("PyTorch not available")
+    print("BEST_DEVICE:cpu")
+except Exception as e:
+    print(f"Error: {e}")
+    print("BEST_DEVICE:cpu")
+`;
+
+        // Execute the device detection script
+        exec(`python3 -c "${deviceCheckScript}"`, { timeout: 10000 }, (err, stdout, stderr) => {
+            let bestDevice = "cpu"; // Default fallback
+
+            if (err) {
+                console.log("Device detection error:", err.message);
+                console.log("Falling back to CPU");
+            } else if (stdout) {
+                console.log("Device detection output:");
+                console.log(stdout);
+
+                // Extract the best device from output
+                const lines = stdout.split('\n');
+                const deviceLine = lines.find(line => line.startsWith('BEST_DEVICE:'));
+                if (deviceLine) {
+                    bestDevice = deviceLine.split(':')[1].trim();
+                }
+            }
+
+            if (stderr) {
+                console.log("Device detection stderr:", stderr);
+            }
+
+            console.log(`Selected device: ${bestDevice}`);
+            resolve(bestDevice);
+        });
+    });
+}
+
+
+// Function to map device values to YOLO-compatible format
+function mapDeviceForYolo(device) {
+    switch (device) {
+        case "mps":
+            return "mps";
+        case "cuda":
+        case "gpu":
+            return "0"; // Use first CUDA device
+        case "0":
+        case "1":
+        case "2":
+        case "3":
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+            return device.toString(); // Keep GPU index as string
+        case "cpu":
+        default:
+            return "cpu";
+    }
+}
 
 async function yoloRun(req, res) {
     var date = Date.now();
@@ -28,7 +121,7 @@ async function yoloRun(req, res) {
         requestedDevice = req.body.device, // Original requested device
         options = req.body.options,
         weightName = req.body.weights;
-        device = req.body.device;
+    device = req.body.device;
     var errFile = `${date}-error.log`;
 
     var publicPath = currentPath,
@@ -92,13 +185,14 @@ async function yoloRun(req, res) {
 
     if (yoloTask == "detect") {
         project = `${Admin}-${PName}`;
-        absDarknetProjectPath = runPath;
-        absDarknetImagesPath = path.join(absDarknetProjectPath, "images");
-        absDarknetImagesTrain = path.join(absDarknetImagesPath, "train");
-        absDarknetImagesVal = path.join(absDarknetImagesPath, "val");
-        absDarknetLabelsPath = path.join(absDarknetProjectPath, "labels");
-        absDarknetLabelsTrain = path.join(absDarknetLabelsPath, "train");
-        absDarknetLabelsVal = path.join(absDarknetLabelsPath, "val");
+
+        let absDarknetProjectPath = runPath;
+        let absDarknetImagesPath = path.join(absDarknetProjectPath, "images");
+        let absDarknetImagesTrain = path.join(absDarknetImagesPath, "train");
+        let absDarknetImagesVal = path.join(absDarknetImagesPath, "val");
+        let absDarknetLabelsPath = path.join(absDarknetProjectPath, "labels");
+        let absDarknetLabelsTrain = path.join(absDarknetLabelsPath, "train");
+        let absDarknetLabelsVal = path.join(absDarknetLabelsPath, "val");
 
         if (!fs.existsSync(absDarknetImagesPath)) {
             fs.mkdirSync(absDarknetImagesPath, (err) => {
@@ -225,22 +319,27 @@ async function yoloRun(req, res) {
                 0,
                 existingImages.rows[i].IName.lastIndexOf("."),
             );
-            var labelFile = filename + ".txt";
-            if (i < trainDataImageSplit) {
-                absDarknetOrgImagesPath = path.join(
-                    imagesPath,
-                    existingImages.rows[i].IName,
-                );
-                absDarknetOrgLabelsPath = path.join(imagesPath, labelFile);
-                absDarknetTrainImagesPath = path.join(
-                    absDarknetImagesTrain,
-                    existingImages.rows[i].IName,
-                );
-                absDarknetTrainLabelsPath = path.join(
-                    absDarknetLabelsTrain,
-                    labelFile,
-                );
 
+            var labelFile = filename + ".txt";
+
+            let absDarknetOrgImagesPath = path.join(
+                imagesPath,
+                existingImages.rows[i].IName,
+            );
+
+            let absDarknetOrgLabelsPath = path.join(imagesPath, labelFile);
+
+            let absDarknetTrainImagesPath = path.join(
+                absDarknetImagesTrain,
+                existingImages.rows[i].IName,
+            );
+
+            let absDarknetTrainLabelsPath = path.join(
+                absDarknetLabelsTrain,
+                labelFile,
+            );
+
+            if (i < trainDataImageSplit) {
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgImagesPath,
@@ -263,16 +362,11 @@ async function yoloRun(req, res) {
                     console.log("Error creating label training symlink:", err);
                 }
             } else {
-                absDarknetOrgImagesPath = path.join(
-                    imagesPath,
-                    existingImages.rows[i].IName,
-                );
-                absDarknetOrgLabelsPath = path.join(imagesPath, labelFile);
-                absDarknetTrainValPath = path.join(
+                let absDarknetValImagesPath = path.join(
                     absDarknetImagesVal,
                     existingImages.rows[i].IName,
                 );
-                absDarknetTrainLabelsPath = path.join(
+                let absDarknetValLabelsPath = path.join(
                     absDarknetLabelsVal,
                     labelFile,
                 );
@@ -280,7 +374,7 @@ async function yoloRun(req, res) {
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgImagesPath,
-                        absDarknetTrainValPath,
+                        absDarknetValImagesPath,
                         "file"
                     );
                     console.log("Symlink created for YOLO image validation file");
@@ -291,7 +385,7 @@ async function yoloRun(req, res) {
                 try {
                     await fs.promises.symlink(
                         absDarknetOrgLabelsPath,
-                        absDarknetTrainLabelsPath,
+                        absDarknetValLabelsPath,
                         "file"
                     );
                     console.log("Symlink created for YOLO label validation file");
@@ -302,15 +396,15 @@ async function yoloRun(req, res) {
         }
 
         ///////////////////Create symbolic link from darknet to run///////////////////////////////
-        absDarknetProjectRun = absDarknetProjectPath;
-
         console.log(`all path training path: ${trainingPath}, weightname: ${weightName}`);
+
         absWeightProjectPath = path.join(
             trainingPath,
             "logs",
             date.toString(),
             weightName,
         );
+
         if (!fs.existsSync(absWeightProjectPath)) {
             console.log("Create symbolic link from YOLO model file");
             try {
@@ -348,154 +442,158 @@ async function yoloRun(req, res) {
         // train val directories
         // for the secific project create the directories of all the labels
         // based on the speciic labels crop it
-        async (sourcePath, targetPath, x, y, width, height) => {
+        const cropImage = async (sourcePath, targetPath, x_center_abs, y_center_abs, width_abs, height_abs, imageWidth, imageHeight) => {
+            const x1 = Math.floor(x_center_abs - width_abs / 2);
+            const y1 = Math.floor(y_center_abs - height_abs / 2);
+
+            const cropLeft = Math.max(0, x1);
+            const cropTop = Math.max(0, y1);
+            const cropWidth = Math.max(1, Math.min(imageWidth - cropLeft, Math.floor(width_abs)));
+            const cropHeight = Math.max(1, Math.min(imageHeight - cropTop, Math.floor(height_abs)));
+
+            if (cropWidth <= 0 || cropHeight <= 0) {
+                console.warn(`Skipping invalid crop for ${sourcePath}. Original absolute bbox: x=${x_center_abs}, y=${y_center_abs}, w=${width_abs}, h=${height_abs}. Resulting crop: left=${cropLeft}, top=${cropTop}, width=${cropWidth}, height=${cropHeight}.`);
+                return false;
+            }
+
             try {
                 const cropOptions = {
-                    left: Math.floor(x), // Ensure x is an integer
-                    top: Math.floor(y), // Ensure y is an integer
-                    width: Math.floor(width), // Ensure width is an integer
-                    height: Math.floor(height), // Ensure height is an integer
+                    left: Math.floor(cropLeft),
+                    top: Math.floor(cropTop),
+                    width: Math.floor(cropWidth),
+                    height: Math.floor(cropHeight),
                 };
 
                 await sharp(sourcePath)
-                    .extract(cropOptions) // Crop with x, y, w, h
-                    .toFile(targetPath); // Save to the target path
-
+                    .extract(cropOptions)
+                    .toFile(targetPath);
                 console.log(`Image cropped successfully: ${targetPath}`);
+                return true;
             } catch (err) {
-                console.error(`error cropping image: ${err.message}`);
+                console.error(`Error cropping image ${sourcePath} to ${targetPath}: ${err.message}`);
+                return false;
             }
         };
 
-        project = `${Admin}-${PName}`;
-        absDarknetProjectPath = runPath;
-        absDarknetImagesPath = path.join(absDarknetProjectPath, "images");
-        absDarknetImagesTrain = path.join(absDarknetImagesPath, "train");
-        absDarknetImagesVal = path.join(absDarknetImagesPath, "val");
-        absDarknetLabelsPath = path.join(absDarknetProjectPath, "labels");
-        absDarknetLabelsTrain = path.join(absDarknetLabelsPath, "train");
-        absDarknetLabelsVal = path.join(absDarknetLabelsPath, "val");
+        console.log("Preparing data for classification task...");
 
-        if (!fs.existsSync(absDarknetImagesPath)) {
-            fs.mkdirSync(absDarknetImagesPath, (err) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log("YOLO Images Directory created");
-                }
-            });
+        const absDarknetClassificationDatasetRoot = runPath;
+        const absDarknetClassificationTrainImagesDir = path.join(absDarknetClassificationDatasetRoot, "train");
+        const absDarknetClassificationValImagesDir = path.join(absDarknetClassificationDatasetRoot, "val");
 
-            fs.mkdirSync(absDarknetImagesTrain, (err) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log("YOLO Images Train Directory created");
-                }
-            });
-
-            fs.mkdirSync(absDarknetImagesVal, (err) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log("YOLO Images Validate Directory created");
-                }
-            });
-
-            fs.mkdirSync(absDarknetLabelsPath, (err) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log("YOLO Labels Directory created");
-                }
-            });
-
-            fs.mkdirSync(absDarknetLabelsTrain, (err) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log("YOLO Labels Train Directory created");
-                }
-            });
-
-            fs.mkdirSync(absDarknetLabelsVal, (err) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    console.log("YOLO Labels Validate Directory created");
-                }
-            });
+        try {
+            await fs.promises.mkdir(absDarknetClassificationTrainImagesDir, { recursive: true });
+            await fs.promises.mkdir(absDarknetClassificationValImagesDir, { recursive: true });
+            console.log(`Created base classification directories: ${absDarknetClassificationTrainImagesDir}, ${absDarknetClassificationValImagesDir}`);
+        } catch (err) {
+            console.error("Error creating base classification train/val directories:", err);
+            return res.status(500).send("Error setting up classification directories.");
         }
 
-        var dictImagesCount = existingImages.rows.length;
-        var trainDataImageSplit = Math.round(
-            (trainDataPer / 100) * dictImagesCount,
-        );
+        const trainDataImageSplit = Math.round((trainDataPer / 100) * existingImages.rows.length);
+        const shuffledImages = existingImages.rows.sort(() => 0.5 - Math.random());
 
-        for (let i = 0; i < existingImages.rows.length; i++) {
-            var filename = existingImages.rows[i].IName.substr(
-                0,
-                existingImages.rows[i].IName.lastIndexOf("."),
-            );
-            var labelFile = filename + ".txt";
-            if (i < trainDataImageSplit) {
-                absDarknetOrgImagesPath = path.join(
-                    imagesPath,
-                    existingImages.rows[i].IName,
-                );
-                absDarknetOrgLabelsPath = path.join(imagesPath, labelFile);
-                absDarknetTrainImagesPath = path.join(
-                    absDarknetImagesTrain,
-                    existingImages.rows[i].IName,
-                );
-                absDarknetTrainLabelsPath = path.join(
-                    absDarknetLabelsTrain,
-                    labelFile,
-                );
+        for (let i = 0; i < shuffledImages.length; i++) {
+            const image = shuffledImages[i];
+            const sourceImagePath = path.join(imagesPath, image.IName);
+            const isTrain = i < trainDataImageSplit;
 
-                try {
-                    await fs.promises.symlink(
-                        absDarknetOrgImagesPath,
-                        absDarknetTrainImagesPath,
-                        "file"
-                    );
-                    console.log("Symlink created for YOLO image training file");
-                } catch (err) {
-                    console.log("Error creating image training symlink:", err);
+            const targetBaseDir = isTrain
+                ? absDarknetClassificationTrainImagesDir
+                : absDarknetClassificationValImagesDir;
+
+            try {
+                const imageMetadata = await sharp(sourceImagePath).metadata();
+                const originalWidth = imageMetadata.width;
+                const originalHeight = imageMetadata.height;
+
+                if (!originalWidth || !originalHeight) {
+                    console.warn(`Could not get dimensions for image ${image.IName}, skipping.`);
+                    continue;
                 }
 
-                try {
-                    await fs.promises.symlink(
-                        absDarknetOrgLabelsPath,
-                        absDarknetTrainLabelsPath,
-                        "file"
-                    );
-                    console.log("Symlink created for YOLO label training file");
-                } catch (err) {
-                    console.log("Error creating label training symlink:", err);
-                }
-            } else {
-                absDarknetOrgImagesPath = path.join(
-                    imagesPath,
-                    existingImages.rows[i].IName,
-                );
-                absDarknetTrainValPath = path.join(
-                    absDarknetImagesVal,
-                    existingImages.rows[i].IName,
-                );
+                const imageLabelsResult = await queries.project.getLabelsForImageName(projectPath, image.IName);
+                const imageLabels = imageLabelsResult.rows;
 
-                try {
-                    await fs.promises.symlink(
-                        absDarknetOrgImagesPath,
-                        absDarknetTrainValPath,
-                        "file"
-                    );
-                    console.log("Symlink created for YOLO image validation file");
-                } catch (err) {
-                    console.log("Error creating image validation symlink:", err);
+                if (imageLabels.length === 0) {
+                    console.warn(`Image ${image.IName} has no labels, skipping for classification training.`);
+                    continue;
                 }
+
+                let croppedCount = 0;
+                for (const label of imageLabels) {
+                    const className = label.CName;
+                    if (!className) {
+                        console.warn(`Label for image ${image.IName} has no class name, skipping.`);
+                        continue;
+                    }
+
+                    const classTargetDir = path.join(targetBaseDir, className);
+                    await fs.promises.mkdir(classTargetDir, { recursive: true });
+
+                    const croppedImageName = `${path.parse(image.IName).name}_crop_${label.LID}${path.parse(image.IName).ext}`;
+                    const targetCroppedImagePath = path.join(classTargetDir, croppedImageName);
+
+                    console.log(`Debug label values for label ID ${label.LID} in image ${image.IName}:`);
+                    console.log(`  label.X: ${label.X} (Type: ${typeof label.X})`);
+                    console.log(`  label.Y: ${label.Y} (Type: ${typeof label.Y})`);
+                    console.log(`  label.W: ${label.W} (Type: ${typeof label.W})`);
+                    console.log(`  label.H: ${label.W} (Type: ${typeof label.W})`);
+
+                    const x_center_abs = label.X;
+                    const y_center_abs = label.Y;
+                    const width_abs = label.W;
+                    const height_abs = label.H;
+
+                    console.log(`  Assigned x_center_abs: ${x_center_abs} (Type: ${typeof x_center_abs})`);
+                    console.log(`  Assigned y_center_abs: ${y_center_abs} (Type: ${typeof y_center_abs})`);
+                    console.log(`  Assigned width_abs: ${width_abs} (Type: ${typeof width_abs})`);
+                    console.log(`  Assigned height_abs: ${height_abs} (Type: ${typeof height_abs})`);
+
+                    const didCrop = await cropImage(
+                        sourceImagePath,
+                        targetCroppedImagePath,
+                        x_center_abs, y_center_abs, width_abs, height_abs,
+                        originalWidth, originalHeight
+                    );
+
+                    if (didCrop) {
+                        croppedCount++;
+                    } else {
+                        console.error(`Failed to crop and save for label ${label.LID} in image ${image.IName}`);
+                    }
+                }
+                if (croppedCount === 0) {
+                    console.warn(`No valid crops generated for image ${image.IName}.`);
+                }
+
+            } catch (err) {
+                console.error(`Error processing image ${image.IName} for classification:`, err);
             }
         }
+
+        var classificationDataYamlContent = "# Ultralytics YOLOv8 Classification Dataset\n";
+        classificationDataYamlContent += `path: ${absDarknetClassificationDatasetRoot}\n`;
+        classificationDataYamlContent += `train: train\n`;
+        classificationDataYamlContent += `val: val\n`;
+        classificationDataYamlContent += `test: \n\n`;
+
+        classificationDataYamlContent += "names:\n";
+        for (var i = 0; i < existingClasses.rows.length; i++) {
+            classificationDataYamlContent += `  ${i}: ${existingClasses.rows[i].CName}\n`;
+        }
+
+        try {
+            await fs.promises.writeFile(classesPath, classificationDataYamlContent);
+            console.log("Done writing YOLO Classification Data YAML file (data.yaml)");
+        } catch (err) {
+            console.error("Error writing YOLO Classification Data YAML file:", err);
+            return res.status(500).send("Error generating classification data file.");
+        }
     }
+
+    let absDarknetProjectPath = runPath;
+    let absDarknetProjectRun = absDarknetProjectPath;
 
     darknetProjectRun = runPath;
     darknetImagesPath = path.join(absDarknetProjectPath, "images");
@@ -512,17 +610,19 @@ async function yoloRun(req, res) {
 
     console.log(cmd);
 
+    fs.appendFile(`${absDarknetProjectRun}/${log}`, `${cmd}\n\n`, (err) => {
+        if (err) console.log("Error writing initial command to log:", err);
+    });
+
     var success = "";
     var error = "";
-
-    // Use spawn instead of exec to handle long-running processes better
 
     console.log("=== STARTING PYTHON SCRIPT ===");
 
     fs.writeFileSync(`${absDarknetProjectRun}/${log}`, cmd);
 
-    exec(cmd, (err, stdout, stderr) => {
-        if(stdout){
+    exec(cmd, { maxBuffer: 1024 * 1024 * 1024 * configFile["training_max_buffer_size"] }, (err, stdout, stderr) => {
+        if (stdout) {
             console.log("STDOUT:", stdout);
             fs.appendFile(`${absDarknetProjectRun}/${log}`, stdout, (err) => {
                 if (err) console.log("Error writing stdout to log:", err);
