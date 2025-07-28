@@ -91,7 +91,7 @@ class Client {
             }
 
             return new Promise((resolve, reject) => {
-                this.db.run(sql, params, (error) => {
+                this.db.run(sql, params, function (error) {
                     this.lastOperation = Date.now();
                     if (error) {
                         reject({
@@ -100,6 +100,8 @@ class Client {
                     } else {
                         resolve({
                             success: true,
+                            changes: this.changes,
+                            lastID: this.lastID
                         });
                     }
                 });

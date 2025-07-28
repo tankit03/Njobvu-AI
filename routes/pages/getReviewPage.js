@@ -1,7 +1,5 @@
 async function getReviewPage(req, res) {
-    console.log(
-        "---------------------------------getReviewPage---------------------------------",
-    );
+    console.log("getReviewPage");
 
     var username = req.cookies.Username;
     var CName = req.query.class;
@@ -99,9 +97,6 @@ async function getReviewPage(req, res) {
     }
 
     var classes = await pdb.allAsync("SELECT * FROM `Classes`");
-
-    console.log("images:", uniqueImages);
-    console.log("imageLabels:", imageLabels);
 
     pdb.close((err) => {
         if (err) {

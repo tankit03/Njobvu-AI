@@ -3,21 +3,39 @@ const path = require("path");
 
 async function deleteLabels(req, res) {
     try {
-        const Admin = req.params.Admin;
+        const admin = req.params.Admin;
         const PName = req.params.PName;
         const Lid = req.params.Lid.split(",");
 
+        console.log("admin: ", admin);
+        console.log("PName", PName);
+        console.log("Lid", Lid);
+
         var publicPath = currentPath,
             mainPath = publicPath + "public/projects/",
-            projectPath = mainPath + Admin + "-" + PName;
+            projectPath = mainPath + admin + "-" + PName;
+
+        console.log("ProjectPath", projectPath);
 
         const placeholders = Lid.map(() => "?").join(",");
         const sql = `DELETE FROM Labels WHERE LID IN (${placeholders})`;
+        const result = await queries.project.sql(projectPath, sql, Lid);
 
-        await queries.project.sql(projectPath, sql);
+        // await queries.project.sql(projectPath, sql);
+
+        if (result.changes === 0) {
+            console.warn("No labels were updated - check if the labels exist and match the criteria");
+            return res.json({
+                message: "No labels were updated - labels may not exist or already have the target class",
+                labelsAffected: 0,
+                body: req.body,
+            });
+        }
 
         return res.status(200).json({
             message: "Deleted labels",
+            labelsAffected: result.changes,
+            body: req.body,
         });
     } catch (error) {
         console.error(error);
