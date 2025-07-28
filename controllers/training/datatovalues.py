@@ -442,8 +442,8 @@ elif yolo_version == 5:
                 try:
                     shutil.move(source_path, destination_path)
                 except shutil.Error as e:
-                    print(f"Warning: Could not move directory {
-                          source_path} to {destination_path}: {e}")
+                    print(f"""Warning: Could not move directory {
+                          source_path} to {destination_path}: {e}""")
                     print(
                         "This often happens if the destination directory already exists. Skipping move for this directory.")
             else:
