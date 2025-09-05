@@ -1,4 +1,6 @@
-const sqlite3 = require("sqlite3");
+const sqlite3 = require("sqlite3").verbose();
+const path = require('path');
+const fs = require('fs');
 
 async function getHomePage(req, res) {
     console.log("getHomePage");
