@@ -29,25 +29,30 @@ async function downloadProject(req, res) {
 
     let tableExists;
     try {
-        tableExists = await queries.project.sql(
-            "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name='Labels'",
-        );
-    } catch (err) {}
-
+        tableExists = await queries.project.checkTableExists(projectPath, 'Labels');
+    } catch (err) {
+        console.log("Error checking table existence:", err);
+        return res.json({ success: false, message: "Database error occurred" });
+    }
     if (tableExists.rows[0].count == 0) {
-        res.send({ Success: "No Labels table" });
+        return res.json({ success: false, message: "No Labels table found" });
     } else {
         var output = fs.createWriteStream(downloadPath + "/" + PName + ".zip");
 
         var archive = archiver("zip");
 
         output.on("close", function () {
-            return res.download(downloadPath + "/" + PName + ".zip");
+            return res.download(downloadPath + "/" + PName + ".zip", (err) => {
+                if (err) {
+                    console.log("Download error:", err);
+                    return res.json({ success: false, message: "Download failed" });
+                }
+            });
         });
 
         archive.on("error", function (err) {
             console.log(err);
-            return;
+            return res.json({ success: false, message: "Archive creation failed" });
         });
 
         archive.pipe(output);
