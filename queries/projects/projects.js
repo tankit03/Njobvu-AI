@@ -56,6 +56,12 @@ module.exports = {
         },
     },
     project: {
+        checkTableExists: async function (projectPath, tableName) {
+            const db = global.projectDbClients[projectPath];
+            const query = "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name=?";
+            const result = await db.get(query, [tableName]);
+            return { rows: [result] };
+        },
         migrateProjectDb: async function (projectPath) {
             const db = global.projectDbClients[projectPath];
             await db.run(

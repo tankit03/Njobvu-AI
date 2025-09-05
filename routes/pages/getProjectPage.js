@@ -1,3 +1,7 @@
+const path = require('path');
+const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
+
 async function getProjectPage(req, res) {
     console.log("getProjectPage");
 
@@ -31,6 +35,7 @@ async function getProjectPage(req, res) {
     var admin = projects[num].Admin;
 
     var project_path = path.join(currentPath, "public", "projects");
+    console.log("this is the project path", project_path);
     var db_path = path.join(
         project_path,
         admin + "-" + PName,

@@ -156,7 +156,7 @@ var Rectangles = (function () {
 			// activeObj.stroke = classes[curr_class].style.backgroundColor;
 			activeObj.stroke = classes[allClasses.indexOf(curr_class)].style.backgroundColor;
 			// activeObj.stroke = classNames[0].style.backgroundColor;
-            activeObj.strokeWidth = 2;
+            activeObj.strokeWidth = 2 / inst.canvas.getZoom();
             activeObj.fill = activeObj.stroke.replace(')', ', 0.33)').replace('rgb', 'rgba');
 
             left_x = Math.min(origX, Math.max(pointer.x, 0))
@@ -180,92 +180,95 @@ var Rectangles = (function () {
         }
     };
 
-    Rectangles.prototype.onMouseDown = function (o) {
-        var inst = this;
-        // Distinguish between two modes (drawing and resizing)
-        if (!this.isDrawing) {
+    function addLabelToForm(id, curr_class, origX, origY, diff_width_ratio) {
+        $('#dynamic_form').append(
+            '<input class="labels label-'+id+' label-id" type="hidden" name="LabelingID" value="' + id + '">' +
+            '<input class="labels label-'+id+' label-c" type="hidden" name="CName" value="' + curr_class + '">' +
+            '<input class="labels label-'+id+' label-x" type="hidden" name="X" value="' + (origX/diff_width_ratio) + '">' +
+            '<input class="labels label-'+id+' label-y" type="hidden" name="Y" value="' + (origY/diff_width_ratio) + '">'
+        );
+    }
+
+    function createRectangle(id, origX, origY, pointer, curr_class, allClasses) {
+        return new fabric.Rect({
+            id: id,
+            left: origX,
+            top: origY,
+            originX: 'left',
+            originY: 'top',
+            width: pointer.x - origX,
+            height: pointer.y - origY,
+            angle: 0,
+            transparentCorners: false,
+            hasBorders: false,
+            hasControls: false,
+            selectable: true,
+            modified: false,
+            class: curr_class,
+			classId: allClasses.indexOf(curr_class) + 1
+        });
+    }
+
+    function clearPreviousSelection(inst) {
+    if(inst.curr_object != -1) {
+        for (var i = 0; i < canvas.getObjects().length; i++) {
+            if (canvas.item(i).id == inst.curr_object) {
+                canvas.item(i).set({ fill: 'transparent' });
+            }
+            if (canvas.item(i).get("type") === 'text')
+            {
+                canvas.remove(canvas.item(i));
+            }
+        }
+    }
+}
+
+    function handleMouseDown(o, inst, curr_class, allClasses, diff_width_ratio) {
+        if (!inst.isDrawing) {
             if (o.target == null) {
-                if(this.curr_object != -1) {
-                    console.log("HERE");
+                if(inst.curr_object != -1) {
                     for (var i = 0; i < canvas.getObjects().length; i++) {
-						console.log(canvas.item(i));
-                        if (canvas.item(i).id == this.curr_object) {
-							console.log("Is the current object: ", canvas.item(i));
+                        if (canvas.item(i).id == inst.curr_object) {
                             canvas.item(i).set({ fill: 'transparent' });
-                            // break;
                         }
-						if (canvas.item(i).get("type") === 'text')
-						{
-                            console.log("REMOVE", canvas.item(i));
-							canvas.remove(canvas.item(i));
-						}
+                        if (canvas.item(i).get("type") === 'text')
+                        {
+                            canvas.remove(canvas.item(i));
+                        }
                     }
                 }
                 inst.enable();
                 var pointer = inst.canvas.getPointer(o.e);
                 origX = pointer.x;
                 origY = pointer.y;
-                var w = pointer.x - origX;
-                var h = pointer.y - origY;
                 var id =  Math.floor(Math.random() * (1000000000 - 100000)) + 100000;
-                var rect = new fabric.Rect({
-                    id: id,
-                    left: origX,
-                    top: origY,
-                    originX: 'left',
-                    originY: 'top',
-                    width: pointer.x - origX,
-                    height: pointer.y - origY,
-                    angle: 0,
-                    transparentCorners: false,
-                    hasBorders: false,
-                    hasControls: false,
-                    selectable: true,
-                    modified: false,
-                    class: curr_class,
-					classId: allClasses.indexOf(curr_class) + 1
-                });
+                var rect = createRectangle(id, origX, origY, pointer, curr_class, allClasses);
                 counter += 1;
-                $('#dynamic_form').append(
-                    '<input class="labels label-'+id+' label-id" type="hidden" name="LabelingID" value="' + id + '">' +
-                    '<input class="labels label-'+id+' label-c" type="hidden" name="CName" value="' + curr_class + '">' +
-                    '<input class="labels label-'+id+' label-x" type="hidden" name="X" value="' + (origX/diff_width_ratio) + '">' +
-                    '<input class="labels label-'+id+' label-y" type="hidden" name="Y" value="' + (origY/diff_width_ratio) + '">'
-                );
-                // $('#dynamic_form').append(
-                //     '<input class="labels label-'+id+' label-id" type="hidden" name="LabelingID" value="' + id + '">' +
-                //     '<input class="labels label-'+id+' label-c" type="hidden" name="CStaticID" value="' + curr_class + '">' +
-                //     '<input class="labels label-'+id+' label-x" type="hidden" name="X" value="' + (origX/diff_height_ratio) + '">' +
-                //     '<input class="labels label-'+id+' label-y" type="hidden" name="Y" value="' + (origY/diff_height_ratio) + '">'
-                // );
+                addLabelToForm(id, curr_class, origX, origY, diff_width_ratio);
                 $('#labels-counter').val(counter);
-                this.curr_object = id;
+                inst.curr_object = id;
                 inst.canvas.add(rect).setActiveObject(rect);
             } else {
-                if(this.curr_object != -1) {
+                if(inst.curr_object != -1) {
                     for (var i = 0; i < canvas.getObjects().length; i++) {
-                        if (canvas.item(i).id == this.curr_object) {
+                        if (canvas.item(i).id == inst.curr_object) {
                             canvas.item(i).set({ fill: 'transparent' });
-                            //break;
                         }
-						if (canvas.item(i).get("type") === 'text')
-						{
-							canvas.remove(canvas.item(i));
-						}
+                        if (canvas.item(i).get("type") === 'text')
+                        {
+                            canvas.remove(canvas.item(i));
+                        }
                     }
                 }
-                this.curr_object = o.target.id;
-				// console.log(o.target)
+                inst.curr_object = o.target.id;
                 o.target.set({ fill: o.target.stroke.replace(')', ', 0.33)').replace('rgb', 'rgba')});
-				
-				//Display class in rect
+                
                 if(state == 1){
                     var text = new fabric.Text(String(o.target.class) + " (" + String(o.target.id) +  ")", {
                         id: o.target.id,
                         selectable: false,
                         textAlign: 'center',
                         backgroundColor: "white",
-                        // fontSize: 90,
                     });
                 }
                 else{
@@ -274,40 +277,29 @@ var Rectangles = (function () {
                         selectable: false,
                         textAlign: 'center',
                         backgroundColor: "white",
-                        // fontSize: 90,
                     });
                 }
 
-				while (((text.height > o.target.height) || (text.width > o.target.width)) && text.fontSize > 18) {
-					text.set("fontSize", text.fontSize-1);
-				}
-				text.set("width", o.target.width);
-				text.set("top", (o.target.top + (o.target.height / 2)) - (text.height / 2));
-				text.set("left", (o.target.left + o.target.width / 2) - (text.width / 2));
+                while (((text.height > o.target.height) || (text.width > o.target.width)) && text.fontSize > 18) {
+                    text.set("fontSize", text.fontSize-1);
+                }
+                text.set("width", o.target.width);
+                text.set("top", (o.target.top + (o.target.height / 2)) - (text.height / 2));
+                text.set("left", (o.target.left + o.target.width / 2) - (text.width / 2));
 
-				// text.set("top", o.target.top);
-				// text.set("left", o.target.left);
-
-				text.lockMovementX = true,
-				text.lockMovementY = true;
-			
-				inst.canvas.add(text)
-
-                //add labelID for each image
-                // while (((idText.height > o.target.height) || (idText.width > o.target.width)) && idText.fontSize > 18) {
-				// 	idText.set("fontSize", idText.fontSize-1);
-				// }
-				// idText.set("width", o.target.width / 2);
-				// idText.set("top", (o.target.top + (o.target.height)) - (idText.height));
-				// idText.set("left", (o.target.left + o.target.width) - (text.width / 2));
-
-				// idText.lockMovementX = true,
-				// idText.lockMovementY = true;
-			
-				// inst.canvas.add(idText)
+                text.lockMovementX = true,
+                text.lockMovementY = true;
+            
+                inst.canvas.add(text)
             }
         }
+    }
+
+    Rectangles.prototype.onMouseDown = function (o) {
+        var inst = this;
+        handleMouseDown(o, inst, curr_class, allClasses, diff_width_ratio);
     };
+
     Rectangles.prototype.isEnable = function () {
         return this.isDrawing;
     }
@@ -329,6 +321,11 @@ var Rectangles = (function () {
         //TODO
         //http://fabricjs.com/fabric-intro-part-5
         canvas.zoomToPoint({ x: o.e.offsetX, y: o.e.offsetY }, zoom);
+        canvas.forEachObject(function(obj) {
+            if (obj.class != 'text') {
+                obj.set('strokeWidth', 2 / zoom);
+            }
+        });
         o.e.preventDefault();
         o.e.stopPropagation();
         var vpt = this.canvas.viewportTransform;
@@ -506,7 +503,7 @@ for (var i = 0; i < list_labels.length; i += 6) {
     var rect = new fabric.Rect({
         id: list_labels[i].value,
         stroke: classes[allClasses.indexOf(list_labels[i + 1].value)].style.backgroundColor,
-        strokeWidth: 2,
+        strokeWidth: 2 / canvas.getZoom(),
         fill: "transparent",
         left: parseInt(list_labels[i + 2].value) * diff_width_ratio,
         top: parseInt(list_labels[i + 3].value) * diff_width_ratio,
@@ -671,6 +668,11 @@ $("#undo-labeling").click(undoLabel);
 // Reset Zoom
 function resetZoom(){
     canvas.setViewportTransform([1,0,0,1,0,0]); 
+    canvas.forEachObject(function(obj) {
+        if (obj.class != 'text') {
+            obj.set('strokeWidth', 2);
+        }
+    });
 }
 $("#reset-zoom").click(resetZoom);
 
@@ -802,4 +804,3 @@ setInterval(function(){
         }
     }
 }, 1000);
-
