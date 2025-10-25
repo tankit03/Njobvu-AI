@@ -383,13 +383,11 @@ canvas.hoverCursor = 'crosshair';
 // crosshair lines
 
 var verticalLine = new fabric.Line([0, 0, 0, canvas.height], {
-    stroke: 'red',
     selectable: false,
     evented: false
 });
 
 var horizontalLine = new fabric.Line([0, 0, canvas.width, 0], {
-    stroke: 'red',
     selectable: false,
     evented: false
 });
@@ -399,19 +397,22 @@ canvas.add(horizontalLine);
 
 canvas.on('mouse:move', function (options) {
     var pointer = canvas.getPointer(options.e);
+    var classColor = classes[allClasses.indexOf(curr_class)].style.backgroundColor;
 
     verticalLine.set({ 
         x1: pointer.x, 
         x2: pointer.x, 
         y1: 0,
-        y2: canvas.height
+        y2: canvas.height,
+        stroke: classColor
     });
 
     horizontalLine.set({
         x1: 0,
         x2: canvas.width,
         y1: pointer.y,
-        y2: pointer.y
+        y2: pointer.y,
+        stroke: classColor
     });
     canvas.renderAll();
 
