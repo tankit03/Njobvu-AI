@@ -83,7 +83,7 @@ var ShapeDrawer = (function () {
         this.canvas = canvas;
         this.shapeStrategy = shapeStrategy;
         this.isDrawing = false;
-        this.curr_object = -1;
+        this.currObject = -1;
         this.currentDrawingShape = null;
         this.bindEvents();
     }
@@ -112,108 +112,49 @@ var ShapeDrawer = (function () {
 
     
     ShapeDrawer.prototype.onMouseUp = function (o) {
-        console.log("[onMouseUp ]Mouse up is disabled");
-        return;
+        var inst = this;
         
-        // console.log(`[onMouseUp] Called`);
-        // console.log(`[onMouseUp] isDrawing: ${this.isDrawing}`);
-        // console.log(`[onMouseUp] currentDrawingShape: ${this.currentDrawingShape}`);
-        
-        // var inst = this;
-        
-        // // Use currentDrawingShape instead of getActiveObject
-        // if(inst.currentDrawingShape != null) {
-        //     var activeObj = inst.currentDrawingShape;
-        //     console.log(`[onMouseUp] activeObj.id: ${activeObj.id}`);
-        //     console.log(`[onMouseUp] activeObj.isTemporaryRect: ${activeObj.isTemporaryRect}`);
-        
-        //     // If strategy has finalizeShape method call it
-        //     if (inst.shapeStrategy.finalizeShape && activeObj.isTemporaryRect) {
-        //         // Check if the shape has at least 3 points and is closed (for polygons)
-        //         var canFinalize = true;
-        //         if (activeObj.points && Array.isArray(activeObj.points)) {
-        //             var pointCount = activeObj.points.length;
-        //             console.log(`[onMouseUp] Points count: ${pointCount}`);
+        if(inst.currentDrawingShape != null) {
+            var activeObj = inst.currentDrawingShape;
+
+            // Check if label inputs already exist
+            if ($(".label-"+activeObj.id).length == 6){
+
+            } else {
+                if (inst.shapeStrategy === RectangleStrategy) {
+                    var w = activeObj.width;
+                    var h = activeObj.height;
                     
-        //             if (pointCount < 3) {
-        //                 canFinalize = false;
-        //                 console.log(`[onMouseUp] Not enough points to finalize (need at least 3)`);
-        //             } else {
-        //                 // Check if last point is near first point (polygon is closed)
-        //                 var firstPoint = activeObj.points[0];
-        //                 var lastPoint = activeObj.points[pointCount - 1];
-        //                 var threshold = 10; // Distance threshold in pixels
-                        
-        //                 var distance = Math.sqrt(
-        //                     Math.pow(lastPoint.x - firstPoint.x, 2) + 
-        //                     Math.pow(lastPoint.y - firstPoint.y, 2)
-        //                 );
-                        
-        //                 console.log(`[onMouseUp] Distance between first and last point: ${distance}`);
-                        
-        //                 if (distance > threshold) {
-        //                     canFinalize = false;
-        //                     console.log(`[onMouseUp] Polygon not closed (distance: ${distance} > threshold: ${threshold})`);
-        //                 } else {
-        //                     console.log(`[onMouseUp] Polygon is closed`);
-        //                 }
-        //             }
-        //         }
-                
-        //         if (canFinalize) {
-        //             console.log(`[onMouseUp] Calling finalizeShape`);
-        //             activeObj = inst.shapeStrategy.finalizeShape(activeObj, inst.canvas);
-        //             // Update the reference after finalization
-        //             inst.currentDrawingShape = activeObj;
-        //         }
-        //     }
+                    $('#dynamic_form').append(
+                        '<input class="labels label-'+activeObj.id+' label-w" type="hidden" name="W" value="' + (w/diff_width_ratio) + '">' +
+                        '<input class="labels label-'+activeObj.id+' label-h" type="hidden" name="H" value="' + (h/diff_width_ratio) + '">'
+                    );
+                }
+                activeObj.lockMovementX = true;
+                activeObj.lockMovementY = true;
+            }
+        }
 
-        //     // Check if label inputs already exist
-        //     if ($(".label-"+activeObj.id).length == 6){
-        //         console.log(`[onMouseUp] Label already exists`);
-        //     } else {
-        //         console.log(`[onMouseUp] Creating label inputs for width and height`);
-        //         var w = activeObj.width;
-        //         var h = activeObj.height;
-                
-        //         $('#dynamic_form').append(
-        //             '<input class="labels label-'+activeObj.id+' label-w" type="hidden" name="W" value="' + (w/diff_width_ratio) + '">' +
-        //             '<input class="labels label-'+activeObj.id+' label-h" type="hidden" name="H" value="' + (h/diff_width_ratio) + '">'
-        //         );
-
-        //         activeObj.lockMovementX = true;
-        //         activeObj.lockMovementY = true;
-        //     }
-            
-        //     // Clear the current drawing shape reference
-        //     inst.currentDrawingShape = null;
-        // }
-        
-        // inst.disable();
-        // console.log(`[onMouseUp] isDrawing set to: ${inst.isDrawing}`);
+        if(inst.shapeStrategy === RectangleStrategy) {
+            inst.disable();
+        }
     };
 
 
     ShapeDrawer.prototype.onMouseDown = function (o) {
         var inst = this;
-        console.log(`[onMouseDown] Is drawing: ${inst.isDrawing}`);
-        console.log(`[onMouseDown] Target: ${o.target}`);
+
         
         // Case 1: Already in polygon drawing mode
         if (inst.isDrawing) {
-            console.log(`[onMouseDown] Already drawing, checking for polygon interaction`);
             
             // If we have a shape being drawn and the strategy supports adding points
             if (inst.currentDrawingShape && inst.shapeStrategy.addPoint) {
-                console.log(`[onMouseDown] Calling addpoint`);
                 var pointer = inst.canvas.getPointer(o.e);
-                console.log(`[onMouseDown] Pointer: (${pointer.x}, ${pointer.y})`);
                 
                 var result = inst.shapeStrategy.addPoint(inst.currentDrawingShape, pointer, inst.canvas);
-                console.log(`[onMouseDown] addpoint returned:`, result);
                 
                 if (result && result.segmentationComplete) {
-                    console.log(`[onMouseDown] polygon finalized`);
                     inst.currentDrawingShape = null;  // Clear the reference
                     inst.disable();
                 }
@@ -221,7 +162,7 @@ var ShapeDrawer = (function () {
             }
             
             if (o.target && (o.target.excludeFromExport || o.target.polygonId)) {
-                console.log(`[onMouseDown] clicked on point marker, ignoring`);
+
                 inst.disable();
                 return;
             }
@@ -230,13 +171,13 @@ var ShapeDrawer = (function () {
         
         // Case 2: Not drawing yet
         if (o.target == null) {
-            console.log(`[onMouseDown] STARTING NEW POLYGON`);
+
             
-            if(inst.curr_object != -1) {
+            if(inst.currObject != -1) {
                 for (var i = inst.canvas.getObjects().length - 1; i >= 0; i--) {
                     var obj = inst.canvas.item(i);
                     if (!obj) continue;
-                    if (obj.id == inst.curr_object) {
+                    if (obj.id == inst.currObject) {
                         obj.set({ fill: 'transparent' });
                     }
                     if (obj.get && obj.get("type") === 'text') {
@@ -246,7 +187,6 @@ var ShapeDrawer = (function () {
             }
 
             inst.enable();
-            console.log(`[onMouseDown] ENABLED - isDrawing now: ${inst.isDrawing}`);
             
             var pointer = inst.canvas.getPointer(o.e);
             origX = pointer.x;
@@ -255,22 +195,22 @@ var ShapeDrawer = (function () {
 
             var shape = inst.shapeStrategy.createShape(id, pointer, curr_class, allClasses, inst.canvas);
             counter += 1;
-            addLabelToForm(id, curr_class, origX, origY, diff_width_ratio);
+
+            if(inst.shapeStrategy !== SegmentationStrategy) {
+                addLabelToForm(id, curr_class, origX, origY, diff_width_ratio);
+                //Segmentation labels are appended in finalize shape
+            }
             
             $('#labels-counter').val(counter);
-            inst.curr_object = id;
+            inst.currObject = id;
             inst.canvas.add(shape).setActiveObject(shape);
-
             inst.currentDrawingShape = shape;
-            console.log(`[onMouseDown] stored reference ready for more points.`);
         } else {
-            console.log(`[onMouseDown] clicked on existing object: ${o.target.id}`);
-            
-            if(inst.curr_object != -1) {
+            if(inst.currObject != -1) {
                 for (var i = inst.canvas.getObjects().length - 1; i >= 0; i--) {
                     var obj = inst.canvas.item(i);
                     if (!obj) continue;
-                    if (obj.id == inst.curr_object) {
+                    if (obj.id == inst.currObject) {
                         obj.set({ fill: 'transparent' });
                     }
                     if (obj.get && obj.get("type") === 'text') {
@@ -280,11 +220,10 @@ var ShapeDrawer = (function () {
             }
             
             if (o.target.excludeFromExport || o.target.polygonId) {
-                console.log(`[onMouseDown] ignoring clicked on point marker`);
                 return;
             }
             
-            inst.curr_object = o.target.id;
+            inst.currObject = o.target.id;
             o.target.set({ fill: o.target.stroke.replace(')', ', 0.33)').replace('rgb', 'rgba')});
             
             if(state == 1){
@@ -409,7 +348,7 @@ var SegmentationStrategy = {
     minPoints: 3,
     
     createShape: function(id, pointer, curr_class, allClasses, canvas) {
-        console.log(`[createShape] ID: ${id}, Pointer: (${pointer.x}, ${pointer.y})`);
+
         
         var points = [];
         
@@ -432,8 +371,6 @@ var SegmentationStrategy = {
         });
         
         points.push({x: pointer.x, y: pointer.y, marker: point});
-        console.log(`[createShape] Initial points array:`, points);
-        console.log(`[createShape] Points length: ${points.length}`);
         
         if (canvas) {
             canvas.add(point);
@@ -462,8 +399,6 @@ var SegmentationStrategy = {
             pointMarkers: [point]
         });
         
-        console.log(`[createShape] Polygon created. Shape.segmentationPoints:`, polygon.segmentationPoints);
-        console.log(`[createShape] Polygon.segmentationPoints.length: ${polygon.segmentationPoints.length}`);
         
         return polygon;
     },
@@ -482,12 +417,8 @@ var SegmentationStrategy = {
     },
     
     addPoint: function(shape, pointer, canvas) {
-        console.log(`[addPoint] Called. Shape ID: ${shape.id}`);
-        console.log(`[addPoint] Shape exists: ${!!shape}`);
-        console.log(`[addPoint] Shape.isTemporaryRect: ${shape.isTemporaryRect}`);
         
         if (!shape || !shape.isTemporaryRect) {
-            console.log(`[addPoint] EARLY RETURN: Shape is null or not temporary`);
             return shape;
         }
         
@@ -495,25 +426,20 @@ var SegmentationStrategy = {
         var curr_class = shape.class;
         
         var points = shape.segmentationPoints || [];
-        console.log(`[addPoint] Retrieved points from shape. Length: ${points.length}`);
-        console.log(`[addPoint] Current points array:`, points);
         
         var x = Math.max(0, Math.min(pointer.x, canvas.getWidth()));
         var y = Math.max(0, Math.min(pointer.y, canvas.getHeight()));
-        console.log(`[addPoint] Constrained pointer: (${x}, ${y})`);
         
         // Check if clicking near first point to close polygon
         if (points.length >= this.minPoints) {
-            console.log(`[addPoint] Checking for polygon closure. Points: ${points.length}, Min: ${this.minPoints}`);
             var firstPoint = points[0];
             var distance = Math.sqrt(
                 Math.pow(x - firstPoint.x, 2) + 
                 Math.pow(y - firstPoint.y, 2)
             );
-            console.log(`[addPoint] Distance to first point: ${distance}`);
+
             
             if (distance < 5) {
-                console.log(`[addPoint] POLYGON CLOSED! Distance < 10. Finalizing...`);
                 return this.finalizeShape(shape, canvas);
             }
         }
@@ -537,29 +463,20 @@ var SegmentationStrategy = {
             excludeFromExport: true
         });
         
-        console.log(`[addPoint] Created point marker. ID: ${pointMarker.id}`);
         
         points.push({x: x, y: y, marker: pointMarker});
-        console.log(`[addPoint] AFTER PUSH - Points length: ${points.length}`);
-        console.log(`[addPoint] Points array:`, points);
         
         canvas.add(pointMarker);
         
         // Update polygon points
         var pts = shape.points.slice();
-        console.log(`[addPoint] Current polygon.points length: ${pts.length}`);
         pts[pts.length - 1] = {x: x, y: y};
         pts.push({x: x, y: y}); // Add new preview point
-        
-        console.log(`[addPoint] BEFORE SET - New polygon.points length: ${pts.length}`);
         
         shape.set({
             points: pts,
             segmentationPoints: points
         });
-        
-        console.log(`[addPoint] AFTER SET - shape.segmentationPoints.length: ${shape.segmentationPoints.length}`);
-        console.log(`[addPoint] shape.segmentationPoints:`, shape.segmentationPoints);
         
         shape.setCoords();
         canvas.renderAll();
@@ -568,19 +485,14 @@ var SegmentationStrategy = {
     },
     
     finalizeShape: function(shape, canvas) {
-        console.log(`[finalizeShape] Called. Shape ID: ${shape.id}`);
         
         if (!shape || !shape.isTemporaryRect) {
-            console.log(`[finalizeShape] EARLY RETURN: Shape is null or not temporary`);
             return shape;
         }
         
         var points = shape.segmentationPoints || [];
-        console.log(`[finalizeShape] Final points count: ${points.length}`);
-        console.log(`[finalizeShape] Final points:`, points);
         
         var pts = shape.points.slice(0, -1);
-        console.log(`[finalizeShape] Polygon points (preview removed): ${pts.length}`);
         
         // Calculate bounding box
         var minX = Math.min.apply(Math, pts.map(function(p) { return p.x; }));
@@ -590,9 +502,7 @@ var SegmentationStrategy = {
         
         var width = maxX - minX;
         var height = maxY - minY;
-        
-        console.log(`[finalizeShape] Bounding box: (${minX}, ${minY}) to (${maxX}, ${maxY}), Size: ${width}x${height}`);
-        
+                
         var normalizedPoints = pts.map(function(p) {
             return {x: p.x - minX, y: p.y - minY};
         });
@@ -618,7 +528,6 @@ var SegmentationStrategy = {
             segmentationPoints: points
         });
         
-        console.log(`[finalizeShape] Final polygon created with ${normalizedPoints.length} points`);
         
         points.forEach(function(pt) {
             if (pt.marker) {
@@ -629,21 +538,34 @@ var SegmentationStrategy = {
         canvas.remove(shape);
         canvas.add(finalPolygon);
         canvas.setActiveObject(finalPolygon);
+
+        var xPoints = [];
+        var yPoints = [];
+
+        for (var i = 0; i < shape.segmentationPoints.length; i++ ) {
+            xPoints[i] = shape.segmentationPoints[i].x;
+            yPoints[i]  =shape.segmentationPoints[i].y;
+        }
         
+        $('#dynamic_form').append(
+             '<input class="labels label-'+shape.id+' label-id" type="hidden" name="LabelingID" value="' + shape.id + '">' +
+            '<input class="labels label-'+shape.id+' label-c" type="hidden" name="CName" value="' + curr_class + '">' +
+            '<input class="labels label-'+shape.id+' label-x" type="hidden" name="X" value="' + (yPoints) + '">' +
+            '<input class="labels label-'+shape.id+' label-y" type="hidden" name="Y" value="' + (xPoints) + '">' +
+            '<input class="labels label-'+shape.id+' label-w" type="hidden" name="W" value="' + 0 + '">' +
+            '<input class="labels label-'+shape.id+' label-h" type="hidden" name="H" value="' + 0 + '">'
+        );
+
         canvas.renderAll();
         return finalPolygon;
     },
     
     cancelDrawing: function(canvas, shape) {
-        console.log(`[cancelDrawing] Called`);
         
         if (!shape) {
-            console.log(`[cancelDrawing] No shape provided`);
             return;
         }
-        
         var points = shape.segmentationPoints || [];
-        console.log(`[cancelDrawing] Removing ${points.length} point markers`);
         
         points.forEach(function(pt) {
             if (pt.marker) {
@@ -703,7 +625,7 @@ var canvas = new fabric.Canvas('canvas', {
 
 //set available shapes
 console.log("Initializing segmentation strategy");
-var rectangle = new ShapeDrawer(canvas, SegmentationStrategy);
+var shapetool = new ShapeDrawer(canvas, RectangleStrategy);
 
 // set cursor when hover over canvas to cross
 canvas.hoverCursor = 'crosshair';
@@ -1123,13 +1045,25 @@ $(window).resize(function() {
 // delete unwanted objects (simple clicks on canvas creates unwanted objects)
 setInterval(function(){
     for (var i = 0; i < canvas.getObjects().length; i++) {
-        if($(".label-"+canvas.item(i).id+".label-w").val() < 5 || $(".label-"+canvas.item(i).id+".label-h").val() < 5) {
-            if(!canvas.isDrawing){
-                $(".label-"+canvas.item(i).id).remove();
-                canvas.remove(canvas.item(i));
-                counter -= 1;
-                $('#labels-counter').val(counter);
-            }
+        var currObject = canvas.item(i);
+
+        if(currObject.isTemporaryRect) continue;
+        if (currObject.excludeFromExport || currObject.polygonId) continue;
+
+        var height = currObject.height;
+        // console.log(`Current obejct height: ${height}`);
+        var width = currObject.width;
+        // console.log(`Current object width ${width}`);
+
+        if(height < 5 && width < 5 && !canvas.isDrawing) {
+            console.log(`Too short removing ${canvas.item(i)}`);
+            $(".label-"+canvas.item(i).id).remove();
+            canvas.remove(currObject);
+            counter -= 1;
+
+            $('#labels-counter').val(counter);
+            i--;
+            
         }
     }
 }, 1000);
