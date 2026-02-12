@@ -55,12 +55,12 @@ async function getProcessingPage(req, res) {
         fs.mkdirSync(trn_log_path);
         fs.mkdirSync(python_path);
         fs.mkdirSync(weights_path);
-        fs.writeFile(python_path_file, "", function (err) {
+        fs.writeFile(python_path_file, "", function(err) {
             if (err) {
                 console.log(err);
             }
         });
-        fs.writeFile(darknet_path_file, "", function (err) {
+        fs.writeFile(darknet_path_file, "", function(err) {
             if (err) {
                 console.log(err);
             }
@@ -79,7 +79,7 @@ async function getProcessingPage(req, res) {
         fs.mkdirSync(weights_path);
     }
     if (!fs.existsSync(darknet_path_file)) {
-        fs.writeFile(darknet_path_file, "", function (err) {
+        fs.writeFile(darknet_path_file, "", function(err) {
             if (err) {
                 console.log(err);
             }
@@ -95,10 +95,10 @@ async function getProcessingPage(req, res) {
     });
 
     // create async database object functions
-    tdb.getAsync = function (sql) {
+    tdb.getAsync = function(sql) {
         var that = this;
-        return new Promise(function (resolve, reject) {
-            that.get(sql, function (err, row) {
+        return new Promise(function(resolve, reject) {
+            that.get(sql, function(err, row) {
                 if (err) {
                     console.log("runAsync ERROR! ", err);
                     reject(err);
@@ -108,10 +108,10 @@ async function getProcessingPage(req, res) {
             console.log(err);
         });
     };
-    tdb.allAsync = function (sql) {
+    tdb.allAsync = function(sql) {
         var that = this;
-        return new Promise(function (resolve, reject) {
-            that.all(sql, function (err, row) {
+        return new Promise(function(resolve, reject) {
+            that.all(sql, function(err, row) {
                 if (err) {
                     console.log("runAsync ERROR! ", err);
                     reject(err);
@@ -124,19 +124,19 @@ async function getProcessingPage(req, res) {
 
     var results1 = await db.getAsync(
         "SELECT * FROM `Projects` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
     var results2 = await tdb.allAsync("SELECT * FROM `Classes`");
 
     var acc = await db.allAsync(
         "SELECT * FROM `Access` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
     var access = [];
     for (var i = 0; i < acc.length; i++) {
@@ -403,7 +403,7 @@ async function getProcessingPage(req, res) {
     }
 
     // close the database
-    tdb.close(function (err) {
+    tdb.close(function(err) {
         if (err) {
             console.error(err);
         } else {

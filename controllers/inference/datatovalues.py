@@ -31,11 +31,14 @@
 # Global Stuff						#
 #########################################################
 import os
-import getopt
 import sys
 import subprocess
 import shutil
 import argparse
+import csv
+import zipfile
+import yaml
+from pathlib import Path
 
 parser = argparse.ArgumentParser(
     description="Run YOLO predictions with Ultralytics"
@@ -90,6 +93,52 @@ def call_command(final_command, debug_mode=""):
         print("Output: {}".format(err.output))
         sys.exit(1)
 
+#########################################################
+# Parse YOLO labels for detection info 			#
+#########################################################
+def parse_yolo_labels(label_path: str, class_names: list[str]):
+    """Parse YOLO format label file & return detection info"""
+    detections = []
+
+    if not os.path.exists(label_path):
+        return detections
+
+    with open(label_path, "r") as f:
+        for line in f:
+            parts = line.strip().split()
+
+            if len(parts) < 6: # not at least class_id, x_center, y_center, width, height
+                continue
+
+            class_id = int(parts[0])
+            confidence = float(parts[5]) if len(parts) > 5 else None
+
+            class_name = class_names[class_id] if class_id < len(class_names) else f"class_{class_id}"
+
+            detections.append({
+                'class': class_name,
+                'confidence': confidence,
+                'bbox': parts[1:5]
+            })
+
+    return detections
+
+def load_class_names(name_path):
+    """Load class names from YAML or text file"""
+    class_names = []
+
+    try:
+        if name_path.endswith('.yaml') or name_path.endswith('.yml'):
+            with open(name_path, 'r') as f:
+                data = yaml.safe_load(f)
+                class_names = data.get('names', [])
+        else:
+            with open(name_path, 'r') as f:
+                class_names = [line.strip() for line in f]
+    except Exception as e:
+        print(f"Warning: Could not load class names: {e}")
+
+    return class_names
 
 #########################################################
 # Main body of program with checks for options		#
@@ -119,6 +168,7 @@ cmd = (
     + data_path
     + " name=output device="
     + device
+    + " save_txt=True save_conf=True"
     + " "
     + adv_options
     + " 2>&1 > "
@@ -132,8 +182,119 @@ call_command(cmd)
 
 destination_dir = data_path
 source_dir = data_path + "/output"
+
 files = os.listdir(source_dir)
 for file_name in files:
     source_path = os.path.join(source_dir, file_name)
     destination_path = os.path.join(destination_dir, file_name)
+
     shutil.move(source_path, destination_path)
+
+class_names = load_class_names(name_path)
+
+image_files = [f for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp'))]
+
+csv_path = os.path.join(destination_dir, 'inference_stats.csv')
+detailed_csv_path = os.path.join(destination_dir, 'inference_detections.csv')
+
+with open(csv_path, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['Image Name', 'File Size (KB)', 'Detection Count', 'Avg Confidence', 'Max Confidence', 'Min Confidence'])
+
+    with open(detailed_csv_path, 'w', newline='') as detail_csvfile:
+        detail_writer = csv.writer(detail_csvfile)
+        detail_writer.writerow(['Image Name', 'Detection #', 'Class', 'Confidence', 'X Center', 'Y Center', 'Width', 'Height'])
+
+        for img_file in image_files:
+            img_path = os.path.join(destination_dir, img_file)
+
+            if not os.path.exists(img_path):
+                continue
+
+            file_size = os.path.getsize(img_path) / 1024 # KB
+
+            label_file = os.path.splitext(img_file)[0] + '.txt'
+            label_path = os.path.join(destination_dir, 'labels', label_file)
+
+            detections = parse_yolo_labels(label_path, class_names)
+            detection_count = len(detections)
+
+            confidences = [d['confidence'] for d in detections if d['confidence'] is not None]
+
+            avg_conf = sum(confidences) / len(confidences) if confidences else 0
+            max_conf = max(confidences) if confidences else 0
+            min_conf = min(confidences) if confidences else 0
+
+            writer.writerow([
+                img_file, 
+                f'{file_size:.2f}',
+                detection_count,
+                f'{avg_conf:.4f}' if avg_conf > 0 else 'N/A',
+                f'{max_conf:.4f}' if max_conf > 0 else 'N/A',
+                f'{min_conf:.4f}' if min_conf > 0 else 'N/A'
+            ])
+
+            for idx, det in enumerate(detections, 1):
+                detail_writer.writerow([
+                    img_file,
+                    idx,
+                    det['class'],
+                    f"{det['confidence']:.4f}" if det['confidence'] else 'N/A',
+                    det['bbox'][0],
+                    det['bbox'][1],
+                    det['bbox'][2],
+                    det['bbox'][3]
+                ])
+
+zip_path = os.path.join(destination_dir, 'inference_images.zip')
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+    for file_name in image_files:
+        file_path = os.path.join(destination_dir, file_name)
+
+        if os.path.isfile(file_path):
+            zipf.write(file_path, arcname=file_name)
+
+    zipf.write(csv_path, arcname="inference_stats.csv")
+    zipf.write(detailed_csv_path, arcname="inference_detections.csv")
+
+print(f"Created zip archive: {zip_path}")
+print(f"Created statistics CSV: {csv_path}")
+print(f"Created detailed detections CSV: {detailed_csv_path}")
+
+print("Cleaning up...")
+moved_count = 0
+
+images_path = os.path.join(destination_dir, "images")
+
+try:
+    os.mkdir(images_path)
+except FileExistsError:
+    print("Could not create the output directory because it already exists.")
+except FileNotFoundError:
+    print("Parent directory does not exist.")
+except OSError as e:
+    print(f"An OS error occurred: {e}")
+
+for img_file in image_files:
+    img_path = os.path.join(destination_dir, img_file)
+
+    if not os.path.isfile(img_path):
+        continue
+
+
+    try:
+        os.rename(img_path, os.path.join(images_path, img_path.split("/")[-1]))
+        moved_count += 1
+    except Exception as e:
+        print(f"Warning: could not delete {img_file}: {e}")
+
+print(f"Moved {moved_count} image files from output directory into a clean directory")
+
+labels_dir = os.path.join(destination_dir, 'labels')
+
+if os.path.exists(labels_dir) and os.path.isdir(labels_dir):
+    try:
+        shutil.rmtree(labels_dir)
+        print("Deleted labels directory")
+    except Exception as e:
+        print(f"Warning: Could not delete labels directory: {e}")

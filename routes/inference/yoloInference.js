@@ -186,8 +186,17 @@ async function yoloInference(req, res) {
                 }
             }
 
+            const completionData = {
+                status: err ? 'error' : 'success',
+                timestamp: date,
+                zipAvailable: fs.existsSync(`${runPath}/inference_results.zip`),
+                csvAvailable: fs.existsSync(`${runPath}/inference_stats.csv`)
+            };
+
             fs.writeFileSync(`${runPath}/done.log`, success);
+            fs.writeFileSync(`${runPath}/done.log`, JSON.stringify(completionData, null, 2));
         });
+
 
         res.send({ Success: `YOLO Inference Started` });
     } catch (err) {
