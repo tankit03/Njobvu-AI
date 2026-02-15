@@ -322,7 +322,7 @@ async function getProcessingPage(req, res) {
         err_idx_inf = logs_inf.indexOf(`${inf_runs[i]}-error.log`);
         done_idx_inf = logs_inf.indexOf("done.log");
 
-        if (err_idx_inf >= 0) {
+        if (err_idx_inf >= 0 && done_idx_inf == -1) {
             // Add error to arrays
             run_status_inf.push("FAILED");
             err_file_inf.push(`${logs_inf[err_idx_inf]}`);

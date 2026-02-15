@@ -85,9 +85,11 @@ const bootstrapController = require("./bootstrap/bootstrapController");
 const yoloInference = require("./inference/yoloInference");
 const getRunImages = require("./inference/getRunImages");
 const uploadInferenceFile = require("./inference/uploadInferenceFile");
+const inceptionInference = require("./inference/inceptionInference");
 
 // INFERENCE ROUTES
 api.post("/yolo-inf", yoloInference);
+api.post("/inception-inf", inceptionInference);
 api.post("/upload_inference_file", uploadInferenceFile);
 api.get("/runs/:runId/images", getRunImages);
 
