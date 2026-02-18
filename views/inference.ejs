@@ -28,6 +28,7 @@
                 <thead class="thead-dark">
                     <tr>
                         <th scope="col">Run Name</th>
+                        <th class="text-center">Run Type</th>
                         <th class="text-center">Status</th>
                         <th class="text-center" scope="col">Files</th>
                         <th></th>
@@ -47,6 +48,10 @@
                                 >
                                     <%= logs_inf[i] %>
                                 </button>
+                            </td>
+
+                            <td scope="row">
+                                <%= logs_inf[i] %>
                             </td>
 
                             <% if (run_status_inf[i] == "FAILED") { %>
