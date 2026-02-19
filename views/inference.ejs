@@ -33,6 +33,7 @@
                         <th class="text-center" scope="col">Files</th>
                         <th></th>
                         <th></th>
+                        <th></th>
                     </tr>
                 </thead>
 
@@ -51,7 +52,7 @@
                             </td>
 
                             <td scope="row">
-                                <%= logs_inf[i] %>
+                                <%= run_types[i] %>
                             </td>
 
                             <% if (run_status_inf[i] == "FAILED") { %>
@@ -127,18 +128,38 @@
                                         >
                                             View Images
                                         </button>
+                                    </div>
+                                </td>
+                            </form>
+
+                            <td class="text-center">
+                                <% if (run_types[i] === 'YOLO' && run_status_inf[i] !== 'RUNNING' && run_status_inf[i] !== 'FAILED') { %>
+                                    <div class="input-group input-group-sm mb-2">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">Min Conf</span>
+                                        </div>
+                                        <input
+                                            type="number"
+                                            class="form-control add-to-dataset-conf"
+                                            value="0.5"
+                                            min="0"
+                                            max="1"
+                                            step="0.05"
+                                        >
 
                                         <button
-                                            type="submit"
-                                            name="form_action"
-                                            value="download"
-                                            class="btn btn-secondary"
+                                            type="button"
+                                            class="btn btn-success add-to-dataset-btn mt-2"
+                                            data-pname="<%= PName %>"
+                                            data-admin="<%= Admin %>"
+                                            data-idx="<%= IDX %>"
+                                            data-timestamp="<%= log_folder_inf[i] %>"
                                         >
                                             Add to Training Set
                                         </button>
                                     </div>
-                                </td>
-                            </form>
+                                <% } %>
+                            </td>
 
                             <td class="text-right">
                                 <% if (run_status_inf[i] != "RUNNING") { %>
@@ -411,6 +432,50 @@ document.addEventListener("keydown", function (e) {
 
 document.addEventListener("hidden.bs.modal", function () {
   activeCarousel = null;
+});
+
+document.addEventListener("click", async function (e) {
+    const btn = e.target.closest(".add-to-dataset-btn");
+    if (!btn) return;
+
+    const inputGroup = btn.closest(".input-group");
+    const confInput = inputGroup.querySelector(".add-to-dataset-conf");
+
+    const PName = btn.dataset.pname;
+    const Admin = btn.dataset.admin;
+    const IDX = btn.dataset.idx;
+    const runTimestamp = btn.dataset.timestamp;
+    const minConfidence = confInput.value;
+
+    btn.disabled = true;
+    btn.textContent = "Adding...";
+
+    try {
+        const response = await fetch("/inference/add-inference-run-to-dataset", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ PName, Admin, IDX, runTimestamp, minConfidence })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.Success) {
+            alert(
+                `Done!\n\n` +
+                `Images copied: ${result.imagesCopied}\n` +
+                `Label files written: ${result.labelFilesWritten}\n` +
+                `Detections skipped (unknown class): ${result.skippedUnknownClass ?? 0}\n` +
+                `Images skipped (not found): ${result.skipped.length}`
+            );
+        } else {
+            alert(`Error: ${result.message || response.statusText}`);
+        }
+    } catch (err) {
+        alert(`Request failed: ${err.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Add to Training Set";
+    }
 });
 </script>
 <%- include('includes/footer') %>

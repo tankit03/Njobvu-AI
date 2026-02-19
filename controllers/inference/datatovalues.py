@@ -107,7 +107,7 @@ def parse_yolo_labels(label_path: str, class_names: list[str]):
         for line in f:
             parts = line.strip().split()
 
-            if len(parts) < 6: # not at least class_id, x_center, y_center, width, height
+            if len(parts) < 5: # not at least class_id, x_center, y_center, width, height
                 continue
 
             class_id = int(parts[0])
@@ -117,6 +117,7 @@ def parse_yolo_labels(label_path: str, class_names: list[str]):
 
             detections.append({
                 'class': class_name,
+                'class_id': class_id,
                 'confidence': confidence,
                 'bbox': parts[1:5]
             })
@@ -134,7 +135,7 @@ def load_class_names(name_path):
                 class_names = data.get('names', [])
         else:
             with open(name_path, 'r') as f:
-                class_names = [line.strip() for line in f]
+                class_names = [line.strip() for line in f if line.strip()]
     except Exception as e:
         print(f"Warning: Could not load class names: {e}")
 
@@ -203,7 +204,7 @@ with open(csv_path, 'w', newline='') as csvfile:
 
     with open(detailed_csv_path, 'w', newline='') as detail_csvfile:
         detail_writer = csv.writer(detail_csvfile)
-        detail_writer.writerow(['Image Name', 'Detection #', 'Class', 'Confidence', 'X Center', 'Y Center', 'Width', 'Height'])
+        detail_writer.writerow(['Image Name', 'Detection #', 'Class', 'Class ID', 'Confidence', 'X Center', 'Y Center', 'Width', 'Height'])
 
         for img_file in image_files:
             img_path = os.path.join(destination_dir, img_file)
@@ -239,6 +240,7 @@ with open(csv_path, 'w', newline='') as csvfile:
                     img_file,
                     idx,
                     det['class'],
+                    det['class_id'],
                     f"{det['confidence']:.4f}" if det['confidence'] else 'N/A',
                     det['bbox'][0],
                     det['bbox'][1],

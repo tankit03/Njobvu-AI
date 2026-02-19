@@ -13,5 +13,6 @@ db/manage.db
 .viminfo
 tmp/
 config.json
+*.h5
 *.pt
 .venv/

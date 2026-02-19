@@ -44,8 +44,7 @@ async function yoloInference(req, res) {
         }
 
         fs.writeFileSync(`${runPath}/${log}`, "");
-
-        fs.writeFileSync(`${runPath}/${type.txt}`, "yolo");
+        fs.writeFileSync(`${runPath}/type.txt`, "yolo");
 
         ultralyticsCfgScript = runPath + "/datatovalues.py";
 

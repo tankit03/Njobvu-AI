@@ -41,6 +41,7 @@ async function inceptionInference(req, res) {
         }
 
         fs.writeFileSync(`${runPath}/${log}`, "");
+        fs.writeFileSync(`${runPath}/type.txt`, "inception");
 
         inferenceScriptCopyPath = runPath + "/inception.py";
 

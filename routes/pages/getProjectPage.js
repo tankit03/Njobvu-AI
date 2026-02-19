@@ -63,10 +63,10 @@ async function getProjectPage(req, res) {
     });
 
     // create async database object functions
-    pdb.getAsync = function (sql) {
+    pdb.getAsync = function(sql) {
         var that = this;
-        return new Promise(function (resolve, reject) {
-            that.get(sql, function (err, row) {
+        return new Promise(function(resolve, reject) {
+            that.get(sql, function(err, row) {
                 if (err) {
                     console.log("runAsync ERROR! ", err);
                     reject(err);
@@ -77,10 +77,10 @@ async function getProjectPage(req, res) {
             return null;
         });
     };
-    pdb.allAsync = function (sql) {
+    pdb.allAsync = function(sql) {
         var that = this;
-        return new Promise(function (resolve, reject) {
-            that.all(sql, function (err, row) {
+        return new Promise(function(resolve, reject) {
+            that.all(sql, function(err, row) {
                 if (err) {
                     console.log("runAsync ERROR! ", err);
                     reject(err);
@@ -94,9 +94,9 @@ async function getProjectPage(req, res) {
 
     var results1 = await pdb.allAsync(
         "SELECT * FROM `Images` LIMIT " +
-            perPage +
-            " OFFSET " +
-            (page - 1) * perPage,
+        perPage +
+        " OFFSET " +
+        (page - 1) * perPage,
     );
 
     var results2 = await pdb.getAsync("SELECT COUNT(*) FROM Images");
@@ -106,25 +106,25 @@ async function getProjectPage(req, res) {
         for (var i = 0; i < results1.length; i++) {
             var results3 = await pdb.getAsync(
                 "SELECT COUNT(*) FROM `Labels` WHERE IName = '" +
-                    results1[i].IName +
-                    "'",
+                results1[i].IName +
+                "'",
             );
             list_counter.push(results3 ? results3["COUNT(*)"] : 0);
         }
     }
-    
+
     var acc = await db.allAsync(
         "SELECT * FROM `Access` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
     var access = [];
     for (var i = 0; i < acc.length; i++) {
         access.push(acc[i].Username);
     }
-    pdb.close(function (err) {
+    pdb.close(function(err) {
         if (err) {
             console.error(err);
         } else {
