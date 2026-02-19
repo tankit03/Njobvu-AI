@@ -64,7 +64,7 @@ async function updateLabels(req, res) {
                 height = req.body.H[j];
             }
 
-            if (!(width > 0) || !(height > 0)) {
+            if (!(width >= 0) || !(height >= 0)) {
                 currentConfidence.push([]);
                 continue;
             }
@@ -89,14 +89,14 @@ async function updateLabels(req, res) {
 
         if (labelsCounter > 1) {
             for (var i = 0; i < labelsCounter; i++) {
-                if (!(req.body.W[i] > 0) || !(req.body.H[i] > 0)) continue;
+                if (!(req.body.W[i] >= 0) || !(req.body.H[i] >= 0)) continue; 
 
                 await queries.project.createLabel(
                     projectPath,
                     Number(newMax),
                     CName[i],
-                    Number(req.body.X[i]),
-                    Number(req.body.Y[i]),
+                    req.body.X[i],
+                    req.body.Y[i],
                     Number(req.body.W[i]),
                     Number(req.body.H[i]),
                     IName,
@@ -119,8 +119,8 @@ async function updateLabels(req, res) {
                 projectPath,
                 Number(newMax),
                 CName,
-                Number(req.body.X),
-                Number(req.body.Y),
+                req.body.X,
+                req.body.Y,
                 Number(req.body.W),
                 Number(req.body.H),
                 IName,

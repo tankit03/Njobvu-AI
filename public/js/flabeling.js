@@ -358,7 +358,7 @@ var SegmentationStrategy = {
             radius: 2,
             fill: '#ffffff',
             stroke: '#000000',
-            strokeWidth: 2,
+            strokeWidth: 2 / canvas.getZoom(),
             left: pointer.x,
             top: pointer.y,
             selectable: false,
@@ -387,7 +387,7 @@ var SegmentationStrategy = {
             originY: 'top',
             fill: 'transparent',
             stroke: '#000000',
-            strokeWidth: 2,
+            strokeWidth: 2 / canvas.getZoom(),
             selectable: false,
             hasBorders: false,
             hasControls: false,
@@ -451,7 +451,7 @@ var SegmentationStrategy = {
             radius: 2,
             fill: '#ffffff',
             stroke: '#000000',
-            strokeWidth: 2,
+            strokeWidth: 2 / canvas.getZoom(),
             left: x,
             top: y,
             selectable: false,
@@ -492,6 +492,10 @@ var SegmentationStrategy = {
         
         var points = shape.segmentationPoints || [];
         
+        for (var l = 0; l < points.length; l++ ) {
+            console.log(`Point ${l} x: ${points[l].x} y: ${points[l].y}`);
+        }
+        
         var pts = shape.points.slice(0, -1);
         
         // Calculate bounding box
@@ -507,6 +511,11 @@ var SegmentationStrategy = {
             return {x: p.x - minX, y: p.y - minY};
         });
         
+        for (var i = 0; i < normalizedPoints.length; i++) {
+            console.log(`[finalizeShape] normalizedPoints x:${normalizedPoints[i].x} y:${normalizedPoints[i].y}`);
+        }
+        console.log(`Left: ${minX}`);
+        console.log(`Top: ${minY}`);
         var finalPolygon = new fabric.Polygon(normalizedPoints, {
             id: shape.id,
             left: minX,
@@ -517,7 +526,7 @@ var SegmentationStrategy = {
             height: height,
             fill: 'transparent',
             stroke: shape.stroke,
-            strokeWidth: 2,
+            strokeWidth: 2 / canvas.getZoom(),
             selectable: true,
             hasBorders: false,
             hasControls: false,
@@ -550,8 +559,8 @@ var SegmentationStrategy = {
         $('#dynamic_form').append(
              '<input class="labels label-'+shape.id+' label-id" type="hidden" name="LabelingID" value="' + shape.id + '">' +
             '<input class="labels label-'+shape.id+' label-c" type="hidden" name="CName" value="' + curr_class + '">' +
-            '<input class="labels label-'+shape.id+' label-x" type="hidden" name="X" value="' + (yPoints) + '">' +
-            '<input class="labels label-'+shape.id+' label-y" type="hidden" name="Y" value="' + (xPoints) + '">' +
+            '<input class="labels label-'+shape.id+' label-x" type="hidden" name="X" value="' + (xPoints) + '">' +
+            '<input class="labels label-'+shape.id+' label-y" type="hidden" name="Y" value="' + (yPoints) + '">' +
             '<input class="labels label-'+shape.id+' label-w" type="hidden" name="W" value="' + 0 + '">' +
             '<input class="labels label-'+shape.id+' label-h" type="hidden" name="H" value="' + 0 + '">'
         );
@@ -626,6 +635,16 @@ var canvas = new fabric.Canvas('canvas', {
 //set available shapes
 console.log("Initializing segmentation strategy");
 var shapetool = new ShapeDrawer(canvas, RectangleStrategy);
+
+// // Swap tool button
+$("#swap-tool").click(function() {
+
+    if (shapetool.shapeStrategy === RectangleStrategy) {
+        shapetool.shapeStrategy = SegmentationStrategy;
+    } else {
+        shapetool.shapeStrategy = RectangleStrategy;
+    }
+});
 
 // set cursor when hover over canvas to cross
 canvas.hoverCursor = 'crosshair';
@@ -750,55 +769,97 @@ function resizeRectangles(diff_width_ratio){
 classes[allClasses.indexOf(curr_class)].style.backgroundColor;
 // draw all rectangles that came from the database
 for (var i = 0; i < list_labels.length; i += 6) {
-	console.log("list_labels[i+1]: ", list_labels[i + 1].value);
-    var rect = new fabric.Rect({
-        id: list_labels[i].value,
-        stroke: classes[allClasses.indexOf(list_labels[i + 1].value)].style.backgroundColor,
-        strokeWidth: 2 / canvas.getZoom(),
-        fill: "transparent",
-        left: parseInt(list_labels[i + 2].value) * diff_width_ratio,
-        top: parseInt(list_labels[i + 3].value) * diff_width_ratio,
-        originX: 'left',
-        originY: 'top',
-        width: parseInt(list_labels[i + 4].value) * diff_width_ratio,
-        height: parseInt(list_labels[i + 5].value) * diff_width_ratio,
-        angle: 0,
-        transparentCorners: false,
-        hasBorders: false,
-        hasControls: false,
-        selectable: true,
-		class: list_labels[i + 1].value,
-		classId: allClasses.indexOf(list_labels[i + 1].value) + 1
-        // class: parseInt(list_labels[i + 1].value)
-    });
-    // var rect = new fabric.Rect({
-    //     id: list_labels[i].value,
-    //     stroke: classes[parseInt(list_labels[i + 1].value)].style.backgroundColor,
-    //     strokeWidth: 1,
-    //     fill: "transparent",
-    //     left: parseInt(list_labels[i + 2].value) * diff_height_ratio,
-    //     top: parseInt(list_labels[i + 3].value) * diff_width_ratio,
-    //     originX: 'left',
-    //     originY: 'top',
-    //     width: parseInt(list_labels[i + 4].value) * diff_height_ratio,
-    //     height: parseInt(list_labels[i + 5].value) * diff_height_ratio,
-    //     angle: 0,
-    //     transparentCorners: false,
-    //     hasBorders: false,
-    //     hasControls: false,
-    //     selectable: true,
-    //     class: parseInt(list_labels[i + 1].value)
-    // });
-    rect.lockMovementX = true,
-    rect.lockMovementY = true;
+    var labelId = list_labels[i].value;
+    var className = list_labels[i + 1].value;
 
-	// var text = new fabric.Text(list_labels[i + 1].value, {});
-	// text.set("top", parseInt(list_labels[i + 3].value) * diff_width_ratio);
-	// text.set("left", parseInt(list_labels[i + 2].value) * diff_width_ratio);
+    var xVal = list_labels[i + 2].value;
+    var yVal = list_labels[i + 3].value;
 
-	// var group = new fabric.Group([rect, text])
-	// canvas.add(group)
-    canvas.add(rect);
+    var wVal = list_labels[i + 4].value;
+    var hVal = list_labels[i + 5].value;
+
+    if (!xVal.includes(",") && !yVal.includes(",")) { //This is a rectangle
+        console.log("[redraw] Rectangle:", labelId);
+        var rect = new fabric.Rect({
+            id: labelId,
+
+            stroke: classes[allClasses.indexOf(className)].style.backgroundColor,
+            strokeWidth: 2 / canvas.getZoom(),
+            fill: "transparent",
+
+            left: parseInt(xVal) * diff_width_ratio,
+            top: parseInt(yVal) * diff_width_ratio,
+
+            originX: 'left',
+            originY: 'top',
+
+            width: parseInt(wVal) * diff_width_ratio,
+            height: parseInt(hVal) * diff_width_ratio,
+
+            angle: 0,
+            transparentCorners: false,
+            hasBorders: false,
+            hasControls: false,
+            selectable: true,
+            class: list_labels[i + 1].value,
+            classId: allClasses.indexOf(className) + 1
+        });
+        rect.lockMovementX = true,
+        rect.lockMovementY = true;
+
+
+        canvas.add(rect);
+    } else { //This is a polygon
+        console.log("[redraw] Attempting to load polygon", labelId);
+        var xCoords = xVal.split(',');
+        var yCoords = yVal.split(',');
+
+        // Create points array for fabric.Polygon
+        var points = [];
+        for (var j = 0; j < xCoords.length ; j++) {
+            points.push({ x: parseFloat(xCoords[j]), y: parseFloat(yCoords[j]) });
+        }
+
+        // Calculate bounding box for the polygon
+        var minX = Math.min(...xCoords);
+        var maxX = Math.max(...xCoords);
+        var minY = Math.min(...yCoords);
+        var maxY = Math.max(...yCoords);
+
+        
+        // Normalize points relative to bounding box
+        var normalizedPoints = points.map(function(p) {
+            return { x: p.x - minX, y: p.y - minY };
+        });
+
+        var polygon = new fabric.Polygon(normalizedPoints, {
+            id: labelId,
+            left: minX ,
+            top: minY ,
+
+            originX: 'left',
+            originY: 'top',
+
+            fill: 'transparent',
+            stroke: classes[allClasses.indexOf(className)].style.backgroundColor,
+            strokeWidth: 2 / canvas.getZoom(),
+
+            selectable: true,
+            hasBorders: false,
+            hasControls: false,
+            objectCaching: false,
+
+            class: className,
+            classId: allClasses.indexOf(className) + 1,
+            segmentationComplete: true
+        });
+        
+        polygon.lockMovementX = true;
+        polygon.lockMovementY = true;
+        
+        canvas.add(polygon);
+        canvas.renderAll();
+    }
     canvas.renderAll();
 
 }
