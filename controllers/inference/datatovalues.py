@@ -184,6 +184,10 @@ call_command(cmd)
 destination_dir = data_path
 source_dir = data_path + "/output"
 
+# create a directory for original images
+raw_images_dir = os.path.join(destination_dir, "raw")
+os.makedirs(raw_images_dir, exist_ok=True)
+
 files = os.listdir(source_dir)
 for file_name in files:
     source_path = os.path.join(source_dir, file_name)
@@ -191,7 +195,27 @@ for file_name in files:
 
     shutil.move(source_path, destination_path)
 
+    if file_name.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp')):
+        original_src = None
+
+        if os.path.isdir(image_path):
+            potential_src = os.path.join(image_path, file_name)
+
+            if os.path.exists(potential_src):
+                original_src = potential_src
+        elif os.path.isfile(image_path):
+            if os.path.basename(image_path) == file_name:
+                original_src = image_path
+
+        if original_src:
+            try:
+                shutil.copy2(original_src, os.path.join(raw_images_dir, file_name))
+            except Exception as e:
+                print(f"Warning: could not copy raw image {file_name}: {e}")
+
 class_names = load_class_names(name_path)
+
+print(class_names)
 
 image_files = [f for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp'))]
 

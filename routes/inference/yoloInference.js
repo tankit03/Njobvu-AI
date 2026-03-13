@@ -1,4 +1,5 @@
 const queries = require("../../queries/queries");
+const path = require("path");
 
 async function yoloInference(req, res) {
     try {
@@ -69,6 +70,9 @@ async function yoloInference(req, res) {
             cnames.push(existingClasses.rows[i].CName);
         }
 
+        const yamlContent = `names:\n${cnames.map(n => `  - ${n}`).join("\n")}\n`;
+        fs.writeFileSync(classesPath, yamlContent);
+
         var dictImagesLabels = {};
 
         for (var i = 0; i < existingImages.rows.length; i++) {
@@ -99,7 +103,7 @@ async function yoloInference(req, res) {
                     (existingLabels.rows[j].Y + existingLabels.rows[j].H / 2) /
                     imgH;
 
-                toStringValue = `${cnames.indexOf(existingLabels.rows[j].CName)} ${centerX} ${centerY} ${existingLabels.rows[j].W / imgW} ${existingLabels.rows[j] / imgH}\n`;
+                toStringValue = `${cnames.indexOf(existingLabels.rows[j].CName)} ${centerX} ${centerY} ${existingLabels.rows[j].W / imgW} ${existingLabels.rows[j].H / imgH}\n`;
 
                 if (
                     dictImagesLabels[existingImages.rows[i].IName] == undefined
@@ -191,11 +195,14 @@ async function yoloInference(req, res) {
                 status: err ? 'error' : 'success',
                 timestamp: date,
                 zipAvailable: fs.existsSync(`${runPath}/inference_results.zip`),
-                csvAvailable: fs.existsSync(`${runPath}/inference_stats.csv`)
+                csvAvailable: fs.existsSync(`${runPath}/inference_stats.csv`),
+                message: success
             };
 
-            fs.writeFileSync(`${runPath}/done.log`, success);
-            fs.writeFileSync(`${runPath}/done.log`, JSON.stringify(completionData, null, 2));
+            fs.writeFileSync(
+                `${runPath}/done.log`,
+                `${cmd}\n\n${JSON.stringify(completionData, null, 2)}`
+            );
         });
 
 
