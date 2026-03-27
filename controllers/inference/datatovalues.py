@@ -96,7 +96,7 @@ def call_command(final_command, debug_mode=""):
 #########################################################
 # Parse YOLO labels for detection info 			#
 #########################################################
-def parse_yolo_labels(label_path: str, class_names: list[str]):
+def parse_yolo_labels(label_path: str, class_names: list[str], task: str = 'detect'):
     """Parse YOLO format label file & return detection info"""
     detections = []
 
@@ -107,11 +107,83 @@ def parse_yolo_labels(label_path: str, class_names: list[str]):
         for line in f:
             parts = line.strip().split()
 
-            if len(parts) < 5: # not at least class_id, x_center, y_center, width, height
+            if len(parts) < 2:
                 continue
 
-            class_id = int(parts[0])
-            confidence = float(parts[5]) if len(parts) > 5 else None
+            # ultralytics with save_conf=True:
+            # detect: class x y w h conf
+            # segment: class x1 y1 x2 y2 ... xn yn conf
+            # obb: class x1 y1 x2 y2 x3 y3 x4 y4 conf
+            # classify: conf class_name
+
+            if task == 'classify' or (len(parts) == 2 and parts[0].replace('.', '', 1).isdigit()):
+                try:
+                    confidence = float(parts[0])
+                except ValueError:
+                    continue
+
+                class_name = parts[1]
+                class_id = class_names.index(class_name) if class_name in class_names else -1
+
+                detections.append({
+                    'class': class_name,
+                    'class_id': class_id,
+                    'confidence': confidence,
+                    'bbox': ['', '', '', ''],
+                    'x_pts': [],
+                    'y_pts': []
+                })
+                continue
+
+            try:
+                class_id = int(parts[0])
+            except ValueError:
+                continue
+
+            if task == 'detect':
+                if len(parts) < 5: continue
+                bbox = parts[1:5]
+                confidence = float(parts[5]) if len(parts) > 5 else None
+                x_pts = []
+                y_pts = []
+            elif task in ['segment', 'obb']:
+                coords = parts[1:]
+                # check if last element is confidence (float, and remaining coords are even)
+                if len(coords) % 2 != 0:
+                    confidence = float(coords[-1])
+                    coords = coords[:-1]
+                else:
+                    confidence = None
+                
+                x_pts = coords[0::2]
+                y_pts = coords[1::2]
+                
+                if not x_pts: continue
+                
+                # calculate bbox
+                try:
+                    fx = [float(x) for x in x_pts]
+                    fy = [float(y) for y in y_pts]
+                    min_x = min(fx)
+                    max_x = max(fx)
+                    min_y = min(fy)
+                    max_y = max(fy)
+                    
+                    width = max_x - min_x
+                    height = max_y - min_y
+                    x_center = min_x + width / 2
+                    y_center = min_y + height / 2
+                    
+                    bbox = [f"{x_center:.6f}", f"{y_center:.6f}", f"{width:.6f}", f"{height:.6f}"]
+                except ValueError:
+                    continue
+            else:
+                # fallback for other tasks
+                if len(parts) < 5: continue
+                bbox = parts[1:5]
+                confidence = float(parts[5]) if len(parts) > 5 else None
+                x_pts = []
+                y_pts = []
 
             class_name = class_names[class_id] if class_id < len(class_names) else f"class_{class_id}"
 
@@ -119,7 +191,9 @@ def parse_yolo_labels(label_path: str, class_names: list[str]):
                 'class': class_name,
                 'class_id': class_id,
                 'confidence': confidence,
-                'bbox': parts[1:5]
+                'bbox': bbox,
+                'x_pts': x_pts,
+                'y_pts': y_pts
             })
 
     return detections
@@ -228,7 +302,7 @@ with open(csv_path, 'w', newline='') as csvfile:
 
     with open(detailed_csv_path, 'w', newline='') as detail_csvfile:
         detail_writer = csv.writer(detail_csvfile)
-        detail_writer.writerow(['Image Name', 'Detection #', 'Class', 'Class ID', 'Confidence', 'X Center', 'Y Center', 'Width', 'Height'])
+        detail_writer.writerow(['Image Name', 'Detection #', 'Class', 'Class ID', 'Confidence', 'X Center', 'Y Center', 'Width', 'Height', 'X Points', 'Y Points'])
 
         for img_file in image_files:
             img_path = os.path.join(destination_dir, img_file)
@@ -241,7 +315,7 @@ with open(csv_path, 'w', newline='') as csvfile:
             label_file = os.path.splitext(img_file)[0] + '.txt'
             label_path = os.path.join(destination_dir, 'labels', label_file)
 
-            detections = parse_yolo_labels(label_path, class_names)
+            detections = parse_yolo_labels(label_path, class_names, yolo_task)
             detection_count = len(detections)
 
             confidences = [d['confidence'] for d in detections if d['confidence'] is not None]
@@ -269,7 +343,9 @@ with open(csv_path, 'w', newline='') as csvfile:
                     det['bbox'][0],
                     det['bbox'][1],
                     det['bbox'][2],
-                    det['bbox'][3]
+                    det['bbox'][3],
+                    ",".join(det['x_pts']),
+                    ",".join(det['y_pts'])
                 ])
 
 zip_path = os.path.join(destination_dir, 'inference_images.zip')
@@ -306,7 +382,6 @@ for img_file in image_files:
 
     if not os.path.isfile(img_path):
         continue
-
 
     try:
         os.rename(img_path, os.path.join(images_path, img_path.split("/")[-1]))

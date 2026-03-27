@@ -16,3 +16,4 @@ config.json
 *.h5
 *.pt
 .venv/
+**/**/__pycache__/
