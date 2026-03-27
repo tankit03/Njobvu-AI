@@ -988,8 +988,31 @@ function resetZoom(){
 }
 $("#reset-zoom").click(resetZoom);
 
+// cancel any partially drawn polygons
+function cancelInProgressPolygon() {
+    if (shapetool.isDrawing && shapetool.shapeStrategy === SegmentationStrategy 
+            && shapetool.currentDrawingShape) {
+        var shape = shapetool.currentDrawingShape;
+        // remove partial entries
+        $(".label-" + shape.id).remove();
+        SegmentationStrategy.cancelDrawing(canvas, shape);
+        shapetool.currentDrawingShape = null;
+        shapetool.disable();
+        counter -= 1;
+        $('#labels-counter').val(counter);
+    }
+}
+
+$("#form-save").on('click', function() {
+    cancelInProgressPolygon();
+})
+
 // key mapping
 $(document).keydown(function (event) {
+
+    if (event.keyCode === 27) {
+        cancelInProgressPolygon();
+    }
 
     var key = (event.keyCode ? event.keyCode : event.which) - 49;
     //console.log(key)
