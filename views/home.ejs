@@ -22,7 +22,7 @@
 	</div>
     <div class="col-12">
         <table class="table table-striped">
-            <thead class="thead-dark">
+            <!-- <thead class="thead-dark">
                 <tr>
                     <th scope="col">Project Name</th>
 					<th class="text-center" scope="col">Admin</th>
@@ -34,7 +34,20 @@
 					<th></th>
 					<th></th>
                 </tr>
-            </thead>
+            </thead> -->
+
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">Project Name</th>
+					<th class="text-center" scope="col" colspan=2>Admin</th>
+
+					<th class="text-center" scope="col">Number of Labels</th>
+					<th class="text-center" scope="col">Number of Images</th>
+					<th class="text-center" scope="col">% Labeled</th>
+
+					<th scope="col" colspan="3" class="text-center">Project Actions</th>
+				</tr>
+			</thead>
             <tbody>
                 <% for(var i=((page-1)*perPage); i<(Math.min(projects.length,(((page-1)*perPage)+Number(perPage)))); i++) {%>
 					<tr>
@@ -48,21 +61,36 @@
 						<td class="text-center"><%= list_counter[i] %></td>
 						<td class="text-center"><%= projects[i][3] %></td>
 						<td class="text-center"><%= projects[i][4] %>%</td>
+
 						<td class="text-center">
 							<form class="download-project-form" action ="downloadProject" method="POST" enctype="multipart/form-data" id="downloadProjectForm<%=i%>">
 								<input id = "PName<%=i%>" type="hidden" name="PName" value="<%= projects[i][0].PName %>">
 								<input id = "Admin<%=i%>" type="hidden" name="Admin" value="<%= projects[i][0].Admin %>">
 								<input id = "PDescription<%=i%>" type="hidden" name="PDescription" value="<%= projects[i][0].PDescription %>">
-								<button id="downloadbtn<%=i%>" name="form_action" value="download" class="btn btn-primary" title="Download Project">
-									<i class="fas fa-download"></i>
-								</button>								
+								<button id="downloadbtn<%=i%>" name="form_action" value="download" aria-label="Download <%= projects[i][0].PName %>" class="btn btn-primary" title="Download Project">
+									<i class="fas fa-download" aria-hidden="true" focusable="false"></i>
+								</button>
 							</form>
 						</td>
-						<td class="text-right"><button id="changeValidbtn<%=i%>" type="submit" class="btn btn-primary" onclick="changeValidation('<%= projects[i][0].PName %>', '<%= projects[i][0].Admin %>')">Enable Validation</button></td>
-						<td class="text-right"><a class="btn btn-primary" href="/project?IDX=<%= projects[i][1] %>&page=1&perPage=<%= perPage %>" role="button" style="border-radius: 0">Project Page</a></td>
+						<td class="text-right">
+						    <button id="changeValidbtn<%=i%>"
+									type="submit" class="btn btn-primary"
+									onclick="changeValidation('<%= projects[i][0].PName %>', '<%= projects[i][0].Admin %>')"
+									aria-label="Enable Validation for <%= projects[i][0].PName %>">
+									Enable Validation
+							</button>
+						</td>
+						<td class="text-right">
+    						<a class="btn btn-primary"
+    						    href="/project?IDX=<%= projects[i][1] %>&page=1&perPage=<%= perPage %>"
+    						    role="button" style="border-radius: 0"
+    							aria-label="View Project Page for <%= projects[i][0].PName %>">
+    							Project Page
+    						</a>
+						</td>
 					</tr>
 				<% } %>
-				
+
             </tbody>
         </table>
     </div>
@@ -118,7 +146,7 @@
     </div>
 </div>
 
-<div class="modal fade" style="width: 300px;" id="import_modal" tabindex="-1" role="dialog" aria-labelledby="menuModal">
+<div class="modal fade" style="width: 300px;" id="import_modal" tabindex="-1" role="dialog" aria-label="menuModal">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -129,7 +157,7 @@
 				<form class="import-project-form" action="/import" method="post" enctype="multipart/form-data" id="ImportForm">
 					<div class="form-row">
 						<div class="form-group col-md-6">
-							<label for="project-name">Project Name</label>
+							<label for="project_name">Project Name</label>
 							<input id = "project_name" name="project_name" type="text" class="form-control" placeholder="Project Name" required>
 						</div>
 						<div class="form-group col-md-6">
@@ -137,9 +165,9 @@
 							<input id = "upload_project" name="upload_project" type="file" class="form-control-file" required>
 						</div>
 					</div>
-					<div class="col text-center">
-						<label for="progress" id="progress"></label>
-					</div>	
+					<!--<div class="col text-center">
+						<!--<label for="progress" id="progress"></label>-->
+					</div>-->
 					<div class="col text-center">
 						<hr class="my-4">
 						<input id="Importbtn" type="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 0">
@@ -191,14 +219,14 @@
 					var percent = Math.round(e.loaded / file1Size * 100);
 					$('#progress').text("Percent Uploaded: " + percent)
 
-				} 
+				}
 				if(e.loaded == e.total){
 					$('#progress').text("Uploaded Finished. Server processing upload. Please wait for the closing prompt.")
 					document.getElementById("Importbtn").style.display = "none";
 					alert("Uploaded Finished. Server processing upload. Please wait for the closing prompt.");
-					
+
 				}
-			}, true);   
+			}, true);
 
 			request.open("post", event.target.action, true);
 			request.onreadystatechange = function receiveResponse() {
@@ -240,7 +268,7 @@
 		console.log("pgnum: ", pgnum.value)
 		if(pgnum.value > 0 && pgnum.value <= "<%=pages%>")
 		{
-			
+
 			window.location.href = `/home?page=${pgnum.value}&perPage=<%=perPage%>`;
 		}
 	}
@@ -268,10 +296,10 @@
 		var formData = new FormData();
 		formData.append("PName", document.getElementById("PName").value);
 		let options = {
-			method: 'POST', 
+			method: 'POST',
 			body: formData
 		}
-		
+
 		let cred = await fetch('/downloadProject', options);
 		cred = await cred.json();
 		console.log("cred: ", cred);
@@ -292,7 +320,7 @@
 		formData.append('validMode', "0");
 
 		let options = {
-			method: 'POST', 
+			method: 'POST',
 			body: formData
 		}
 
@@ -310,4 +338,3 @@
 	}
 </script>
 <%- include('includes/footer') %>
-

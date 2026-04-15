@@ -33,12 +33,12 @@
 					  <a href="/labeling?IDX=<%= IDX %>&IName=<%= prev_IName %>&curr_class=<%= curr_class %>" role="button" class="mr-0 ml-0 btn btn-dark col text-center pass-class" id="prev" style="border-radius: 0"><i class="fas fa-arrow-alt-left"></i></a>
                   <% } %>
           <% } else { %>
-              <a href="#" role="button" class="mr-0 ml-0 btn btn-dark col text-center disabled" style="border-radius: 0"><i class="fas fa-arrow-alt-left"></i></a>
+              <a href="#" role="button" class="mr-0 ml-0 btn btn-dark col text-center disabled" style="border-radius: 0"><i class="fas fa-arrow-alt-left" aria-hidden="true" aria-label="Previous image"></i></a>
           <% } %>
           <span class="mr-0 ml-0 btn col text-center" style="cursor: default"><%= image_name %> (<b><%= curr_index %></b>/<%= images_length %>)</span>
           <% if(next_IName != -1) { %>
                   <% if (AutoSave == 1) { %>
-                      <button type="submit" name="form_action" class="mr-0 ml-0 btn btn-primary col text-center" id="auto-next" value="auto-next" style="border-radius: 0"><i class="fas fa-arrow-alt-right"></i></button>
+                      <button type="submit" name="form_action" class="mr-0 ml-0 btn btn-primary col text-center" id="auto-next" value="auto-next" style="border-radius: 0"><i class="fas fa-arrow-alt-right" aria-hidden="true" aria-label="Next image"></i></button>
                   <% } else { %>
 					  <a href="/labeling?IDX=<%= IDX %>&IName=<%= next_IName %>&curr_class=<%= curr_class %>" role="button" class="mr-0 ml-0 btn btn-primary col text-center pass-class" id="next" style="border-radius: 0"><i class="fas fa-arrow-alt-right"></i></a>
                   <% } %>
@@ -103,7 +103,7 @@
 </div>
 
 <!-- Modals -->
-<div class="modal fade" style="width: 300px;" id="menu_modal" tabindex="-1" role="dialog" aria-labelledby="menuModal">
+<div class="modal fade" style="width: 300px;" id="menu_modal" tabindex="-1" role="dialog" aria-label="menuModal">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -118,9 +118,9 @@
                     <table class="table table-striped">
                         <thead class="thead-dark">
                             <tr>
-                                <th scope="col">Project Name</th>
-                                <th></th>
-                                <th class="text-right" scope="col"></th>
+                                <th scope="col" colspan="3">Project Name</th>
+                                <!--<th></th>-->
+                                <!--<th class="text-right" scope="col"></th>-->
                             </tr>
                         </thead>
                         <tbody>
@@ -143,7 +143,7 @@
         </div>
     </div>
 </div>
-<div class="modal fade" style="width: 300px;" id="info_modal" tabindex="-1" role="dialog" aria-labelledby="infoModal">
+<div class="modal fade" style="width: 300px;" id="info_modal" tabindex="-1" role="dialog" aria-label="infoModal">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
