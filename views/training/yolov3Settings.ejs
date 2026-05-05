@@ -30,7 +30,7 @@
 										<div class="form-row">
 											<div class="form-group col-md-6">
 												<h5><label for="project-name">Darknet/YOLOv3 Directory Path</label></h5>
-												<input id="darknet_path" name="darknet_path" type="text"
+												<input id="darknet_path" aria-label="Input Darknet Path" name="darknet_path" type="text"
 													class="form-control" id="darknet_path" placeholder="Darknet Path"
 													required>
 											</div>
@@ -87,7 +87,7 @@
 											</div>
 											<div class="form-group col-md-3">
 												<label for="upload-command">Weights File</label>
-												<select name="Weights" id="Weights" style="width:100%">
+												<select name="Weights" id="Weights" aria-label="Select weights file" style="width:100%">
 													<% for(var i=0; i<global_weights.length; i++) {%>
 														<option>
 															<%= global_weights[i]%>

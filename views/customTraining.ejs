@@ -16,7 +16,7 @@
 			<div class="form-row">
 				<div class="form-group col-md-6">
 					<label for="upload-python">Upload python file (.py)</label>
-					<input id = "upload_python" name="upload_python" type="file" class="form-control-file" required>
+					<input id = "upload_python" aria-label="Upload Python" name="upload_python" type="file" class="form-control-file" required>
 				</div>
 			</div>
 			<div class="col text-center">
@@ -42,7 +42,7 @@
 			<div class="form-row">
 				<div class="form-group col-md-6">
 					<label for="project-name">Python Path</label>
-					<input id = "python_path" name="python_path" type="text" class="form-control" id="python_path" placeholder="Python Path" required>
+					<input id = "python_path" aria-label="Enter Python path" name="python_path" type="text" class="form-control" id="python_path" placeholder="Python Path" required>
 				</div>
 			</div>
 			<div class="col text-center">
@@ -78,7 +78,7 @@
 				</div>
 				<div class="form-group col-md-3">
 					<label for="upload-command">Weights File</label>
-					<select name="Weights" id="Weights" style="width:100%">
+					<select name="Weights" id="Weights" aria-label="Weights file" style="width:100%">
 					<% for(var i=0; i<global_weights.length; i++) {%>
 						<option><%= global_weights[i]%></option>
 					<% } %> 
@@ -86,7 +86,7 @@
 				</div>
 				<div class="form-group col-md-6">
 					<label for="upload-command">Script Options: Please add "&lt;data_dir&gt;" "&lt;training_csv&gt;" "&lt;validation_csv&gt;" "&lt;output_dir&gt;" "&lt;weights&gt;"</label>
-					<input id ="options" name="options" type="text" class="form-control-file">
+					<input id ="options" aria-label="Enter script options" name="options" type="text" class="form-control-file">
 				</div>
 			</div>
 			<div class="col text-center">

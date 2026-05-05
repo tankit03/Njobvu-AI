@@ -319,3 +319,16 @@ a:hover {
     border-radius: 0;
     font-weight: bold;
 }
+
+.btn-info {
+    background-color:#1569AE !important;
+    color: rgb(255, 255, 255) !important;
+    border-radius: 0px !important;
+    opacity: 1 !important;
+    border: none;
+}
+
+btn-info:hover {
+    background-color: rgb(15, 107, 122) !important;
+    color: rgb(255, 255, 255) !important;
+}
