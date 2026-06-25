@@ -1,376 +1,77 @@
 <%- include('includes/header', {activePage: null}) %>
 <style>
-    /* Premium dark-mode modern design system */
-    :root {
-        --primary-glow: conic-gradient(from 180deg at 50% 50%, #16abff -20deg, #0885ff 120deg, #54d2ff 150deg, #0071ff 250deg, #19abff 340deg);
-        --purple-glow: radial-gradient(circle, rgba(129,140,248,0.15) 0%, rgba(0,0,0,0) 70%);
-        --blue-glow: radial-gradient(circle, rgba(6,182,212,0.15) 0%, rgba(0,0,0,0) 70%);
-    }
-
-    body {
-        background-color: #0b0f17 !important;
-        color: #f8fafc;
-        font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
-    }
-
-    #create {
-        position: relative;
-        padding: 60px 0;
-        min-height: calc(100vh - 80px);
-        overflow: hidden;
-    }
-
-    #create::before {
-        content: '';
-        position: absolute;
-        top: -10%;
-        left: -10%;
-        width: 600px;
-        height: 600px;
-        background: var(--purple-glow);
-        z-index: 0;
-        pointer-events: none;
-    }
-
-    #create::after {
-        content: '';
-        position: absolute;
-        bottom: -10%;
-        right: -10%;
-        width: 600px;
-        height: 600px;
-        background: var(--blue-glow);
-        z-index: 0;
-        pointer-events: none;
-    }
-
-    .glass-card {
-        background: rgba(22, 28, 45, 0.4);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 20px;
-        padding: 40px;
-        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
-        z-index: 1;
-        position: relative;
-        max-width: 800px;
-        margin: 0 auto;
-    }
-
-    .page-title {
-        font-size: 2.25rem;
-        font-weight: 800;
-        letter-spacing: -0.025em;
-        background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 8px;
-        text-align: center;
-    }
-
-    .page-subtitle {
-        color: #94a3b8;
-        font-size: 1rem;
-        text-align: center;
-        margin-bottom: 40px;
-    }
-
-    /* Tabs Navigation styling */
-    .tabs-wrapper {
-        display: flex;
-        background: rgba(15, 23, 42, 0.6);
-        padding: 4px;
-        border-radius: 12px;
-        margin-bottom: 40px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .tab-btn {
-        flex: 1;
-        background: none;
-        border: none;
-        color: #94a3b8;
-        padding: 12px 16px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        text-align: center;
-    }
-
-    .tab-btn:hover {
-        color: #f1f5f9;
-        background: rgba(255, 255, 255, 0.03);
-    }
-
-    .tab-btn.active {
-        color: #818cf8;
-        background: rgba(99, 102, 241, 0.15);
-        border: 1px solid rgba(99, 102, 241, 0.2);
-    }
-
-    /* Form Styles */
-    .form-group {
-        margin-bottom: 24px;
-    }
-
-    .form-group label {
-        color: #cbd5e1;
-        font-weight: 600;
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-        display: inline-block;
-    }
-
-    .form-control-premium {
-        background: rgba(15, 23, 42, 0.5) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 10px !important;
-        color: #f8fafc !important;
-        padding: 14px 18px !important;
-        font-size: 0.95rem !important;
-        transition: all 0.3s ease !important;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .form-control-premium:focus {
-        border-color: #818cf8 !important;
-        box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25) !important;
-        outline: none !important;
-    }
-
-    .form-control-premium::placeholder {
-        color: #475569;
-    }
-
-    .input-hint {
-        font-size: 0.8rem;
-        color: #64748b;
-        margin-top: 6px;
-    }
-
-    .form-row {
-        display: flex;
-        gap: 20px;
-    }
-
-    .form-row .form-group {
-        flex: 1;
-    }
-
-    @media (max-width: 768px) {
-        .form-row {
-            flex-direction: column;
-            gap: 0;
-        }
-    }
-
-    /* Upload Area Styling */
-    .upload-area {
-        border: 2px dashed rgba(255, 255, 255, 0.12);
-        border-radius: 12px;
-        padding: 35px 20px;
-        text-align: center;
-        background: rgba(15, 23, 42, 0.3);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-    }
-
-    .upload-area:hover, .upload-area.dragover {
-        border-color: #818cf8;
-        background: rgba(99, 102, 241, 0.05);
-    }
-
-    .upload-area i {
-        font-size: 2.25rem;
-        color: #818cf8;
-        margin-bottom: 12px;
-        display: block;
-    }
-
-    .upload-area p {
-        margin: 0;
-        color: #94a3b8;
-        font-size: 0.9rem;
-    }
-
-    .upload-area span {
-        color: #f1f5f9;
-        font-weight: 600;
-        text-decoration: underline;
-    }
-
-    .upload-file-input {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        cursor: pointer;
-        z-index: 10;
-    }
-
-    .file-name-display {
-        margin-top: 12px;
-        font-size: 0.85rem;
-        color: #34d399;
-        font-weight: 600;
-        background: rgba(52, 211, 153, 0.1);
-        padding: 6px 12px;
-        border-radius: 6px;
-        display: inline-block;
-        border: 1px solid rgba(52, 211, 153, 0.2);
-    }
-
-    /* Buttons */
-    .btn-premium {
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        border: none;
-        border-radius: 10px;
-        color: #ffffff;
-        font-weight: 600;
-        padding: 16px 32px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
-        width: 100%;
-        margin-top: 15px;
-    }
-
-    .btn-premium:hover {
-        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.55);
-        transform: translateY(-1px);
-    }
-
-    .btn-premium:active {
-        transform: translateY(1px);
-    }
-
-    /* Progress Display */
-    .progress-container {
-        margin-top: 30px;
-        display: none;
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 20px;
-    }
-
-    .progress-bar-wrapper {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 9999px;
-        height: 10px;
-        overflow: hidden;
-        margin-bottom: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.03);
-    }
-
-    .progress-bar-fill {
-        background: linear-gradient(90deg, #6366f1, #06b6d4, #10b981);
-        height: 100%;
-        width: 0%;
-        transition: width 0.1s ease;
-        border-radius: 9999px;
-    }
-
-    .progress-text {
-        font-size: 0.88rem;
-        color: #94a3b8;
-        font-weight: 500;
-        text-align: center;
-    }
-
-    /* Flow content show/hide */
     .flow-content {
         display: none;
     }
-
     .flow-content.active {
         display: block;
-        animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 </style>
-
 <div id="create">
     <div class="container">
-        <div class="glass-card">
-            <h1 class="page-title">Create New Project</h1>
-            <p class="page-subtitle">Choose a creation flow to initialize your labeling workspace</p>
-
-            <!-- Custom Premium Tab Switcher -->
-            <div class="tabs-wrapper">
-                <button type="button" class="tab-btn active" onclick="switchFlow('blank')">
-                    <i class="fas fa-plus-circle mr-2"></i> Blank Project
-                </button>
-                <button type="button" class="tab-btn" onclick="switchFlow('yolo')">
-                    <i class="fas fa-folder-open mr-2"></i> YOLO Archive
-                </button>
-                <button type="button" class="tab-btn" onclick="switchFlow('kwcoco')">
-                    <i class="fas fa-database mr-2"></i> KW Coco Archive
-                </button>
+        <div class="contact">
+			<%- include('includes/createNav', { activePage }) %>
+            
+            <!-- Tab headers for the three project creation options -->
+            <div class="col-md-12" style="margin-top: 15px; margin-bottom: 20px; padding: 0;">
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <a id="tab-blank" class="nav-link active" href="#" onclick="switchFlow('blank')" style="border-radius: 0">Blank Project</a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="tab-yolo" class="nav-link" href="#" onclick="switchFlow('yolo')" style="border-radius: 0">YOLO Archive</a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="tab-kwcoco" class="nav-link" href="#" onclick="switchFlow('kwcoco')" style="border-radius: 0">KW Coco Archive</a>
+                    </li>
+                </ul>
             </div>
 
             <!-- 1. Blank Project Form -->
-            <form id="blankForm" action="/createP" method="POST" enctype="multipart/form-data" class="flow-content active">
+			<form class="add-project-form flow-content active" action="/createP" method='POST' enctype="multipart/form-data" id="blankForm">
+                <h3>Add New Project</h3>
                 <div class="form-row">
-                    <div class="form-group">
+                    <div class="form-group col-md-6">
                         <label for="blank_project_name">Project Name</label>
-                        <input id="blank_project_name" name="project_name" type="text" class="form-control-premium" placeholder="Enter unique project name" required>
+                        <input id="blank_project_name" name="project_name" aria-label="Project name" type="text" class="form-control" placeholder="Project Name" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="blank_upload_images">
+							Upload Images or Videos (.zip or .mp4/.avi/.mov) (Optional)
+						</label>
+						<input id="blank_upload_images" name="upload_images" aria-label="Choose file" type="file" class="form-control-file">
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="blank_input_classes">Input Classes (comma separated)</label>
-                    <input id="blank_input_classes" name="input_classes" type="text" class="form-control-premium" placeholder="e.g. cat,dog,fish" required>
-                    <p class="input-hint">Specify the classes users can select when labeling. No extra spaces around commas.</p>
-                </div>
-
-                <div class="form-group">
-                    <label>Upload Images or Video (Optional)</label>
-                    <div class="upload-area">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Drag and drop or <span>browse</span> your files</p>
-                        <p class="input-hint">Supports .zip archives of images, or video files (.mp4, .mov, .avi)</p>
-                        <input id="blank_upload_images" name="upload_images" type="file" class="upload-file-input" onchange="handleFileSelected(this, 'blank_file_name')">
-                        <div id="blank_file_name" class="file-name-display"></div>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label for="blank_input_classes">Input classes (separated with commas)</label>
+                        <input id="blank_input_classes" name="input_classes" aria-label="Input classes. Separated by commas." type="text" class="form-control" placeholder="cat,dog,large mouse" required>
+						<p>Do not add leading or trailing spaces between classes</p>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label>Bootstrap Model Archive (Optional)</label>
-                    <div class="upload-area">
-                        <i class="fas fa-brain"></i>
-                        <p>Upload (.data + .cfg + .weights).zip bootstrap model</p>
-                        <input id="blank_upload_bootstrap" name="upload_bootstrap" type="file" class="upload-file-input" onchange="handleFileSelected(this, 'blank_bootstrap_name')">
-                        <div id="blank_bootstrap_name" class="file-name-display"></div>
+				<div class="form-row">
+					<div class="form-group col-md-6">
+                        <label for="blank_upload_bootstrap">Upload (.data + .cfg + .weights).zip (Optional)</label>
+						<input id="blank_upload_bootstrap" aria-label="Upload (.data + .cfg + .weights).zip" name="upload_bootstrap" type="file" class="form-control-file">
                     </div>
+				</div>
+                <div class="col text-center">
+                    <hr class="my-4">
+					<input type="submit" aria-label="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 0">
                 </div>
-
-                <button type="submit" class="btn-premium">Create Blank Project</button>
             </form>
 
             <!-- 2. YOLO Archive Form -->
-            <form id="yoloForm" action="/api/projects/import-yolo" method="POST" enctype="multipart/form-data" class="flow-content">
+            <form class="add-project-form flow-content" action="/api/projects/import-yolo" method='POST' enctype="multipart/form-data" id="yoloForm">
+                <h3>Import YOLO Project</h3>
                 <div class="form-row">
-                    <div class="form-group">
+                    <div class="form-group col-md-6">
                         <label for="yolo_project_name">Project Name</label>
-                        <input id="yolo_project_name" name="project_name" type="text" class="form-control-premium" placeholder="Enter unique project name" required>
+                        <input id="yolo_project_name" name="project_name" aria-label="Project name" type="text" class="form-control" placeholder="Project Name" required>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group col-md-6">
                         <label for="yolo_task_type">YOLO Task Type</label>
-                        <select id="yolo_task_type" name="task_type" class="form-control-premium">
+                        <select id="yolo_task_type" name="task_type" class="form-control">
                             <option value="detect">Object Detection (detect)</option>
                             <option value="classify">Classification (classify)</option>
                             <option value="segment">Instance Segmentation (segment)</option>
@@ -379,71 +80,52 @@
                         </select>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label>Upload YOLO Archive (.zip) <span style="color: #ef4444;">*</span></label>
-                    <div class="upload-area">
-                        <i class="fas fa-file-archive"></i>
-                        <p>Drag and drop or <span>browse</span> YOLO dataset zip archive</p>
-                        <p class="input-hint">Should contain images, labels directory, and metadata YAML</p>
-                        <input id="yolo_archive" name="yolo_archive" type="file" class="upload-file-input" required onchange="handleFileSelected(this, 'yolo_file_name')">
-                        <div id="yolo_file_name" class="file-name-display"></div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="yolo_archive">Upload YOLO Archive (.zip) <span style="color: red;">*</span></label>
+                        <input id="yolo_archive" name="yolo_archive" aria-label="YOLO Archive" type="file" class="form-control-file" required>
+                        <p>Should contain images, labels, and YAML/txt class definition</p>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="yolo_weights">Upload Model Weights (.pt / .weights) (Optional)</label>
+                        <input id="yolo_weights" name="yolo_weights" aria-label="YOLO Weights" type="file" class="form-control-file">
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label>Upload Model Weights (Optional)</label>
-                    <div class="upload-area">
-                        <i class="fas fa-weight-hanging"></i>
-                        <p>Drag and drop or <span>browse</span> weights file (.pt / .weights)</p>
-                        <input id="yolo_weights" name="yolo_weights" type="file" class="upload-file-input" onchange="handleFileSelected(this, 'yolo_weights_name')">
-                        <div id="yolo_weights_name" class="file-name-display"></div>
-                    </div>
+                <div class="col text-center">
+                    <hr class="my-4">
+					<input type="submit" aria-label="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 0">
                 </div>
-
-                <button type="submit" class="btn-premium">Import YOLO Project</button>
             </form>
 
             <!-- 3. KW Coco Archive Form -->
-            <form id="kwcocoForm" action="/api/projects/import-kwcoco" method="POST" enctype="multipart/form-data" class="flow-content">
+            <form class="add-project-form flow-content" action="/api/projects/import-kwcoco" method='POST' enctype="multipart/form-data" id="kwcocoForm">
+                <h3>Import KW Coco Project</h3>
                 <div class="form-row">
-                    <div class="form-group">
+                    <div class="form-group col-md-12">
                         <label for="coco_project_name">Project Name</label>
-                        <input id="coco_project_name" name="project_name" type="text" class="form-control-premium" placeholder="Enter unique project name" required>
+                        <input id="coco_project_name" name="project_name" aria-label="Project name" type="text" class="form-control" placeholder="Project Name" required>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label>Upload KW Coco Archive (.zip) <span style="color: #ef4444;">*</span></label>
-                    <div class="upload-area">
-                        <i class="fas fa-file-archive"></i>
-                        <p>Drag and drop or <span>browse</span> Kitware COCO zip archive</p>
-                        <p class="input-hint">Should contain images and input_coco.json annotations</p>
-                        <input id="coco_archive" name="coco_archive" type="file" class="upload-file-input" required onchange="handleFileSelected(this, 'coco_file_name')">
-                        <div id="coco_file_name" class="file-name-display"></div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="coco_archive">Upload KW Coco Archive (.zip) <span style="color: red;">*</span></label>
+                        <input id="coco_archive" name="coco_archive" aria-label="KW Coco Archive" type="file" class="form-control-file" required>
+                        <p>Should contain images and input_coco.json annotations</p>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="viame_model">Upload VIAME Model File (Optional)</label>
+                        <input id="viame_model" name="viame_model" aria-label="VIAME Model" type="file" class="form-control-file">
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label>Upload VIAME Model File (Optional)</label>
-                    <div class="upload-area">
-                        <i class="fas fa-project-diagram"></i>
-                        <p>Drag and drop or <span>browse</span> VIAME pipeline model config/weights</p>
-                        <input id="viame_model" name="viame_model" type="file" class="upload-file-input" onchange="handleFileSelected(this, 'viame_model_name')">
-                        <div id="viame_model_name" class="file-name-display"></div>
-                    </div>
+                <div class="col text-center">
+                    <hr class="my-4">
+					<input type="submit" aria-label="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 0">
                 </div>
-
-                <button type="submit" class="btn-premium">Import KW Coco Project</button>
             </form>
 
-            <!-- Global Upload Progress Indicator -->
-            <div class="progress-container" id="progressContainer">
-                <div class="progress-bar-wrapper">
-                    <div class="progress-bar-fill" id="progressBarFill"></div>
-                </div>
-                <div class="progress-text" id="progressText">Starting upload...</div>
-            </div>
+			<div class="col text-center" style="margin-top: 15px;">
+				<label for="progress" id="progress" aria-live="polite" aria-atomic="true" style="font-weight: bold; color: #1569AE;"></label>
+			</div>
         </div>
     </div>
 </div>
@@ -452,34 +134,18 @@
     const PNames = "<%= PNames %>".split(",");
 
     function switchFlow(flow) {
-        // Toggle tab active styles
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
+        // Toggle active tab link styling
+        document.getElementById('tab-blank').classList.remove('active');
+        document.getElementById('tab-yolo').classList.remove('active');
+        document.getElementById('tab-kwcoco').classList.remove('active');
         
-        // Find correct tab button and set active
-        let tabIndex = 0;
-        if (flow === 'yolo') tabIndex = 1;
-        if (flow === 'kwcoco') tabIndex = 2;
-        document.querySelectorAll('.tab-btn')[tabIndex].classList.add('active');
+        document.getElementById('tab-' + flow).classList.add('active');
 
-        // Toggle form active styles
+        // Toggle active form visibility
         document.querySelectorAll('.flow-content').forEach(form => {
             form.classList.remove('active');
         });
-        
         document.getElementById(flow + 'Form').classList.add('active');
-    }
-
-    function handleFileSelected(input, displayId) {
-        const display = document.getElementById(displayId);
-        if (input.files && input.files[0]) {
-            display.textContent = `Selected: ${input.files[0].name}`;
-            display.style.display = 'inline-block';
-        } else {
-            display.textContent = '';
-            display.style.display = 'none';
-        }
     }
 
     // Helper to validate project names
@@ -502,7 +168,7 @@
         return true;
     }
 
-    // Hook forms submission to handle progress bar upload and fetch API calls
+    // Hook forms submission to handle progress bar upload and AJAX API calls
     document.querySelectorAll('.flow-content').forEach(form => {
         form.addEventListener('submit', function(event) {
             event.preventDefault();
@@ -519,46 +185,30 @@
 
             const formData = new FormData(this);
             const xhr = new XMLHttpRequest();
-            const progressContainer = document.getElementById('progressContainer');
-            const progressFill = document.getElementById('progressBarFill');
-            const progressText = document.getElementById('progressText');
+            const progress = document.getElementById('progress');
 
-            progressContainer.style.display = 'block';
-            progressFill.style.width = '0%';
-            progressText.textContent = 'Uploading files (0%)...';
-
-            // Disable submit buttons during upload
-            document.querySelectorAll('.btn-premium').forEach(btn => btn.disabled = true);
+            progress.textContent = "Percent Uploaded: 0%";
+            document.querySelectorAll('input[type="submit"]').forEach(btn => btn.style.display = "none");
 
             xhr.upload.addEventListener('progress', function(e) {
                 if (e.lengthComputable) {
                     const percent = Math.round((e.loaded / e.total) * 100);
-                    progressFill.style.width = percent + '%';
-                    progressText.textContent = `Uploading files (${percent}%)...`;
+                    progress.textContent = `Percent Uploaded: ${percent}%`;
                     if (percent === 100) {
-                        progressText.textContent = 'Upload complete! Server is extracting and processing dataset archives, please wait...';
+                        progress.textContent = "Upload Finished. Server processing upload. Please wait for the closing prompt.";
                     }
                 }
             });
 
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
-                    // Re-enable submit buttons
-                    document.querySelectorAll('.btn-premium').forEach(btn => btn.disabled = false);
+                    document.querySelectorAll('input[type="submit"]').forEach(btn => btn.style.display = "inline-block");
 
                     if (xhr.status === 200) {
-                        progressText.textContent = 'Project successfully initialized!';
-                        let responseData;
-                        try {
-                            responseData = JSON.parse(xhr.responseText);
-                        } catch(e) {
-                            responseData = xhr.responseText;
-                        }
-                        
-                        alert(typeof responseData === 'object' && responseData.message ? responseData.message : 'Project created successfully!');
+                        alert("Project creation successful");
                         window.location.replace('/home');
                     } else {
-                        progressText.textContent = 'Error during initialization.';
+                        progress.textContent = "";
                         let errMsg = 'Something went wrong during project creation.';
                         try {
                             const resObj = JSON.parse(xhr.responseText);
@@ -579,15 +229,15 @@
                 if (uploadImages.files.length > 0) {
                     const file = uploadImages.files[0];
                     if (file.name.endsWith('.mp4') || file.name.endsWith('.mov') || file.name.endsWith('.avi')) {
-                        const frameRate = prompt("Please enter the framerate the video should be split by (e.g. 30):", "30");
+                        const frameRate = prompt("Please enter a number for the framerate the video should be split by. (ex: 30)");
                         if (frameRate) {
                             formData.delete('upload_images');
                             formData.append('upload_video', file);
                             formData.append('frame_rate', frameRate);
                         } else {
                             // Cancel creation if prompt was cancelled
-                            progressContainer.style.display = 'none';
-                            document.querySelectorAll('.btn-premium').forEach(btn => btn.disabled = false);
+                            progress.textContent = "";
+                            document.querySelectorAll('input[type="submit"]').forEach(btn => btn.style.display = "inline-block");
                             return;
                         }
                     }
