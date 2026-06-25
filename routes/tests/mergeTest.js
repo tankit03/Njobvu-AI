@@ -28,7 +28,7 @@ async function mergeTest(req, res) {
         if (fs.existsSync(mergePath)) {
             rimraf(mergePath, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 } else {
                     fs.mkdirSync(mergePath);
                 }
@@ -40,7 +40,7 @@ async function mergeTest(req, res) {
         if (fs.existsSync(mergeImages)) {
             rimraf(mergeImages, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 } else {
                     fs.mkdirSync(mergeImages);
                 }
@@ -49,7 +49,7 @@ async function mergeTest(req, res) {
             fs.mkdirSync(mergeImages);
         }
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error creating merge paths");
     }
 
@@ -65,13 +65,12 @@ async function mergeTest(req, res) {
 
             rimraf(mergePath, (err) => {
                 if (err) {
-                    console.error("there was an error with contents: ", err);
+                    global.logger.error("there was an error with contents: ", err);
                 } else {
-                    console.log("merge_path contents successfuly deleted");
                 }
             });
         } catch (err) {
-            console.error(err);
+            global.logger.error(err);
         }
 
         return res.send("ERROR! " + err);
@@ -93,13 +92,12 @@ async function mergeTest(req, res) {
         try {
             await rimraf(mergePath, (err) => {
                 if (err) {
-                    console.error("there was an error with contents: ", err);
+                    global.logger.error("there was an error with contents: ", err);
                 } else {
-                    console.log("merge_path contents successfuly deleted");
                 }
             });
         } catch (e) {
-            console.error(e);
+            global.logger.error(e);
         }
         return res.send("ERROR! No Database file (.db) found!");
     }
@@ -190,7 +188,7 @@ async function mergeTest(req, res) {
             try {
                 await fsPromises.rename(mergeScriptPath, newScriptPath);
             } catch (err) {
-                console.error("Rename error:", err);
+                global.logger.error("Rename error:", err);
             }
         }
     }
@@ -304,7 +302,7 @@ async function mergeTest(req, res) {
         currentDbClasses = await queries.project.getAllClasses(projectPath);
         toMergeClasses = await queries.project.getAllClasses(newDbPath);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error fetching classes");
     }
 
@@ -336,7 +334,7 @@ async function mergeTest(req, res) {
                     toMergeClasses.rows[i].CName,
                 );
             } catch (err) {
-                console.error(err);
+                global.logger.error(err);
             }
         }
     }
@@ -360,7 +358,7 @@ async function mergeTest(req, res) {
     try {
         incomingDbImages = await queries.project.getAllImages(newDbPath);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error fetching images");
     }
 
@@ -398,14 +396,14 @@ async function mergeTest(req, res) {
                     image,
                 );
             } catch (err) {
-                console.error(err);
+                global.logger.error(err);
                 continue;
             }
         } else if (allowedFileTypes.includes(ext)) {
             try {
                 await queries.project.addImages(newDbPath, image, 1, 0);
             } catch (err) {
-                console.error(err);
+                global.logger.error(err);
                 continue;
             }
         }
@@ -416,7 +414,7 @@ async function mergeTest(req, res) {
         normalizedIncomingImages =
             await queries.project.getAllImages(newDbPath);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error fetching images");
     }
 
@@ -441,7 +439,7 @@ async function mergeTest(req, res) {
                     normalizedIncomingImages.rows[i].validateImage,
                 );
             } catch (err) {
-                console.error(err);
+                global.logger.error(err);
                 continue;
             }
 
@@ -454,7 +452,7 @@ async function mergeTest(req, res) {
                     normalizedIncomingImages.rows[i].IName,
                 );
             } catch (err) {
-                console.error(err);
+                global.logger.error(err);
                 continue;
             }
         }
@@ -464,7 +462,7 @@ async function mergeTest(req, res) {
     try {
         existingLabels = await queries.project.getAllLabels(projectPath);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error fetching labels");
     }
 
@@ -497,7 +495,7 @@ async function mergeTest(req, res) {
         incomingValidations =
             await queries.project.getAllValidations(newDbPath);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error fetching incoming labels");
     }
 

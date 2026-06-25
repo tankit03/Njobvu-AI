@@ -1,6 +1,4 @@
 async function removeDarknetPath(req, res) {
-    console.log("remove darknet path");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         IDX = parseInt(req.body.IDX),

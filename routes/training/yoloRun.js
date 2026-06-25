@@ -52,7 +52,6 @@ except Exception as e:
 
             if (err) {
                 console.log("Device detection error:", err.message);
-                console.log("Falling back to CPU");
             } else if (stdout) {
                 console.log("Device detection output:");
                 console.log(stdout);
@@ -412,7 +411,7 @@ async function yoloRun(req, res) {
     cfgTemp = runPath + "/cfgTemplate.txt";
     fs.copyFile(cfgTempPath, cfgTemp, (err) => {
         if (err) {
-            console.log(err);
+            global.logger.error(err);
         }
     });
 
@@ -420,7 +419,7 @@ async function yoloRun(req, res) {
     dataTemp = runPath + "/dataTemplate.txt";
     fs.copyFile(dataTempPath, dataTemp, (err) => {
         if (err) {
-            console.log(err);
+            global.logger.error(err);
         }
     });
 
@@ -428,7 +427,7 @@ async function yoloRun(req, res) {
     if (!fs.existsSync(darknetCfgScript)) {
         fs.copyFile(yoloScript, darknetCfgScript, (err) => {
             if (err) {
-                console.log(err);
+                global.logger.error(err);
             }
         });
     }
@@ -441,7 +440,7 @@ async function yoloRun(req, res) {
         existingImages = await queries.project.getAllImages(projectPath);
         existingClasses = await queries.project.getAllClasses(projectPath);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error fetching classes");
     }
 
@@ -459,44 +458,38 @@ async function yoloRun(req, res) {
         if (!fs.existsSync(absDarknetImagesPath)) {
             fs.mkdirSync(absDarknetImagesPath, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 } else {
-                    console.log("YOLO Images Directory created");
                 }
             });
             fs.mkdirSync(absDarknetImagesTrain, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 } else {
-                    console.log("YOLO Images Train Directory created");
                 }
             });
             fs.mkdirSync(absDarknetImagesVal, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 } else {
-                    console.log("YOLO Images Validate Directory created");
                 }
             });
             fs.mkdirSync(absDarknetLabelsPath, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 } else {
-                    console.log("YOLO Labels Directory created");
                 }
             });
             fs.mkdirSync(absDarknetLabelsTrain, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 } else {
-                    console.log("YOLO Labels Train Directory created");
                 }
             });
             fs.mkdirSync(absDarknetLabelsVal, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 } else {
-                    console.log("YOLO Labels Validate Directory created");
                 }
             });
         }
@@ -504,7 +497,7 @@ async function yoloRun(req, res) {
         var cnames = [];
         try {
         } catch (err) {
-            console.error(err);
+            global.logger.error(err);
             return res.status(500).send("Error finding classes");
         }
 
@@ -612,7 +605,6 @@ async function yoloRun(req, res) {
                         absDarknetTrainImagesPath,
                         "file"
                     );
-                    console.log("Symlink created for YOLO image training file");
                 } catch (err) {
                     console.log("Error creating image training symlink:", err);
                 }
@@ -623,7 +615,6 @@ async function yoloRun(req, res) {
                         absDarknetTrainLabelsPath,
                         "file"
                     );
-                    console.log("Symlink created for YOLO label training file");
                 } catch (err) {
                     console.log("Error creating label training symlink:", err);
                 }
@@ -643,7 +634,6 @@ async function yoloRun(req, res) {
                         absDarknetValImagesPath,
                         "file"
                     );
-                    console.log("Symlink created for YOLO image validation file");
                 } catch (err) {
                     console.log("Error creating image validation symlink:", err);
                 }
@@ -654,7 +644,6 @@ async function yoloRun(req, res) {
                         absDarknetValLabelsPath,
                         "file"
                     );
-                    console.log("Symlink created for YOLO label validation file");
                 } catch (err) {
                     console.log("Error creating label validation symlink:", err);
                 }
@@ -672,10 +661,8 @@ async function yoloRun(req, res) {
         );
 
         if (!fs.existsSync(absWeightProjectPath)) {
-            console.log("Create symbolic link from YOLO model file");
             try {
                 await fs.promises.symlink(weightPath, absWeightProjectPath, "file");
-                console.log("Symlink created for YOLO model file");
             } catch (err) {
                 console.log("Error creating symlink:", err);
             }
@@ -701,7 +688,6 @@ async function yoloRun(req, res) {
 
         fs.writeFileSync(classesPath, classes, (err) => {
             if (err) throw err;
-            console.log("Done writing YOLO Classes file");
         });
     } else if (yoloTask == "classify") {
         // if its classify
@@ -736,7 +722,7 @@ async function yoloRun(req, res) {
                 console.log(`Image cropped successfully: ${targetPath}`);
                 return true;
             } catch (err) {
-                console.error(`Error cropping image ${sourcePath} to ${targetPath}: ${err.message}`);
+                global.logger.error(`Error cropping image ${sourcePath} to ${targetPath}: ${err.message}`);
                 return false;
             }
         };
@@ -752,7 +738,7 @@ async function yoloRun(req, res) {
             await fs.promises.mkdir(absDarknetClassificationValImagesDir, { recursive: true });
             console.log(`Created base classification directories: ${absDarknetClassificationTrainImagesDir}, ${absDarknetClassificationValImagesDir}`);
         } catch (err) {
-            console.error("Error creating base classification train/val directories:", err);
+            global.logger.error("Error creating base classification train/val directories:", err);
             return res.status(500).send("Error setting up classification directories.");
         }
 
@@ -826,7 +812,7 @@ async function yoloRun(req, res) {
                     if (didCrop) {
                         croppedCount++;
                     } else {
-                        console.error(`Failed to crop and save for label ${label.LID} in image ${image.IName}`);
+                        global.logger.error(`Failed to crop and save for label ${label.LID} in image ${image.IName}`);
                     }
                 }
                 if (croppedCount === 0) {
@@ -834,7 +820,7 @@ async function yoloRun(req, res) {
                 }
 
             } catch (err) {
-                console.error(`Error processing image ${image.IName} for classification:`, err);
+                global.logger.error(`Error processing image ${image.IName} for classification:`, err);
             }
         }
 
@@ -853,7 +839,7 @@ async function yoloRun(req, res) {
             await fs.promises.writeFile(classesPath, classificationDataYamlContent);
             console.log("Done writing YOLO Classification Data YAML file (data.yaml)");
         } catch (err) {
-            console.error("Error writing YOLO Classification Data YAML file:", err);
+            global.logger.error("Error writing YOLO Classification Data YAML file:", err);
             return res.status(500).send("Error generating classification data file.");
         }
     }
@@ -871,7 +857,6 @@ async function yoloRun(req, res) {
         cmd = `python3 ${yoloScript} -d ${runPath} -t ${yoloTask} -m ${yoloMode} -i ${darknetImagesPath} -n ${classesPath} -p ${trainDataPer} -l ${absDarknetProjectRun}/${log} -f ${darknetPath} -w ${weightPath} -b ${batch} -s ${subdiv} -x ${width} -y ${height} -v ${yoloVersion} -e ${epochs} -I ${imgsz} -D ${device} -o "${options}"`;
     } else {
         cmd = `python3 --version`;
-        console.log("YOLO python script not for training");
     }
 
     console.log(cmd);
@@ -895,7 +880,7 @@ async function yoloRun(req, res) {
             });
         }
         if (err) {
-            console.error(err);
+            global.logger.error(err);
             console.log(`This is the error: ${err.message}`);
 
             if (err.message != "stdout maxBuffer length exceeded") {

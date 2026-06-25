@@ -8,7 +8,6 @@ async function deleteLabels(req, res) {
         const Lid = req.params.Lid.split(",");
 
         console.log("admin: ", admin);
-        console.log("PName", PName);
         console.log("Lid", Lid);
 
         var publicPath = currentPath,
@@ -38,7 +37,7 @@ async function deleteLabels(req, res) {
             body: req.body,
         });
     } catch (error) {
-        console.error(error);
+        global.logger.error(error);
         if (!res.headersSent) {
             res.status(500).json({ message: error.message });
         }

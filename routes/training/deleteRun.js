@@ -17,7 +17,7 @@ async function deleteRun(req, res) {
 
     rimraf(runPath, function (err) {
         if (err) {
-            console.error(err);
+            global.logger.error(err);
         }
         console.log(`${runPath} deleted`);
     });

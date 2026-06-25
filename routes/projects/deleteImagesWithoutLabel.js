@@ -19,7 +19,7 @@ async function deleteImagesWithoutLabel(req, res) {
 
         return res.redirect(`/project?IDX=${projectIndex}`);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error deleting images");
     }
 }

@@ -1,6 +1,4 @@
 async function uploadWeights(req, res) {
-    console.log("upload_weights");
-
     var PName = req.body.PName,
         Admin = req.body.Admin,
         user = req.cookies.Username,

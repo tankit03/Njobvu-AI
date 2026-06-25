@@ -61,14 +61,12 @@ async function switchLabels(req, res) {
 
         // Check if the query worked
         if (result.error) {
-            console.error("SQL Error:", result.error);
+            global.logger.error("SQL Error:", result.error);
             return res.status(500).json({
                 message: "Database error occurred",
                 error: result.error
             });
         }
-
-        console.log("SQL Query executed successfully");
         console.log("Number of labels updated:", result.changes);
 
         if (result.changes === 0) {
@@ -87,7 +85,7 @@ async function switchLabels(req, res) {
         });
 
     } catch (error) {
-        console.error("Error in switchLabels:", error);
+        global.logger.error("Error in switchLabels:", error);
         res.status(500).json({
             message: error.message,
             stack: error.stack

@@ -1,8 +1,6 @@
 const queries = require("../../queries/queries");
 
 async function run(req, res) {
-    console.log("run script");
-
     const { exec } = require("child_process");
 
     console.log("date: ", Date.now());
@@ -55,7 +53,7 @@ async function run(req, res) {
     try {
         existingLabels = await queries.project.getAllLabels(projectPath);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error fetching labels");
     }
     const labels = existingLabels.rows;
@@ -94,7 +92,6 @@ async function run(req, res) {
     var trainingCsv = runPath + "/" + PName + "_train.csv";
     fs.writeFile(trainingCsv, data, (err) => {
         if (err) throw err;
-        console.log("done writing csv");
     });
 
     ///////////////Create Tensorflow Validate csv /////////////////////////////////
@@ -127,7 +124,6 @@ async function run(req, res) {
     var validationCsv = runPath + "/" + PName + "_validate.csv";
     fs.writeFile(validationCsv, data, (err) => {
         if (err) throw err;
-        console.log("done writing csv");
     });
 
     //Create error file name
@@ -162,7 +158,6 @@ async function run(req, res) {
         console.log("stdout: ", stdout);
         console.log("stderr: ", stderr);
         console.log("err: ", err);
-        console.log("The script has finished running");
         fs.writeFile(`${runPath}/done.log`, success, (err) => {
             if (err) throw err;
         });

@@ -213,7 +213,7 @@ async function updateLabels(req, res) {
             );
         }
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error updating labels");
     }
 }
