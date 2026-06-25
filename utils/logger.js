@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Logger levels
 const LEVELS = {
     ERROR: 'error',
     WARN: 'warn',
@@ -66,15 +65,14 @@ class Logger {
         }
 
         const formatted = this._format(level, message, meta);
-        
-        // Write to stdout/stderr depending on level
+
         if (level === LEVELS.ERROR) {
             console.error(formatted);
         } else {
             console.log(formatted);
         }
 
-        // Append to server.log asynchronously (fire and forget)
+        // fire and forget
         try {
             fs.appendFile(LOG_FILE_PATH, formatted + '\n', (err) => {
                 if (err) {
@@ -105,11 +103,12 @@ class Logger {
 
 const logger = new Logger();
 
-// Middleware for Express request logging
 logger.requestMiddleware = (req, res, next) => {
     const start = Date.now();
+
     res.on('finish', () => {
         const duration = Date.now() - start;
+
         logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`, {
             method: req.method,
             url: req.originalUrl,
@@ -119,6 +118,7 @@ logger.requestMiddleware = (req, res, next) => {
             userAgent: req.get('User-Agent')
         });
     });
+
     next();
 };
 
