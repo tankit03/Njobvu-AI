@@ -6,6 +6,7 @@ jest.mock('decompress-zip/lib/extractors', () => ({
 jest.mock('ffmpeg', () => jest.fn());
 jest.mock('sharp', () => jest.fn());
 jest.mock('unzipper', () => jest.fn());
+
 jest.mock('child_process', () => {
   const mProcess = {
     stdout: { on: jest.fn() },
@@ -21,6 +22,7 @@ jest.mock('child_process', () => {
     spawn: jest.fn().mockReturnValue(mProcess),
   };
 });
+
 jest.mock('sqlite3', () => {
   const mockDb = {
     run: jest.fn((...cbArgs) => {
@@ -38,6 +40,7 @@ jest.mock('sqlite3', () => {
     }),
     close: jest.fn((cb) => cb && cb()),
   };
+
   const mockModule = {
     OPEN_CREATE: 1,
     OPEN_READWRITE: 2,
@@ -49,6 +52,7 @@ jest.mock('sqlite3', () => {
     }),
     verbose: jest.fn().mockImplementation(() => mockModule),
   };
+
   return mockModule;
 });
 jest.mock('socket.io-client', () => ({

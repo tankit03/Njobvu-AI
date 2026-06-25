@@ -108,20 +108,20 @@ const importDataset = async (req, res) => {
 
         pythonProcess.stdout.on('data', (data) => {
             const log_data = data.toString();
-            console.log('Python Script:', log_data);
+            global.logger.debug('Python Script:', log_data);
             stdout += log_data;
         });
 
         pythonProcess.stderr.on('data', (data) => {
             const log_data = data.toString();
-            console.error('Python Script Error:', log_data);
+            global.logger.error('Python Script Error:', log_data);
             stderr += log_data;
         });
 
         pythonProcess.on('close', async (code) => {
             if (code !== 0) {
-                console.error(`python script exited with code ${code}:`);
-                console.error(stderr);
+                global.logger.error(`python script exited with code ${code}:`);
+                global.logger.error(stderr);
                 return res.status(500).json({ success: false, message: stderr });
             }
 
@@ -151,13 +151,13 @@ const importDataset = async (req, res) => {
 
                 res.json({ success: true, message: 'Import process completed.', output: stdout });
             } catch (dbError) {
-                console.error('Database update failed after import:', dbError);
-
+                global.logger.error('Database update failed after import:', dbError);
+              
                 return res.status(500).json({ success: false, message: 'Project imported but failed to update main database.' });
             }
         });
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         res.status(500).json({ success: false, message: 'File upload failed' });
     }
 };

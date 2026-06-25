@@ -39,6 +39,7 @@ jest.mock('sqlite3', () => {
       { Username: 'testuser' }
     ]),
   };
+
   const mockModule = {
     OPEN_CREATE: 1,
     OPEN_READWRITE: 2,
@@ -50,6 +51,7 @@ jest.mock('sqlite3', () => {
     }),
     verbose: jest.fn().mockImplementation(() => mockModule),
   };
+
   return mockModule;
 });
 jest.mock('socket.io-client', () => ({
