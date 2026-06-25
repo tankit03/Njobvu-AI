@@ -7,11 +7,14 @@ const rimraf = require("../../public/libraries/rimraf");
 const { Client } = require("../../queries/client");
 
 async function createProject(req, res) {
+    const files = req.files || {};
+
+    const uploadImages = files["upload_images"] || null;
+    const uploadVideo = files["upload_video"] || null;
+    const uploadBootstrap = files["upload_bootstrap"] ?? null;
+
     var publicPath = currentPath;
     var projectName = req.body["project_name"],
-        uploadImages = req.files["upload_images"],
-        uploadVideo = req.files["upload_video"],
-        uploadBootstrap = req.files["upload_bootstrap"],
         frameRate = req.body["frame_rate"],
         inputClasses = req.body["input_classes"],
         autoSave = 1,
@@ -43,12 +46,12 @@ async function createProject(req, res) {
         fs.mkdirSync(logsPath);
         fs.mkdirSync(pythonPath);
 
-        fs.writeFile(pythonPathFile, "", function (err) {
+        fs.writeFile(pythonPathFile, "", function(err) {
             if (err) {
                 console.log(err);
             }
         });
-        fs.writeFile(darknetPathFile, "", function (err) {
+        fs.writeFile(darknetPathFile, "", function(err) {
             if (err) {
                 console.log(err);
             }
@@ -122,7 +125,7 @@ async function createProject(req, res) {
                 }
 
                 if (files[i].endsWith(".zip")) {
-                    fs.unlink(imagesPath + "/" + files[i], () => {});
+                    fs.unlink(imagesPath + "/" + files[i], () => { });
                     continue;
                 }
 
@@ -136,7 +139,7 @@ async function createProject(req, res) {
                 files[i] = files[i].split(" ").join("_");
                 files[i] = files[i].split("+").join("_");
 
-                fs.rename(temp, imagesPath + "/" + files[i], () => {});
+                fs.rename(temp, imagesPath + "/" + files[i], () => { });
 
                 try {
                     await queries.project.addImages(
@@ -192,7 +195,7 @@ async function createProject(req, res) {
                     files[i].endsWith(".avi") ||
                     files[i].endsWith(".mov")
                 ) {
-                    fs.unlink(imagesPath + "/" + files[i], () => {});
+                    fs.unlink(imagesPath + "/" + files[i], () => { });
                 }
 
                 if (files[i] === "blob") {
@@ -205,7 +208,7 @@ async function createProject(req, res) {
                 files[i] = files[i].split(" ").join("_");
                 files[i] = files[i].split("+").join("_");
 
-                fs.rename(temp, imagesPath + "/" + files[i], () => {});
+                fs.rename(temp, imagesPath + "/" + files[i], () => { });
 
                 await queries.project.addImages(projectPath, files[i], 0, 0);
             }
@@ -249,7 +252,7 @@ async function createProject(req, res) {
                     bfiles[i] = bfiles[i].split(" ").join("_");
                     bfiles[i] = bfiles[i].split("+").join("_");
 
-                    fs.rename(temp, bootstrapPath + "/" + bfiles[i], () => {});
+                    fs.rename(temp, bootstrapPath + "/" + bfiles[i], () => { });
 
                     if (bfiles[i].endsWith(".weights"))
                         weightBootstrapPath = bootstrapPath + "/" + bfiles[i];
@@ -266,7 +269,7 @@ async function createProject(req, res) {
                     !bfiles[i].endsWith(".cfg") &&
                     !bfiles[i].endsWith(".data")
                 ) {
-                    fs.unlink(bootstrapPath + "/" + bfiles[i], () => {});
+                    fs.unlink(bootstrapPath + "/" + bfiles[i], () => { });
                 }
             }
 
@@ -340,8 +343,8 @@ async function createProject(req, res) {
 
             for (let i = 0; i < imageResults.length; i++) {
                 var img = fs.readFileSync(
-                        `${imagesPath}/${imageResults[i].IName}`,
-                    ),
+                    `${imagesPath}/${imageResults[i].IName}`,
+                ),
                     imgData = probe.sync(img),
                     imgW = imgData.width,
                     imgH = imgData.height;

@@ -40,9 +40,8 @@ const importYolo = async (req, res) => {
         const mainPath = path.join(__dirname, '..', '..', 'public', 'projects');
         const projectPath = path.join(mainPath, `${username}-${projectName}`);
 
-        // If a project with the same name exists, delete it to ensure a fresh import.
         if (fs.existsSync(projectPath)) {
-            fs.rmSync(projectPath, { recursive: true, force: true });
+            return res.status(400).json({ success: false, message: 'A project already exists with that name!' });
         }
 
         const imagesPath = path.join(projectPath, 'images');
@@ -54,7 +53,7 @@ const importYolo = async (req, res) => {
         const pythonPathFile = path.join(trainingPath, 'Paths.txt');
         const darknetPathFile = path.join(trainingPath, 'darknetPaths.txt');
 
-        // Create the project directory structure
+        // directory structure
         fs.mkdirSync(projectPath, { recursive: true });
         fs.mkdirSync(imagesPath);
         fs.mkdirSync(bootstrapPath);
@@ -65,7 +64,7 @@ const importYolo = async (req, res) => {
         fs.writeFileSync(pythonPathFile, "");
         fs.writeFileSync(darknetPathFile, "");
 
-        // Determine if weights were uploaded
+        // determine if weights were uploaded
         let weightsPathVal = '';
         if (req.files.yolo_weights) {
             const weightsFile = req.files.yolo_weights;
@@ -114,7 +113,7 @@ const importYolo = async (req, res) => {
 
                 await queries.managed.grantUserAccess(username, projectName, username);
 
-                // Add the new project's database client to the pool of active clients
+                // add the new project's database client to the pool of active clients
                 const newDbPath = path.join(projectPath, `${projectName}.db`);
                 global.projectDbClients[projectPath] = new Client(newDbPath);
 
@@ -123,7 +122,6 @@ const importYolo = async (req, res) => {
                     newClient.open();
                 }
 
-                // Migrate DB
                 await queries.project.migrateProjectDb(projectPath);
 
                 res.json({ success: true, message: 'YOLO Import process completed.', output: stdout });

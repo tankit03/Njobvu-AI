@@ -11,7 +11,7 @@
     <div class="container">
         <div class="contact">
 			<%- include('includes/createNav', { activePage }) %>
-            
+
             <!-- Tab headers for the three project creation options -->
             <div class="col-md-12" style="margin-top: 15px; margin-bottom: 20px; padding: 0;">
                 <ul class="nav nav-tabs">
@@ -49,12 +49,6 @@
 						<p>Do not add leading or trailing spaces between classes</p>
                     </div>
                 </div>
-				<div class="form-row">
-					<div class="form-group col-md-6">
-                        <label for="blank_upload_bootstrap">Upload (.data + .cfg + .weights).zip (Optional)</label>
-						<input id="blank_upload_bootstrap" aria-label="Upload (.data + .cfg + .weights).zip" name="upload_bootstrap" type="file" class="form-control-file">
-                    </div>
-				</div>
                 <div class="col text-center">
                     <hr class="my-4">
 					<input type="submit" aria-label="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 0">
@@ -222,20 +216,23 @@
             };
 
             xhr.open('POST', this.action, true);
-            
-            // Adjust payload for Blank project formulation
+
+            // adjust payload for Blank project formulation
             if (formId === 'blankForm') {
                 const uploadImages = document.getElementById('blank_upload_images');
+
                 if (uploadImages.files.length > 0) {
                     const file = uploadImages.files[0];
+
                     if (file.name.endsWith('.mp4') || file.name.endsWith('.mov') || file.name.endsWith('.avi')) {
                         const frameRate = prompt("Please enter a number for the framerate the video should be split by. (ex: 30)");
+
                         if (frameRate) {
                             formData.delete('upload_images');
                             formData.append('upload_video', file);
                             formData.append('frame_rate', frameRate);
                         } else {
-                            // Cancel creation if prompt was cancelled
+                            // cancel creation if prompt was cancelled
                             progress.textContent = "";
                             document.querySelectorAll('input[type="submit"]').forEach(btn => btn.style.display = "inline-block");
                             return;
