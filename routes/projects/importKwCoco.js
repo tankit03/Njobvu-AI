@@ -81,8 +81,6 @@ const importKwCoco = async (req, res) => {
             args.push('-w', modelPathVal);
         }
 
-        console.log(pythonPath, args)
-
         const pythonProcess = spawn(`${pythonPath}`, args);
 
         let stdout = '';
