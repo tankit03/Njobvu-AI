@@ -158,7 +158,6 @@ logger.requestMiddleware = (req, res, next) => {
     res.on('finish', () => {
         const duration = Date.now() - start;
         const url = req.originalUrl || req.url;
-
         // static asset patterns
         const staticAssetRegex = /\.(css|js|png|jpg|jpeg|gif|ico|woff|woff2|ttf|svg|eot|mp4|webm|ogg)$/i;
         const staticPathPrefixes = ['/js/', '/css/', '/images/', '/libraries/', '/node_modules/'];
@@ -176,7 +175,6 @@ logger.requestMiddleware = (req, res, next) => {
         };
 
         const message = `${req.method} ${url} ${res.statusCode} - ${duration}ms`;
-
         if (isStatic) {
             logger.debug(message, logData);
         } else {

@@ -60,4 +60,55 @@ describe('Logger Utility Unit Tests', () => {
         expect(output.message).toBe('Database connection failed');
         expect(output).toHaveProperty('stack');
     });
+
+    it('should log static asset requests as debug level and regular requests as info level', () => {
+        logger.setLevel('debug');
+        
+        const reqMockStatic = {
+            method: 'GET',
+            originalUrl: '/js/jquery.min.js',
+            ip: '127.0.0.1',
+            get: jest.fn().mockReturnValue('Mock-User-Agent')
+        };
+        const reqMockRegular = {
+            method: 'POST',
+            originalUrl: '/login',
+            ip: '127.0.0.1',
+            get: jest.fn().mockReturnValue('Mock-User-Agent')
+        };
+        
+        let finishCallbackStatic;
+        const resMockStatic = {
+            statusCode: 200,
+            on: jest.fn((event, cb) => {
+                if (event === 'finish') finishCallbackStatic = cb;
+            })
+        };
+        let finishCallbackRegular;
+        const resMockRegular = {
+            statusCode: 200,
+            on: jest.fn((event, cb) => {
+                if (event === 'finish') finishCallbackRegular = cb;
+            })
+        };
+
+        const nextMock = jest.fn();
+
+        logger.requestMiddleware(reqMockStatic, resMockStatic, nextMock);
+        expect(nextMock).toHaveBeenCalled();
+        finishCallbackStatic();
+        
+        logger.requestMiddleware(reqMockRegular, resMockRegular, nextMock);
+        finishCallbackRegular();
+
+        expect(logSpy).toHaveBeenCalledTimes(2);
+
+        const firstLog = JSON.parse(logSpy.mock.calls[0][0]);
+        expect(firstLog.level).toBe('debug');
+        expect(firstLog.message).toContain('GET /js/jquery.min.js 200');
+
+        const secondLog = JSON.parse(logSpy.mock.calls[1][0]);
+        expect(secondLog.level).toBe('info');
+        expect(secondLog.message).toContain('POST /login 200');
+    });
 });
