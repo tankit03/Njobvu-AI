@@ -28,17 +28,17 @@
         <div class="mb-0 col-md-12 row text-center mx-auto nopadding" style="background-color: #262C2F; color: white">
           <% if(prev_IName != -1) { %>
                   <% if (AutoSave == 1) { %>
-                      <button type="submit" name="form_action" class="mr-0 ml-0 btn btn-primary col text-center" id="auto-prev" value="auto-prev" style="border-radius: 0"><i class="fas fa-arrow-alt-left"></i></button>
+                      <button type="submit" name="form_action" class="mr-0 ml-0 btn btn-primary col text-center" id="auto-prev" value="auto-prev" style="border-radius: 0" aria-label="Previous image"><i class="fas fa-arrow-alt-left" aria-hidden="true" aria-label="Previous image}"></i></button>
                   <% } else { %>
 					  <a href="/labeling?IDX=<%= IDX %>&IName=<%= prev_IName %>&curr_class=<%= curr_class %>" role="button" class="mr-0 ml-0 btn btn-dark col text-center pass-class" id="prev" style="border-radius: 0"><i class="fas fa-arrow-alt-left"></i></a>
                   <% } %>
           <% } else { %>
-              <a href="#" role="button" class="mr-0 ml-0 btn btn-dark col text-center disabled" style="border-radius: 0"><i class="fas fa-arrow-alt-left"></i></a>
+              <a href="#" role="button" class="mr-0 ml-0 btn btn-dark col text-center disabled" style="border-radius: 0"><i class="fas fa-arrow-alt-left" aria-hidden="true" aria-label="Previous image"></i></a>
           <% } %>
           <span class="mr-0 ml-0 btn col text-center" style="cursor: default"><%= image_name %> (<b><%= curr_index %></b>/<%= images_length %>)</span>
           <% if(next_IName != -1) { %>
                   <% if (AutoSave == 1) { %>
-                      <button type="submit" name="form_action" class="mr-0 ml-0 btn btn-primary col text-center" id="auto-next" value="auto-next" style="border-radius: 0"><i class="fas fa-arrow-alt-right"></i></button>
+                      <button type="submit" name="form_action" class="mr-0 ml-0 btn btn-primary col text-center" id="auto-next" value="auto-next" style="border-radius: 0" aria-label="Next image"><i class="fas fa-arrow-alt-right" aria-hidden="true" aria-label="Next image"></i></button>
                   <% } else { %>
 					  <a href="/labeling?IDX=<%= IDX %>&IName=<%= next_IName %>&curr_class=<%= curr_class %>" role="button" class="mr-0 ml-0 btn btn-primary col text-center pass-class" id="next" style="border-radius: 0"><i class="fas fa-arrow-alt-right"></i></a>
                   <% } %>
@@ -50,6 +50,9 @@
             <canvas id="canvas"
                     width="<%= image_width %>"
                     height="<%= image_height %>"
+                    role="application"
+                    aria-label="Image labeling canvas for <%= image_name %>. Use mouse to draw bounding boxes."
+                    tabindex="0"
                     style=" cursor: crosshair;
                             margin: auto">
             </canvas>
@@ -86,24 +89,24 @@
         </div>
 
         <div class="col-md-12 enoughPadding row mx-auto text-center">
-            <button type="button" class="mr-0 ml-0 btn btn-info col text-center" id="menu" data-toggle="modal" data-target="#menu_modal" style="border-radius: 0"><i class="fas fa-bars"></i> <u>M</u>enu</button>
-            <button type="button" class="mr-0 ml-0 btn btn-dark col text-center" id="info" data-toggle="modal" data-target="#info_modal" style="border-radius: 0"><i class="fas fa-info"></i> <u>I</u>nfo</button>
-            <button type="button" class="mr-0 ml-0 btn btn-danger col text-center" id="reset-labeling" style="border-radius: 0"><i class="fas fa-recycle"></i> <u>R</u>eset</button>
-            <button type="button" class="mr-0 ml-0 btn btn-warning col text-center" id="undo-labeling" style="border-radius: 0"><i class="fas fa-undo"></i> <u>U</u>ndo</button>
-            <button type="button" class="mr-0 ml-0 btn btn-dark col text-center" id="reset-zoom" style="border-radius: 0"><i class="fas fa-search"></i> Reset <u>Z</u>oom</button>
+            <button type="button" class="mr-0 ml-0 btn btn-info col text-center" id="menu" aria-label="Menu" data-toggle="modal" data-target="#menu_modal" style="border-radius: 0"><i class="fas fa-bars"></i> <u>M</u>enu</button>
+            <button type="button" class="mr-0 ml-0 btn btn-dark col text-center" id="info" aria-label="Info" data-toggle="modal" data-target="#info_modal" style="border-radius: 0"><i class="fas fa-info"></i> <u>I</u>nfo</button>
+            <button type="button" class="mr-0 ml-0 btn btn-danger col text-center" id="reset-labeling" aria-label="Reset labels" style="border-radius: 0"><i class="fas fa-recycle"></i> <u>R</u>eset</button>
+            <button type="button" class="mr-0 ml-0 btn btn-warning col text-center" id="undo-labeling" aria-label="Undo last label"style="border-radius: 0"><i class="fas fa-undo"></i> <u>U</u>ndo</button>
+            <button type="button" class="mr-0 ml-0 btn btn-dark col text-center" id="reset-zoom" aria-label="Reset zoom"style="border-radius: 0"><i class="fas fa-search"></i> Reset <u>Z</u>oom</button>
             <% if(rev_image != 0){ %>
               <button type="button" class="mr-0 ml-0 col text-center rev-button" id="Review" style="border-radius: 0; background-color: red;">Needs Review</button>
             <%} else {%>
               <button type="button" class="mr-0 ml-0 col text-center rev-button" id="Review" style="border-radius: 0;">Needs Review</button>
             <% } %>
-            <button type="submit" name="form_action" class="mr-0 ml-0 btn btn-success col text-center" id="form-save" value="save" style="border-radius: 0"><i class="fas fa-save"></i> <u>S</u>ave </button>
+            <button type="submit" name="form_action" class="mr-0 ml-0 btn btn-success col text-center" id="form-save" aria-label="save" style="border-radius: 0"><i class="fas fa-save"></i> <u>S</u>ave </button>
         </div>
     </form>
     <ul id="output"></ul>
 </div>
 
 <!-- Modals -->
-<div class="modal fade" style="width: 300px;" id="menu_modal" tabindex="-1" role="dialog" aria-labelledby="menuModal">
+<div class="modal fade" style="width: 300px;" id="menu_modal" tabindex="-1" role="dialog" aria-label="menuModal">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -118,9 +121,9 @@
                     <table class="table table-striped">
                         <thead class="thead-dark">
                             <tr>
-                                <th scope="col">Project Name</th>
-                                <th></th>
-                                <th class="text-right" scope="col"></th>
+                                <th scope="col" colspan="3">Project Name</th>
+                                <!--<th></th>-->
+                                <!--<th class="text-right" scope="col"></th>-->
                             </tr>
                         </thead>
                         <tbody>
@@ -143,7 +146,7 @@
         </div>
     </div>
 </div>
-<div class="modal fade" style="width: 300px;" id="info_modal" tabindex="-1" role="dialog" aria-labelledby="infoModal">
+<div class="modal fade" style="width: 300px;" id="info_modal" tabindex="-1" role="dialog" aria-label="infoModal">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">

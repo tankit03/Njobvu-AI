@@ -67,7 +67,9 @@
                                     <% if (label.CName===CName) { %>
                                         <tr>
                                             <td>
-                                                <input type="checkbox" class="badCheckbox" name="bad_<%= label.LID %>"
+                                                <input type="checkbox" 
+                                                    aria-label="<%= label.IName%> label <%= label.LID %>" 
+                                                    "class="badCheckbox" name="bad_<%= label.LID %>"
                                                     value="<%= label.LID %>">
                                             </td>
                                             <td><a href="/labeling?IDX=<%=IDX%>&IName=<%= label.IName %>" />
@@ -76,6 +78,7 @@
                                             <td>
                                                 <img class="Image"
                                                     src="/projects/<%= admin %>-<%= PName %>/images/<%= label.IName %>"
+                                                    aria-label="<%=PName %> <%= label.IName%> label <%= label.LID%>"
                                                     style="display: none;">
                                                 <input type="hidden" class="LabelX" value="<%= label.X %>">
                                                 <input type="hidden" class="LabelY" value="<%= label.Y %>">
@@ -129,7 +132,7 @@
                 <% } %>
         </div>
     </div>
-    <div class="modal fade custom-modal" id="myModel" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+    <div class="modal fade custom-modal" id="myModel" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
@@ -140,7 +143,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <img id="expandedImg" style="width:100%" />
+                    <img id="expandedImg" alt="Expanded image" style="width:100%" />
                 </div>
             </div>
         </div>

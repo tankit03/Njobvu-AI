@@ -23,7 +23,7 @@
             <input type="hidden" name="Admin" value="<%= Admin %>">
             <input type="hidden" name="IDX" value="<%= IDX %>">
             <div class="col-auto">
-                <input name="newUser" type="text" class="form-control" id="newUser" placeholder="Nobody" required>
+                <input name="newUser" aria-label="Add user to project" type="text" class="form-control" id="newUser" placeholder="Nobody" required>
             </div>
             <div class="col-auto">
                 <% if(user == Admin) {%>

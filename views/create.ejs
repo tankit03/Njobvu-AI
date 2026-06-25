@@ -8,35 +8,35 @@
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <label for="project-name">Project Name</label>
-                        <input id = "project_name" name="project_name" type="text" class="form-control" id="project-name" placeholder="Project Name" required>
+                        <input id = "project_name" name="project_name" aria-label="Project name"type="text" class="form-control" id="project-name" placeholder="Project Name" required>
                     </div>
                     <div class="form-group col-md-6">
                         <label for="upload-images">
 							Upload Images or Videos (.zip or .mp4/.avi/.mov)
 						</label>
-						<input id="upload_images" name="upload_images" type="file" class="form-control-file" id="upload-images" required>
+						<input id="upload_images" name="upload_images" aria-label="Choose file" type="file" class="form-control-file" id="upload-images" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group col-md-12">
                         <label for="input-classes">Input classes (separated with commas)</label>
-                        <input id="input_classes" name="input_classes" type="text" class="form-control" id="input-classes" placeholder="cat,dog,large mouse" required>
+                        <input id="input_classes" name="input_classes" aria-label="Input classes. Separated by commas."type="text" class="form-control" id="input-classes" placeholder="cat,dog,large mouse" required>
 						<p>Do not add leading or trailing spaces between classes</p>
                     </div>
                 </div>
 				<div class="form-row">
 					<div class="form-group col-md-6">
                         <label for="upload-bootstrap">Upload (.data + .cfg + .weights).zip</label>
-						<input id = "upload_bootstrap" name="upload_bootstrap" type="file" class="form-control-file" id="upload-bootstrap">
+						<input id = "upload_bootstrap" aria-label="Upload (.data + .cfg + .weights).zip"name="upload_bootstrap" type="file" class="form-control-file" id="upload-bootstrap">
                     </div>
 				</div>
                 <div class="col text-center">
                     <hr class="my-4">
-						<input id="Createbtn" type="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 0">
+						<input id="Createbtn" type="submit" aria-label"submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 0">
                 </div>
             </form>
 			<div class="col text-center">
-				<label for="progress" id="progress"></label>
+				<label for="progress" id="progress" aria-live="polite" aria-atomic="true"></label>
 			</div>
         </div>
     </div>

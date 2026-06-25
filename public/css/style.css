@@ -297,3 +297,38 @@ a:hover {
 .modal-backdrop {
     display:none;
 }
+
+.page-item.active .page-link {
+    background-color: #1569AE;
+    border-color: #1569AE;
+    color: #ffffff !important;
+}
+.page-link {
+    color: #1569AE; 
+}
+
+.page-link:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 74, 153, 0.5); 
+    outline: 2px solid #1569AE;
+}
+
+.btn-danger {
+    background-color: #C60D0D !important;
+    border-color: #A30B0B !important;
+    color: #ffffff !important;
+    border-radius: 0;
+    font-weight: bold;
+}
+
+.btn-info {
+    background-color:#1569AE !important;
+    color: rgb(255, 255, 255) !important;
+    border-radius: 0px !important;
+    opacity: 1 !important;
+    border: none;
+}
+
+btn-info:hover {
+    background-color: rgb(15, 107, 122) !important;
+    color: rgb(255, 255, 255) !important;
+}

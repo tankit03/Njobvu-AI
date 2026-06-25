@@ -59,18 +59,22 @@
 	</div>
 	<div class="col-md-12">
 		<table class="table table-striped">
+		<colgroup>
+		    <col style="width: 20%;"> <col style="width: 15%;">
+			<col style="width: 15%;"> <col style="width: 5%;">
+			<col style="width: 9%;"> <col style="width: 10%;">
+			<col style="width: 10%;"> <col style="width: 10%;">
+			<col style="width: 10%;">  
+	  
+		</colgroup>
 			<thead class="thead-dark" style="width: 100%;">
+			
 				<tr>
-					<th scope="col">Image Name</th>
-					<th></th>
-					<th class="text-center" scope="col">Classes</th>
-					<th></th>
-					<th class="text-center" scope="col">Number of Labels</th>
-					<th></th>
-					<th class="text-center" scope="col">Confidence</th>
-					<th class="text-right" scope="col"></th>
-					<th></th>
-				</tr>
+					<th scope="col" colspan="2">Image Name</th>
+					<th class="text-left" scope="col" colspan="2">Classes</th>
+					<th class="text-left" scope="col" colspan="2">Number of Labels</th>
+					<th class="text-left" scope="col" colspan=4>Confidence</th>
+					<!--<th class="text-right" scope="col" colspan="3"></th>-->
 			</thead>
 			<tbody>
 				<% for(var i=0; i<images.length; i++) {%>
@@ -78,13 +82,13 @@
 					<td scope="row"><a href="/labelingV?IDX=<%= IDX %>&IName=<%= images[i].IName %>&sort=<%= sortFilter %>&class=<%= imageClass %>&classFilter=true"><%= images[i].IName %></a></td>
 					<!-- input checkbox for review here -->
 					<% if(images[i].reviewImage != 0) {%>
-						<td class="text-right"><h4 style="border-radius: 0; color: red;">Needs Review</h4></td>
+						<td class="text-center"><h4 style="border-radius: 0; color: red;">Needs Review</h4></td>
 					<%} else {%>
 						<td></td>
 					<% } %>
 
 					<% if(classes[i].length > 0) {%>
-						<td class="text-center">
+						<td class="text-left">
 						<% for(var f=0; f<classes[i].length; f++) {%>
 						<a><%= classes[i][f] %></a>
 						<% } %>
