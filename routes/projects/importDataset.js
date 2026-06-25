@@ -72,6 +72,14 @@ const importDataset = async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Database name is required for classification import.' });
             }
             args.push('-d', projectName, '-r', 'class');
+        } else if (importType === 'yolo' || importType === 'kwcoco') {
+            if (req.files && req.files.weights) {
+                const weightsFile = req.files.weights;
+                const weightsPath = path.join(uploadPath, Date.now() + '-' + weightsFile.name);
+                await weightsFile.mv(weightsPath);
+                args.push('-w', weightsPath);
+            }
+            args.push('-d', projectName, '-r', importType === 'yolo' ? 'yolo' : 'coco');
         } else if (importType === 'inference' || importType === 'inference-classification') {
             if (!req.files.weights) {
                 return res.status(400).json({ success: false, message: 'Weights file is required for inference.' });

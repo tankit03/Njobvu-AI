@@ -74,14 +74,9 @@ const importYolo = async (req, res) => {
             weightsPathVal = tempWeightsPath;
         }
 
-        const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'import_yolo.py');
-        
-        // Ensure stub python script exists
-        if (!fs.existsSync(scriptPath)) {
-            fs.writeFileSync(scriptPath, `import sys\nimport os\nprint("YOLO Import script stub called")\nsys.exit(0)\n`);
-        }
+        const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'import_options.py');
 
-        const args = ['-u', scriptPath, '-i', unzippedPath, '-o', projectPath, '-d', projectName, '-t', taskType];
+        const args = ['-u', scriptPath, '-i', unzippedPath, '-o', projectPath, '-d', projectName, '-r', 'yolo'];
         if (weightsPathVal) {
             args.push('-w', weightsPathVal);
         }

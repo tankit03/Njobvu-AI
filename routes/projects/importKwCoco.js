@@ -73,16 +73,11 @@ const importKwCoco = async (req, res) => {
             modelPathVal = tempModelPath;
         }
 
-        const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'import_kwcoco.py');
-        
-        // Ensure stub python script exists
-        if (!fs.existsSync(scriptPath)) {
-            fs.writeFileSync(scriptPath, `import sys\nimport os\nprint("KW Coco Import script stub called")\nsys.exit(0)\n`);
-        }
+        const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'import_options.py');
 
-        const args = ['-u', scriptPath, '-i', unzippedPath, '-o', projectPath, '-d', projectName];
+        const args = ['-u', scriptPath, '-i', unzippedPath, '-o', projectPath, '-d', projectName, '-r', 'coco'];
         if (modelPathVal) {
-            args.push('-m', modelPathVal);
+            args.push('-w', modelPathVal);
         }
 
         const pythonProcess = spawn(`${pythonPath}`, args);

@@ -102,6 +102,8 @@ jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
     yolo_weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() },
     coco_archive: { name: 'coco_archive.zip', mv: jest.fn().mockResolvedValue() },
     viame_model: { name: 'viame.pt', mv: jest.fn().mockResolvedValue() },
+    dataset: { name: 'dataset.zip', mv: jest.fn().mockResolvedValue() },
+    weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() },
     ...req.files
   };
   next();
@@ -242,5 +244,39 @@ describe('Project Routes - Basic Tests', () => {
       .set('Cookie', ['Username=testuser']);
 
     expect(res.statusCode).toBe(200);
+  });
+
+  /* 
+  * this tests if the import-dataset route responds to YOLO archive import requests.
+  * This test expects a status code 200.
+  */
+  it('should successfully import YOLO dataset archive', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-dataset')
+      .send({
+        projectName: 'test-yolo-project',
+        'import-type': 'yolo'
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  /* 
+  * this tests if the import-dataset route responds to KW Coco archive import requests.
+  * This test expects a status code 200.
+  */
+  it('should successfully import KW Coco dataset archive', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-dataset')
+      .send({
+        projectName: 'test-coco-project',
+        'import-type': 'kwcoco'
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 }); 

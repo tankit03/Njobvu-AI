@@ -2,10 +2,12 @@ import sys
 print("Python executable:", sys.executable);
 import os
 from ultralytics import YOLO
-import sys
 from PIL import Image
 import subprocess
 import shutil
+import json
+import yaml
+import sqlite3
 #classes need to be of form X_Y or X or X_y_z or X-y X-y-z if there are spaces in the class name it will give errors
 
 runs = ''
@@ -237,6 +239,289 @@ def inference_plus_import(input_dir, output, weights_file):
         print(f"Stderr: {e.stderr}", file=sys.stderr)
         sys.exit(1)
 
+def yolo_archive_import(db_name, input_dir, output, weights_file=None):
+    print("\n--- Starting YOLO Archive Import ---")
+    print(f"Input directory: {input_dir}")
+    print(f"Output project path: {output}")
+    print(f"Database name: {db_name}")
+
+    # 1. Search recursively for any yaml file to extract class names
+    yaml_files = []
+    for root, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file.lower().endswith(('.yaml', '.yml')):
+                yaml_files.append(os.path.join(root, file))
+
+    class_names = {}
+    if yaml_files:
+        for yf in sorted(yaml_files):
+            try:
+                with open(yf, 'r') as f:
+                    data = yaml.safe_load(f)
+                    if isinstance(data, dict) and 'names' in data:
+                        names = data['names']
+                        if isinstance(names, dict):
+                            class_names = {int(k): str(v) for k, v in names.items()}
+                            print(f"Parsed class names from {yf}: {class_names}")
+                            break
+                        elif isinstance(names, list):
+                            class_names = {i: str(v) for i, v in enumerate(names)}
+                            print(f"Parsed class names from {yf}: {class_names}")
+                            break
+            except Exception as e:
+                print(f"Warning: Failed to parse yaml {yf}: {e}")
+
+    # Fallback to classes.txt if found
+    if not class_names:
+        for root, dirs, files in os.walk(input_dir):
+            for file in files:
+                if file.lower() == 'classes.txt':
+                    try:
+                        with open(os.path.join(root, file), 'r') as f:
+                            lines = [line.strip() for line in f if line.strip()]
+                            class_names = {i: name for i, name in enumerate(lines)}
+                            print(f"Parsed class names from classes.txt: {class_names}")
+                            break
+                    except Exception as e:
+                        print(f"Warning: Failed to parse classes.txt: {e}")
+            if class_names:
+                break
+
+    # 2. Search recursively for any .pt or other weights files and copy them to training/weights/
+    weights_path = os.path.join(output, 'training', 'weights')
+    os.makedirs(weights_path, exist_ok=True)
+    if weights_file and os.path.exists(weights_file):
+        shutil.copy(weights_file, os.path.join(weights_path, os.path.basename(weights_file)))
+        print(f"Copied uploaded weights file: {weights_file} -> {weights_path}")
+    
+    for root, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file.lower().endswith(('.pt', '.weights')):
+                src = os.path.join(root, file)
+                if not (weights_file and os.path.abspath(src) == os.path.abspath(weights_file)):
+                    dst = os.path.join(weights_path, file)
+                    shutil.copy(src, dst)
+                    print(f"Found model file in archive: {src} -> {dst}")
+
+    # 3. Create sqlite3 database
+    db_file_path = os.path.join(output, f'{db_name}.db')
+    conn = sqlite3.connect(db_file_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("CREATE TABLE IF NOT EXISTS Classes (CName VARCHAR NOT NULL PRIMARY KEY)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Images (IName VARCHAR NOT NULL PRIMARY KEY, reviewImage INTEGER NOT NULL DEFAULT 0, validateImage INTEGER NOT NULL DEFAULT 0)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Labels (LID INTEGER PRIMARY KEY, CName VARCHAR NOT NULL, X VARCHAR NOT NULL, Y VARCHAR NOT NULL, W INTEGER NOT NULL, H INTEGER NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(CName) REFERENCES Classes(CName), FOREIGN KEY(IName) REFERENCES Images(IName))")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Validation (Confidence INTEGER NOT NULL, LID INTEGER NOT NULL PRIMARY KEY, CName VARCHAR NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(LID) REFERENCES Labels(LID), FOREIGN KEY(IName) REFERENCES Images(IName), FOREIGN KEY(CName) REFERENCES Classes(CName))")
+    conn.commit()
+
+    # 4. Find all images recursively, copy them, and parse labels
+    image_exts = ('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')
+    images_path = os.path.join(output, 'images')
+    os.makedirs(images_path, exist_ok=True)
+
+    inserted_classes = set()
+    label_id = 1
+
+    for root, dirs, files in os.walk(input_dir):
+        if '__MACOSX' in root or 'training/weights' in root:
+            continue
+        for file in files:
+            if file.lower().endswith(image_exts):
+                image_path = os.path.join(root, file)
+                
+                rel_path = os.path.relpath(image_path, input_dir)
+                new_image_name = rel_path.replace(os.sep, '_')
+                
+                dst_image_path = os.path.join(images_path, new_image_name)
+                shutil.copy(image_path, dst_image_path)
+
+                cursor.execute("INSERT OR IGNORE INTO Images (IName, reviewImage, validateImage) VALUES (?, 0, 0)", (new_image_name,))
+                
+                base_name_no_ext = os.path.splitext(file)[0]
+                label_txt_file = base_name_no_ext + '.txt'
+                
+                label_path = None
+                path_same_folder = os.path.join(root, label_txt_file)
+                if os.path.exists(path_same_folder):
+                    label_path = path_same_folder
+                else:
+                    path_swapped = root.replace('images', 'labels')
+                    path_swapped_file = os.path.join(path_swapped, label_txt_file)
+                    if os.path.exists(path_swapped_file):
+                        label_path = path_swapped_file
+                
+                if label_path:
+                    try:
+                        with Image.open(image_path) as img:
+                            img_w, img_h = img.size
+                        
+                        with open(label_path, 'r') as lf:
+                            for line in lf:
+                                parts = line.strip().split()
+                                if len(parts) == 5:
+                                    class_id = int(parts[0])
+                                    x_center = float(parts[1])
+                                    y_center = float(parts[2])
+                                    w = float(parts[3])
+                                    h = float(parts[4])
+                                    
+                                    left_x = int(round((x_center - w / 2.0) * img_w))
+                                    top_y = int(round((y_center - h / 2.0) * img_h))
+                                    box_w = int(round(w * img_w))
+                                    box_h = int(round(h * img_h))
+                                    
+                                    cname = class_names.get(class_id, f"class_{class_id}")
+                                    
+                                    if cname not in inserted_classes:
+                                        cursor.execute("INSERT OR IGNORE INTO Classes (CName) VALUES (?)", (cname,))
+                                        inserted_classes.add(cname)
+                                        
+                                    cursor.execute("INSERT INTO Labels (LID, CName, X, Y, W, H, IName) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                                   (label_id, cname, str(left_x), str(top_y), box_w, box_h, new_image_name))
+                                    label_id += 1
+                    except Exception as e:
+                        print(f"Warning: Error parsing label file {label_path} for image {file}: {e}")
+
+    conn.commit()
+    conn.close()
+    print("YOLO Archive Import completed successfully.")
+
+
+def coco_archive_import(db_name, input_dir, output, weights_file=None):
+    print("\n--- Starting COCO / KW COCO Archive Import ---")
+    print(f"Input directory: {input_dir}")
+    print(f"Output project path: {output}")
+    print(f"Database name: {db_name}")
+
+    # 1. Search recursively for any json file containing COCO keys
+    json_files = []
+    for root, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file.lower().endswith('.json'):
+                json_files.append(os.path.join(root, file))
+
+    coco_json_path = None
+    coco_data = None
+    for jf in json_files:
+        try:
+            with open(jf, 'r') as f:
+                data = json.load(f)
+                if isinstance(data, dict) and 'images' in data and 'annotations' in data:
+                    coco_json_path = jf
+                    coco_data = data
+                    print(f"Found COCO JSON: {jf}")
+                    break
+        except Exception as e:
+            pass
+
+    if not coco_data:
+        print("Error: No valid COCO JSON file found in the archive.", file=sys.stderr)
+        sys.exit(1)
+
+    # 2. Search recursively for any weights file and copy it to training/weights/
+    weights_path = os.path.join(output, 'training', 'weights')
+    os.makedirs(weights_path, exist_ok=True)
+    if weights_file and os.path.exists(weights_file):
+        shutil.copy(weights_file, os.path.join(weights_path, os.path.basename(weights_file)))
+        print(f"Copied uploaded weights file: {weights_file} -> {weights_path}")
+
+    for root, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file.lower().endswith(('.pt', '.weights', '.habry', '.pipe', '.conf')):
+                src = os.path.join(root, file)
+                if not (weights_file and os.path.abspath(src) == os.path.abspath(weights_file)):
+                    dst = os.path.join(weights_path, file)
+                    shutil.copy(src, dst)
+                    print(f"Found model file in archive: {src} -> {dst}")
+
+    # 3. Create sqlite3 database
+    db_file_path = os.path.join(output, f'{db_name}.db')
+    conn = sqlite3.connect(db_file_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("CREATE TABLE IF NOT EXISTS Classes (CName VARCHAR NOT NULL PRIMARY KEY)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Images (IName VARCHAR NOT NULL PRIMARY KEY, reviewImage INTEGER NOT NULL DEFAULT 0, validateImage INTEGER NOT NULL DEFAULT 0)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Labels (LID INTEGER PRIMARY KEY, CName VARCHAR NOT NULL, X VARCHAR NOT NULL, Y VARCHAR NOT NULL, W INTEGER NOT NULL, H INTEGER NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(CName) REFERENCES Classes(CName), FOREIGN KEY(IName) REFERENCES Images(IName))")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Validation (Confidence INTEGER NOT NULL, LID INTEGER NOT NULL PRIMARY KEY, CName VARCHAR NOT NULL, IName VARCHAR NOT NULL, FOREIGN KEY(LID) REFERENCES Labels(LID), FOREIGN KEY(IName) REFERENCES Images(IName), FOREIGN KEY(CName) REFERENCES Classes(CName))")
+    conn.commit()
+
+    categories = coco_data.get('categories', [])
+    category_map = {}
+    inserted_classes = set()
+    for cat in categories:
+        cat_id = cat.get('id')
+        cat_name = cat.get('name', f"class_{cat_id}")
+        category_map[cat_id] = cat_name
+        cursor.execute("INSERT OR IGNORE INTO Classes (CName) VALUES (?)", (cat_name,))
+        inserted_classes.add(cat_name)
+
+    # 4. Map images in COCO JSON to actual files
+    images_path = os.path.join(output, 'images')
+    os.makedirs(images_path, exist_ok=True)
+
+    coco_images = coco_data.get('images', [])
+    image_id_to_new_name = {}
+    
+    all_files_in_archive = {}
+    for root, dirs, files in os.walk(input_dir):
+        for file in files:
+            if file.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')):
+                all_files_in_archive[file.lower()] = os.path.join(root, file)
+
+    for img_entry in coco_images:
+        img_id = img_entry.get('id')
+        file_name = img_entry.get('file_name')
+        
+        found_path = None
+        try_path_1 = os.path.join(os.path.dirname(coco_json_path), file_name)
+        if os.path.exists(try_path_1):
+            found_path = try_path_1
+        else:
+            try_path_2 = os.path.join(input_dir, file_name)
+            if os.path.exists(try_path_2):
+                found_path = try_path_2
+            else:
+                base_name = os.path.basename(file_name)
+                if base_name.lower() in all_files_in_archive:
+                    found_path = all_files_in_archive[base_name.lower()]
+
+        if found_path:
+            rel_path = os.path.relpath(found_path, input_dir)
+            new_image_name = rel_path.replace(os.sep, '_')
+            
+            shutil.copy(found_path, os.path.join(images_path, new_image_name))
+            
+            cursor.execute("INSERT OR IGNORE INTO Images (IName, reviewImage, validateImage) VALUES (?, 0, 0)", (new_image_name,))
+            image_id_to_new_name[img_id] = new_image_name
+        else:
+            print(f"Warning: Image file not found for COCO entry: {file_name}")
+
+    # 5. Populate Labels
+    annotations = coco_data.get('annotations', [])
+    label_id = 1
+    for ann in annotations:
+        image_id = ann.get('image_id')
+        cat_id = ann.get('category_id')
+        bbox = ann.get('bbox')
+        
+        new_image_name = image_id_to_new_name.get(image_id)
+        cname = category_map.get(cat_id)
+        
+        if new_image_name and cname and bbox and len(bbox) == 4:
+            left_x = int(round(bbox[0]))
+            top_y = int(round(bbox[1]))
+            box_w = int(round(bbox[2]))
+            box_h = int(round(bbox[3]))
+            
+            cursor.execute("INSERT INTO Labels (LID, CName, X, Y, W, H, IName) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                           (label_id, cname, str(left_x), str(top_y), box_w, box_h, new_image_name))
+            label_id += 1
+
+    conn.commit()
+    conn.close()
+    print("COCO Archive Import completed successfully.")
+
+
 # Main argument parsing and execution logic
 if __name__ == '__main__':
     # Parse all arguments first
@@ -264,6 +549,10 @@ if __name__ == '__main__':
         inference_plus_import(input_dir, output, weights_file)
     elif runs == 'ci':
         inference_into_classification(db_name, input_dir, output, weights_file, classification_dir)
+    elif runs == 'yolo':
+        yolo_archive_import(db_name, input_dir, output, weights_file)
+    elif runs == 'coco':
+        coco_archive_import(db_name, input_dir, output, weights_file)
     elif runs:
         print(f"invalid run type: {runs}")
 
