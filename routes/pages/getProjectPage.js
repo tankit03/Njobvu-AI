@@ -33,7 +33,7 @@ async function getProjectPage(req, res) {
     var admin = projects[num].Admin;
 
     var project_path = path.join(currentPath, "public", "projects");
-    console.log("this is the project path", project_path);
+    global.logger.debug("this is the project path", project_path);
     var db_path = path.join(
         project_path,
         admin + "-" + PName,

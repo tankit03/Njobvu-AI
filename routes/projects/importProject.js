@@ -118,7 +118,7 @@ async function importProject(req, res) {
                 await res.status(500).send("Could not fetch old images");
             }
 
-            console.log(oldImages);
+            global.logger.debug(oldImages);
 
             var oldDbImages = [];
             var fileTypes = [

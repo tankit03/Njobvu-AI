@@ -61,7 +61,7 @@ async function getAnnotatePage(req, res) {
         ".db";
 
     // Log the database path being accessed
-    console.log("Accessing database file:", db_path);
+    global.logger.debug("Accessing database file:", db_path);
 
     // If you need to connect to this specific database
     var pdb = new sqlite3.Database(db_path, (err) => {

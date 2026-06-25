@@ -72,7 +72,7 @@ async function inceptionInference(req, res) {
         exec(cmd, (err, stdout, stderr) => {
             if (err) {
                 global.logger.error(err);
-                console.log(`Error: ${err.message}`);
+                global.logger.debug(`Error: ${err.message}`);
 
                 if (err.message != "stdout maxBuffer length exceeded") {
                     success = err.message;
@@ -83,7 +83,7 @@ async function inceptionInference(req, res) {
                     );
                 }
             } else if (stderr) {
-                console.log(`stderr: ${stderr}`);
+                global.logger.debug(`stderr: ${stderr}`);
 
                 if (stderr != "stdout maxBuffer length exceeded") {
                     fs.writeFileSync(

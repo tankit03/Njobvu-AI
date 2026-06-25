@@ -30,7 +30,7 @@ async function getMergeSettingsPage(req, res) {
             "'",
     );
 
-    console.log("username: ", user);
+    global.logger.debug("username: ", user);
     try {
         res.render("settings/mergeSettings", {
             title: "mergeSettings",

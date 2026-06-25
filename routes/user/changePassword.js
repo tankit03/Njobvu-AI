@@ -13,7 +13,7 @@ async function changePassword(req, res) {
         return res.send({ Success: "Could not get current user" });
     }
 
-    console.log(user);
+    global.logger.debug(user);
 
     if (!bcrypt.compareSync(oldPassword, user.row.Password)) {
         return res.send({ Success: "Wrong Password!" });

@@ -31,7 +31,7 @@ async function getProjectSettingsPage(req, res) {
             "'",
     );
 
-    console.log("username: ", user);
+    global.logger.debug("username: ", user);
     try {
         res.render("settings/projSettings", {
             title: "projSettings",

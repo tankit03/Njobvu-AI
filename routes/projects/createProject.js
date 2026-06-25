@@ -75,10 +75,10 @@ async function createProject(req, res) {
     }
 
     try {
-        console.log(projectPath);
+        global.logger.debug(projectPath);
         const classes = await queries.project.getAllClasses(projectPath);
 
-        console.log(classes);
+        global.logger.debug(classes);
 
         const currentClasses = [];
         for (var i = 0; i < classes.rows.length; i++) {
@@ -99,7 +99,7 @@ async function createProject(req, res) {
         var zipPath = imagesPath + "/" + uploadImages.name; // $LABELING_TOOL_PATH/public/projects/{projectName}/{zip_file_name}
 
         await uploadImages.mv(zipPath);
-        console.log("File Uploaded", uploadImages.name);
+        global.logger.debug("File Uploaded", uploadImages.name);
 
         var zip = new StreamZip.async({ file: zipPath });
 
@@ -173,7 +173,7 @@ async function createProject(req, res) {
 
             cleanFiles();
         } catch (e) {
-            console.log("ERROR " + e);
+            global.logger.debug("ERROR " + e);
         }
 
         async function cleanFiles() {
@@ -293,9 +293,9 @@ async function createProject(req, res) {
 
             var child = exec(cmd, (err, stdout, stderr) => {
                 if (err) {
-                    console.log(`This is the error: ${err.message}`);
+                    global.logger.debug(`This is the error: ${err.message}`);
                 } else if (stderr) {
-                    console.log(`This is the stderr: ${stderr}`);
+                    global.logger.debug(`This is the stderr: ${stderr}`);
                 }
             });
 
@@ -304,7 +304,7 @@ async function createProject(req, res) {
             });
 
             child.on("exit", (code) => {
-                console.log(`Child process exited with code ${code}`);
+                global.logger.debug(`Child process exited with code ${code}`);
                 applyBootstrapLabels();
             });
         } catch (err) {

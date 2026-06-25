@@ -164,7 +164,7 @@ async function yoloInference(req, res) {
         exec(cmd, (err, stdout, stderr) => {
             if (err) {
                 global.logger.error(err);
-                console.log(`This is the error: ${err.message}`);
+                global.logger.debug(`This is the error: ${err.message}`);
 
                 if (err.message != "stdout maxBuffer length exceeded") {
                     success = err.message;
@@ -178,7 +178,7 @@ async function yoloInference(req, res) {
                     );
                 }
             } else if (stderr) {
-                console.log(`This is the stderr: ${stderr}`);
+                global.logger.debug(`This is the stderr: ${stderr}`);
 
                 if (stderr != "stdout maxBuffer length exceeded") {
                     fs.writeFile(

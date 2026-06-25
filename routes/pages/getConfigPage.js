@@ -167,8 +167,8 @@ async function getConfigPage(req, res) {
     var colors = [];
     var i = 0;
 
-    console.log(colors);
-    console.log("this is colors", colorsJSON);
+    global.logger.debug(colors);
+    global.logger.debug("this is colors", colorsJSON);
 
     while (colors.length < results2.length) {
         if (i >= colorsJSON.length) {

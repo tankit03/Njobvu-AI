@@ -84,7 +84,7 @@ async function getLabelingPage(req, res) {
         });
     };
 
-    console.log(String(IName));
+    global.logger.debug(String(IName));
 
     var results1 = await ldb.allAsync("SELECT * FROM `Classes`");
     var Classes = [];
@@ -184,7 +184,7 @@ async function getLabelingPage(req, res) {
             colors.push(colorsJSON[i]);
             i++;
         }
-        console.log(results3);
+        global.logger.debug(results3);
         res.render("labeling", {
             title: "labeling",
             user: user,

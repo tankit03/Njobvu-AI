@@ -64,12 +64,12 @@ async function getHomePage(req, res) {
                     results1[i][0].PName + ".db"
                 );
 
-                console.log("Attempting to connect to database:", dbpath);
+                global.logger.debug("Attempting to connect to database:", dbpath);
                 
                 // Check if database file exists
                 const fs = require('fs');
                 if (!fs.existsSync(dbpath)) {
-                    console.log("Database file does not exist:", dbpath);
+                    global.logger.debug("Database file does not exist:", dbpath);
                     // Add default values for this project
                     review_counter.push(0);
                     results1[i][3] = 0;

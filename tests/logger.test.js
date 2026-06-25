@@ -16,7 +16,7 @@ describe('Logger Utility Unit Tests', () => {
         errorSpy.mockRestore();
     });
 
-    it('should format logs as valid JSON', () => {
+    it('should format logs as valid JSON and track caller source', () => {
         logger.setLevel('info');
         logger.info('Test info message', { userId: 123 });
 
@@ -26,6 +26,9 @@ describe('Logger Utility Unit Tests', () => {
         expect(output.level).toBe('info');
         expect(output.message).toBe('Test info message');
         expect(output.meta).toEqual({ userId: 123 });
+        expect(output).toHaveProperty('source');
+        expect(output.source.file).toBe('tests/logger.test.js');
+        expect(typeof output.source.line).toBe('number');
     });
 
     it('should filter log levels correctly based on severity', () => {
