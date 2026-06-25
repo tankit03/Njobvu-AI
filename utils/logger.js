@@ -157,15 +157,31 @@ logger.requestMiddleware = (req, res, next) => {
 
     res.on('finish', () => {
         const duration = Date.now() - start;
+        const url = req.originalUrl || req.url;
 
-        logger.info(`${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`, {
+        // static asset patterns
+        const staticAssetRegex = /\.(css|js|png|jpg|jpeg|gif|ico|woff|woff2|ttf|svg|eot|mp4|webm|ogg)$/i;
+        const staticPathPrefixes = ['/js/', '/css/', '/images/', '/libraries/', '/node_modules/'];
+
+        const isStatic = staticAssetRegex.test(url) ||
+            staticPathPrefixes.some(prefix => url.startsWith(prefix));
+
+        const logData = {
             method: req.method,
-            url: req.originalUrl,
+            url: url,
             status: res.statusCode,
             durationMs: duration,
             ip: req.ip,
             userAgent: req.get('User-Agent')
-        });
+        };
+
+        const message = `${req.method} ${url} ${res.statusCode} - ${duration}ms`;
+
+        if (isStatic) {
+            logger.debug(message, logData);
+        } else {
+            logger.info(message, logData);
+        }
     });
 
     next();
