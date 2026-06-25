@@ -47,7 +47,7 @@ async function createClassification(req, res) {
                     global.logger.error("Error moving file:", err);
                     reject(new Error("Failed to move file."));
                 } else {
-                    console.log("File moved to path:", targetPath);
+                    global.logger.debug("File moved to path:", targetPath);
                     resolve();
                 }
             });
@@ -74,7 +74,7 @@ async function createClassification(req, res) {
     let extractedFiles;
     try {
         extractedFiles = fs.readdirSync(projectPath);
-        console.log("Extracted files:", extractedFiles);
+        global.logger.debug("Extracted files:", extractedFiles);
     } catch (error) {
         global.logger.error("Error reading project path:", error);
         await deleteDir(projectPath);
@@ -85,7 +85,7 @@ async function createClassification(req, res) {
 
     const inputDir = projectPath + "/" + extractedFiles[0];
     const runType = "class";
-    console.log("Using input directory:", inputDir);
+    global.logger.debug("Using input directory:", inputDir);
 
     try {
         await pythonScript(inputDir, projectPath, runType, dbName);

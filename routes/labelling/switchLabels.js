@@ -11,12 +11,12 @@ async function switchLabels(req, res) {
         const mainPath = currentPath + "/public/projects/";
         const projectPath = mainPath + admin + "-" + PName;
 
-        console.log("Request body:", req.body);
-        console.log("switch labels for Project Path:", projectPath);
-        console.log("labels type:", typeof selectedLabels);
-        console.log("labels value:", selectedLabels);
-        console.log("selectedClass:", selectedClass);
-        console.log("currentClass:", currentClass);
+        global.logger.debug("Request body:", req.body);
+        global.logger.debug("switch labels for Project Path:", projectPath);
+        global.logger.debug("labels type:", typeof selectedLabels);
+        global.logger.debug("labels value:", selectedLabels);
+        global.logger.debug("selectedClass:", selectedClass);
+        global.logger.debug("currentClass:", currentClass);
 
         // Validate input
         if (!selectedLabels) {
@@ -50,12 +50,12 @@ async function switchLabels(req, res) {
         }
 
         const placeholders = labelsArray.map(() => "?").join(",");
-        console.log("placeholders", placeholders);
+        global.logger.debug("placeholders", placeholders);
         const sql = `UPDATE Labels SET CName = ? WHERE CName = ? AND LID IN (${placeholders})`;
-        console.log("SQL query:", sql);
+        global.logger.debug("SQL query:", sql);
 
         const params = [selectedClass, currentClass, ...labelsArray];
-        console.log("SQL params:", params);
+        global.logger.debug("SQL params:", params);
 
         const result = await queries.project.sql(projectPath, sql, params);
 
@@ -67,7 +67,7 @@ async function switchLabels(req, res) {
                 error: result.error
             });
         }
-        console.log("Number of labels updated:", result.changes);
+        global.logger.debug("Number of labels updated:", result.changes);
 
         if (result.changes === 0) {
             console.warn("No labels were updated - check if the labels exist and match the criteria");

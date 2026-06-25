@@ -61,7 +61,7 @@ async function downloadDataset(req, res) {
                     .extract(cropOptions) // Crop with x, y, w, h
                     .toFile(targetPath); // Save to the target path
 
-                console.log(`Image cropped successfully: ${targetPath}`);
+                global.logger.debug(`Image cropped successfully: ${targetPath}`);
             } catch (err) {
                 global.logger.error(`error cropping image: ${err.message}`);
             }
@@ -164,7 +164,7 @@ async function downloadDataset(req, res) {
         });
 
         output.on("close", () => {
-            console.log(`${archive.pointer()} total bytes`);
+            global.logger.debug(`${archive.pointer()} total bytes`);
             console.log(
                 "archiver has been finalized and the output file descriptor has closed.",
             );

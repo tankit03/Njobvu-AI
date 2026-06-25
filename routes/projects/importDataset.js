@@ -40,7 +40,7 @@ const importDataset = async (req, res) => {
 
         // If a project with the same name exists, delete it to ensure a fresh import.
         if (fs.existsSync(projectPath)) {
-            console.log(`Project directory ${projectPath} already exists. Removing for a fresh import.`);
+            global.logger.debug(`Project directory ${projectPath} already exists. Removing for a fresh import.`);
             fs.rmSync(projectPath, { recursive: true, force: true });
         }
 
@@ -99,7 +99,7 @@ const importDataset = async (req, res) => {
 
         pythonProcess.stdout.on('data', (data) => {
             const log_data = data.toString();
-            console.log('Python Script:', log_data);
+            global.logger.debug('Python Script:', log_data);
             stdout += log_data;
         });
 

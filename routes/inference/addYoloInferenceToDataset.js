@@ -63,10 +63,10 @@ async function addYoloInferenceToDataset(req, res) {
                 .pipe(csv())
                 .on("data", (row) => {
                     totalRows++;
-                    console.log("RAW ROW:", JSON.stringify(row));
+                    global.logger.debug("RAW ROW:", JSON.stringify(row));
 
                     const conf = parseFloat(row["Confidence"]);
-                    console.log(`  conf parsed: ${conf}, minConfidence: ${minConfidence}, passes: ${conf >= minConfidence}`);
+                    global.logger.debug(`  conf parsed: ${conf}, minConfidence: ${minConfidence}, passes: ${conf >= minConfidence}`);
                     if (isNaN(conf) || conf < minConfidence) return;
                     passedConfidence++;
 
@@ -81,7 +81,7 @@ async function addYoloInferenceToDataset(req, res) {
                         }
                     }
 
-                    console.log(`  class: ${className}, classId: ${classId}, map:`, JSON.stringify(classIndexMap));
+                    global.logger.debug(`  class: ${className}, classId: ${classId}, map:`, JSON.stringify(classIndexMap));
 
                     // skip detections for classes not in this project
                     if (classId === undefined) return;
@@ -104,8 +104,8 @@ async function addYoloInferenceToDataset(req, res) {
                 .on("end", resolve)
                 .on("error", reject);
         });
-        console.log(`detectionsByImage keys:`, Object.keys(detectionsByImage));
-        console.log(`classIndexMap:`, JSON.stringify(classIndexMap));
+        global.logger.debug(`detectionsByImage keys:`, Object.keys(detectionsByImage));
+        global.logger.debug(`classIndexMap:`, JSON.stringify(classIndexMap));
 
         let imagesCopied = 0;
         let labelFilesWritten = 0;
@@ -161,7 +161,7 @@ async function addYoloInferenceToDataset(req, res) {
                 imgWidth = dimensions.width;
                 imgHeight = dimensions.height;
 
-                console.log(`Dimensions for ${imgName}: ${imgWidth}x${imgHeight}`);
+                global.logger.debug(`Dimensions for ${imgName}: ${imgWidth}x${imgHeight}`);
             } catch (e) {
                 global.logger.error(`Could not get dimensions for ${imgName}:`, e);
             }

@@ -34,12 +34,51 @@ class Logger {
         return targetSeverity <= currentSeverity;
     }
 
+    _getCallerInfo() {
+        const obj = {};
+        Error.captureStackTrace(obj, this._write);
+        const stack = obj.stack;
+        if (!stack) return null;
+        
+        const lines = stack.split('\n');
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+            if (line.includes('utils/logger.js') || line.includes('node:internal') || line.includes('(node:')) {
+                continue;
+            }
+            
+            const match = line.match(/(?:\(([^)]+)\)|at\s+([^\s]+)$)/);
+            if (match) {
+                const location = match[1] || match[2];
+                const parts = location.split(':');
+                if (parts.length >= 2) {
+                    const filePath = parts[0];
+                    const lineNo = parts[1];
+                    if (filePath.includes('node_modules')) {
+                        continue;
+                    }
+                    const relativePath = path.relative(process.cwd(), filePath);
+                    return {
+                        file: relativePath,
+                        line: parseInt(lineNo, 10)
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
     _format(level, message, meta) {
         const logObject = {
             timestamp: new Date().toISOString(),
             level,
             message: message instanceof Error ? message.message : String(message)
         };
+
+        const callerInfo = this._getCallerInfo();
+        if (callerInfo) {
+            logObject.source = callerInfo;
+        }
 
         if (message instanceof Error) {
             logObject.stack = message.stack;

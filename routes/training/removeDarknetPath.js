@@ -5,7 +5,7 @@ async function removeDarknetPath(req, res) {
         user = req.cookies.Username;
 
     var removePaths = req.body["darknet_paths[]"];
-    console.log("remove_paths: ", removePaths);
+    global.logger.debug("remove_paths: ", removePaths);
 
     var publicPath = currentPath,
         mainPath = publicPath + "public/projects/", // $LABELING_TOOL_PATH/public/projects/

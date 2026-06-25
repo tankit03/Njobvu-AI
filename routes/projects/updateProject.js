@@ -10,7 +10,7 @@ async function updateProject(req, res) {
         projectPath = mainPath + admin + "-" + PName;
 
     var db = new sqlite3.Database(projectPath + "/" + PName + ".db", (err) => {
-        console.log(db);
+        global.logger.debug(db);
         if (err) {
             return global.logger.error(err.message);
         }

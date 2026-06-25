@@ -59,7 +59,7 @@ async function getServerStatsPage(req, res) {
         // const { stdout, stderr } = await exec( "uptime");
         const { stdout, stderr } = await execAsync("top -bn1|head -20");
         top_stdout = stdout;
-        console.log("this is top_stdout: ", top_stdout);
+        global.logger.debug("this is top_stdout: ", top_stdout);
     } catch (error) {
         global.logger.error(error);
         top_stdout = ""; // Set default value on error
@@ -98,7 +98,7 @@ async function getServerStatsPage(req, res) {
             };
         });
     } catch (error) {
-        console.log("Error fetching GPU stats:", error);
+        global.logger.debug("Error fetching GPU stats:", error);
         gpu_info = []; // Set default value on error
     }
 

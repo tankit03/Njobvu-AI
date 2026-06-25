@@ -19,7 +19,7 @@ async function deleteRun(req, res) {
         if (err) {
             global.logger.error(err);
         }
-        console.log(`${runPath} deleted`);
+        global.logger.debug(`${runPath} deleted`);
     });
     return res.redirect("/training?IDX=" + IDX);
 }

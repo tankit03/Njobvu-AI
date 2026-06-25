@@ -2,7 +2,7 @@ const queries = require("../../queries/queries");
 
 async function deleteImagesWithoutLabel(req, res) {
     try {
-        console.log(req.body);
+        global.logger.debug(req.body);
         let projectName = req.body.PName,
             admin = req.body.Admin,
             user = req.cookies.Username,

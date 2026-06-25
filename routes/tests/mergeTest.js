@@ -289,7 +289,7 @@ async function mergeTest(req, res) {
     const newDbPath = path.normalize(mergePath);
 
     if (!Object.keys(global.projectDbClients).includes(newDbPath)) {
-        console.log(incomingDB);
+        global.logger.debug(incomingDB);
         global.projectDbClients[newDbPath] = new Client(
             mergePath + `/${incomingDB}`,
         );
@@ -418,7 +418,7 @@ async function mergeTest(req, res) {
         return res.status(500).send("Error fetching images");
     }
 
-    console.log(normalizedIncomingImages.rows);
+    global.logger.debug(normalizedIncomingImages.rows);
 
     for (var i = 0; i < normalizedIncomingImages.rows.length; i++) {
         if (
@@ -511,7 +511,7 @@ async function mergeTest(req, res) {
 
     var newLabels = [];
 
-    console.log(incomingLabels.rows, currentLabels);
+    global.logger.debug(incomingLabels.rows, currentLabels);
 
     for (var i = 0; i < incomingLabels.rows.length; i++) {
         let candidate = {

@@ -30,7 +30,7 @@ async function uploadWeights(req, res) {
         if (!fs.existsSync(trainingPath)) {
             fs.mkdir(trainingPath, (error) => {
                 if (error) {
-                    console.log(errror);
+                    global.logger.debug(errror);
                 }
             });
         }

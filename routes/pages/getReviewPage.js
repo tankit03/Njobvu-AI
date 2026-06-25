@@ -100,7 +100,7 @@ async function getReviewPage(req, res) {
         if (err) {
             global.logger.error("Error closing database connection:", err.message);
         }
-        console.log("Closed pdb connection.");
+        global.logger.debug("Closed pdb connection.");
     });
 
     let totalImagesCount = Math.ceil(totalImages[0].count / pageSize);

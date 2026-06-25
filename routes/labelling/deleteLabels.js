@@ -7,14 +7,14 @@ async function deleteLabels(req, res) {
         const PName = req.params.PName;
         const Lid = req.params.Lid.split(",");
 
-        console.log("admin: ", admin);
-        console.log("Lid", Lid);
+        global.logger.debug("admin: ", admin);
+        global.logger.debug("Lid", Lid);
 
         var publicPath = currentPath,
             mainPath = publicPath + "public/projects/",
             projectPath = mainPath + admin + "-" + PName;
 
-        console.log("ProjectPath", projectPath);
+        global.logger.debug("ProjectPath", projectPath);
 
         const placeholders = Lid.map(() => "?").join(",");
         const sql = `DELETE FROM Labels WHERE LID IN (${placeholders})`;
