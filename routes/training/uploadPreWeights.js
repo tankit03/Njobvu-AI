@@ -19,14 +19,14 @@ async function uploadPreWeights(req, res) {
 
     console.log("weightsFilePath: ", weightsFilePath);
 
+    const validExtensions = ["137", "weights", "pt", "h5"]
+
     if (
-        weightsFile.name.split(".").pop() != "137" &&
-        weightsFile.name.split(".").pop() != "weights" &&
-        weightsFile.name.split(".").pop() != "pt"
+        !validExtensions.includes(weightsFile.name.split(".").pop())
     ) {
         res.send({
             Success:
-                "ERROR: Wrong filetype. Must be type .137 or weights or pt",
+                "ERROR: Wrong filetype. Must be type .137 or weights or .pt or .h5",
         });
     } else {
         // move python file and check of python path exists

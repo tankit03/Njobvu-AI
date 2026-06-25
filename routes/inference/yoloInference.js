@@ -1,4 +1,5 @@
 const queries = require("../../queries/queries");
+const path = require("path");
 
 async function yoloInference(req, res) {
     try {
@@ -44,6 +45,7 @@ async function yoloInference(req, res) {
         }
 
         fs.writeFileSync(`${runPath}/${log}`, "");
+        fs.writeFileSync(`${runPath}/type.txt`, "yolo");
 
         ultralyticsCfgScript = runPath + "/datatovalues.py";
 
@@ -67,6 +69,9 @@ async function yoloInference(req, res) {
         for (var i = 0; i < existingClasses.rows.length; i++) {
             cnames.push(existingClasses.rows[i].CName);
         }
+
+        const yamlContent = `names:\n${cnames.map(n => `  - ${n}`).join("\n")}\n`;
+        fs.writeFileSync(classesPath, yamlContent);
 
         var dictImagesLabels = {};
 
@@ -98,7 +103,7 @@ async function yoloInference(req, res) {
                     (existingLabels.rows[j].Y + existingLabels.rows[j].H / 2) /
                     imgH;
 
-                toStringValue = `${cnames.indexOf(existingLabels.rows[j].CName)} ${centerX} ${centerY} ${existingLabels.rows[j].W / imgW} ${existingLabels.rows[j] / imgH}\n`;
+                toStringValue = `${cnames.indexOf(existingLabels.rows[j].CName)} ${centerX} ${centerY} ${existingLabels.rows[j].W / imgW} ${existingLabels.rows[j].H / imgH}\n`;
 
                 if (
                     dictImagesLabels[existingImages.rows[i].IName] == undefined
@@ -186,8 +191,20 @@ async function yoloInference(req, res) {
                 }
             }
 
-            fs.writeFileSync(`${runPath}/done.log`, success);
+            const completionData = {
+                status: err ? 'error' : 'success',
+                timestamp: date,
+                zipAvailable: fs.existsSync(`${runPath}/inference_results.zip`),
+                csvAvailable: fs.existsSync(`${runPath}/inference_stats.csv`),
+                message: success
+            };
+
+            fs.writeFileSync(
+                `${runPath}/done.log`,
+                `${cmd}\n\n${JSON.stringify(completionData, null, 2)}`
+            );
         });
+
 
         res.send({ Success: `YOLO Inference Started` });
     } catch (err) {

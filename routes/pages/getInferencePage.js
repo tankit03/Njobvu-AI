@@ -1,3 +1,6 @@
+const fsPath = require("path");
+const fs = require("fs");
+
 async function getProcessingPage(req, res) {
     console.log("getProcessingPage");
 
@@ -55,12 +58,12 @@ async function getProcessingPage(req, res) {
         fs.mkdirSync(trn_log_path);
         fs.mkdirSync(python_path);
         fs.mkdirSync(weights_path);
-        fs.writeFile(python_path_file, "", function (err) {
+        fs.writeFile(python_path_file, "", function(err) {
             if (err) {
                 console.log(err);
             }
         });
-        fs.writeFile(darknet_path_file, "", function (err) {
+        fs.writeFile(darknet_path_file, "", function(err) {
             if (err) {
                 console.log(err);
             }
@@ -79,7 +82,7 @@ async function getProcessingPage(req, res) {
         fs.mkdirSync(weights_path);
     }
     if (!fs.existsSync(darknet_path_file)) {
-        fs.writeFile(darknet_path_file, "", function (err) {
+        fs.writeFile(darknet_path_file, "", function(err) {
             if (err) {
                 console.log(err);
             }
@@ -95,10 +98,10 @@ async function getProcessingPage(req, res) {
     });
 
     // create async database object functions
-    tdb.getAsync = function (sql) {
+    tdb.getAsync = function(sql) {
         var that = this;
-        return new Promise(function (resolve, reject) {
-            that.get(sql, function (err, row) {
+        return new Promise(function(resolve, reject) {
+            that.get(sql, function(err, row) {
                 if (err) {
                     console.log("runAsync ERROR! ", err);
                     reject(err);
@@ -108,10 +111,10 @@ async function getProcessingPage(req, res) {
             console.log(err);
         });
     };
-    tdb.allAsync = function (sql) {
+    tdb.allAsync = function(sql) {
         var that = this;
-        return new Promise(function (resolve, reject) {
-            that.all(sql, function (err, row) {
+        return new Promise(function(resolve, reject) {
+            that.all(sql, function(err, row) {
                 if (err) {
                     console.log("runAsync ERROR! ", err);
                     reject(err);
@@ -124,19 +127,19 @@ async function getProcessingPage(req, res) {
 
     var results1 = await db.getAsync(
         "SELECT * FROM `Projects` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
     var results2 = await tdb.allAsync("SELECT * FROM `Classes`");
 
     var acc = await db.allAsync(
         "SELECT * FROM `Access` WHERE PName = '" +
-            PName +
-            "' AND Admin = '" +
-            admin +
-            "'",
+        PName +
+        "' AND Admin = '" +
+        admin +
+        "'",
     );
     var access = [];
     for (var i = 0; i < acc.length; i++) {
@@ -171,6 +174,7 @@ async function getProcessingPage(req, res) {
     var weights_files = [];
     var run_path = "";
     var run_paths = [];
+    let run_types = [];
     var idx = 0;
 
     // get inference runs
@@ -321,8 +325,61 @@ async function getProcessingPage(req, res) {
         //check for error file
         err_idx_inf = logs_inf.indexOf(`${inf_runs[i]}-error.log`);
         done_idx_inf = logs_inf.indexOf("done.log");
+        let runTypePath = logs_inf.indexOf("type.txt");
 
-        if (err_idx_inf >= 0) {
+        const fileExistsRecursive = (dirPath, target) => {
+            let entries;
+
+            try {
+                entries = fs.readdirSync(dirPath, { withFileTypes: true });
+            } catch {
+                return false;
+            }
+
+            for (const entry of entries) {
+                const fullPath = fsPath.join(dirPath, entry.name);
+
+                if (entry.name === target) {
+                    return true;
+                }
+
+                if (entry.isDirectory()) {
+                    if (fileExistsRecursive(fullPath, target)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        if (runTypePath >= 0) {
+            const type = fs.readFileSync(
+                fsPath.join(run_path_inf, logs_inf[runTypePath]),
+                "utf8"
+            );
+
+            if (type.trim() === "inception") {
+                run_types.push("Inception");
+            } else if (type.trim() === "yolo") {
+                run_types.push("YOLO");
+            } else {
+                run_types.push("Unknown");
+            }
+        } else {
+            const inceptionExists = fileExistsRecursive(run_path_inf, "inception.py");
+            const yoloExists = fileExistsRecursive(run_path_inf, "datatovalues.py");
+
+            if (inceptionExists) {
+                run_types.push("Inception");
+            } else if (yoloExists) {
+                run_types.push("YOLO");
+            } else {
+                run_types.push("Unknown");
+            }
+        }
+
+        if (err_idx_inf >= 0 && done_idx_inf == -1) {
             // Add error to arrays
             run_status_inf.push("FAILED");
             err_file_inf.push(`${logs_inf[err_idx_inf]}`);
@@ -364,8 +421,6 @@ async function getProcessingPage(req, res) {
                 // weight_inf.push(`${run_path_inf}${logs_inf[j]}`);
                 weight_inf.push(`${logs_inf[j]}`);
                 weights_names_inf.push(logs_inf[j]);
-                console.log("Got Here");
-                console.log("logs_inf[j]:" + logs_inf[j]);
             }
         } else {
             run_status_inf.push("RUNNING");
@@ -403,7 +458,7 @@ async function getProcessingPage(req, res) {
     }
 
     // close the database
-    tdb.close(function (err) {
+    tdb.close(function(err) {
         if (err) {
             console.error(err);
         } else {
@@ -462,6 +517,7 @@ async function getProcessingPage(req, res) {
         run_status_inf: run_status_inf,
         run_paths: run_paths,
         run_paths_inf: run_paths_inf,
+        run_types,
         log_contents: log_contents,
         log_contents_inf: log_contents_inf,
         logged: req.query.logged,

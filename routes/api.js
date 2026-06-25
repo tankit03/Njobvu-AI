@@ -83,11 +83,17 @@ const changeClass = require("./validation/changeClass");
 const bootstrapController = require("./bootstrap/bootstrapController");
 
 const yoloInference = require("./inference/yoloInference");
+const getRunImages = require("./inference/getRunImages");
 const uploadInferenceFile = require("./inference/uploadInferenceFile");
+const inceptionInference = require("./inference/inceptionInference");
+const addYoloInferenceToDataset = require("./inference/addYoloInferenceToDataset");
 
 // INFERENCE ROUTES
 api.post("/yolo-inf", yoloInference);
+api.post("/inception-inf", inceptionInference);
 api.post("/upload_inference_file", uploadInferenceFile);
+api.get("/runs/:runId/images", getRunImages);
+api.post("/inference/add-inference-run-to-dataset", addYoloInferenceToDataset);
 
 // USER ROUTES
 api.post("/logout", logout);
@@ -146,7 +152,7 @@ api.post("/downloadScript", downloadScript);
 api.post("/downloadWeights", downloadWeights);
 api.post("/downloadRun", downloadRun);
 
-//VALIDATION ROUTES
+// VALIDATION ROUTES
 api.post("/changeValidation", changeValidation);
 api.post("/deleteLabelValidation", deleteLabelValidation);
 api.post("/batch-change-class", batchChangeClass);
@@ -156,7 +162,7 @@ api.post("/solo-change-class", changeClass);
 api.post("/test", test);
 api.post("/mergeTest", mergeTest);
 
-//BOOTSTRAP ROUTES
+// BOOTSTRAP ROUTES
 api.post("/bootstrap", bootstrapController);
 
 module.exports = api;

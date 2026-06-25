@@ -44,8 +44,8 @@
                 <input type="hidden" name="IDX" value="<%= IDX %>">
                 <% for(var i=0; i<classes.length; i++) {%>
                     <div class="col-auto mr-4 mb-4">
-                        <input class="form-check-input self-align-center" type="checkbox" value="<%=classes[i].CName%>" id="checkClass-<%= i %>">
-                        <input name="input_updateClass" type="text" class="form-control" style="outline: 2px solid <%= colors[i].value %>" id="input_updateClass-<%= i %>" value="<%=classes[i].CName%>"  required>
+                        <input class="form-check-input self-align-center" type="checkbox" value="<%=classes[i].CName%>" id="checkClass-<%= i %>" aria-label="Select <%=classes[i].CName%>">
+                        <input name="input_updateClass" type="text" class="form-control" style="outline: 2px solid <%= colors[i].value %>" id="input_updateClass-<%= i %>" aria-label="Current class name" value="<%=classes[i].CName%>"  required>
                     </div>
                 <% } %>
             </form>
