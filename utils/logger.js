@@ -79,10 +79,31 @@ class Logger {
     }
 
     _format(level, message, meta) {
+        let msgStr = '';
+        let stackStr = undefined;
+        let additionalMeta = undefined;
+
+        if (message instanceof Error) {
+            msgStr = message.message;
+            stackStr = message.stack;
+        } else if (typeof message === 'object' && message !== null) {
+            if (message.error) {
+                const errObj = message.error;
+                msgStr = errObj.message || String(errObj);
+                stackStr = errObj.stack;
+                additionalMeta = { error: errObj.message || String(errObj) };
+            } else {
+                msgStr = message.message || JSON.stringify(message);
+                stackStr = message.stack;
+            }
+        } else {
+            msgStr = String(message);
+        }
+
         const logObject = {
             timestamp: new Date().toISOString(),
             level,
-            message: message instanceof Error ? message.message : String(message)
+            message: msgStr
         };
 
         const callerInfo = this._getCallerInfo();
@@ -90,18 +111,22 @@ class Logger {
             logObject.source = callerInfo;
         }
 
-        if (message instanceof Error) {
-            logObject.stack = message.stack;
+        if (stackStr) {
+            logObject.stack = stackStr;
+        }
+
+        if (additionalMeta) {
+            logObject.meta = additionalMeta;
         }
 
         if (meta !== undefined && meta !== null) {
             if (meta instanceof Error) {
-                logObject.stack = meta.stack;
-                logObject.meta = { message: meta.message };
+                logObject.stack = logObject.stack || meta.stack;
+                logObject.meta = { ...logObject.meta, message: meta.message };
             } else if (typeof meta === 'object') {
-                logObject.meta = meta;
+                logObject.meta = { ...logObject.meta, ...meta };
             } else {
-                logObject.meta = { value: meta };
+                logObject.meta = { ...logObject.meta, value: meta };
             }
         }
 

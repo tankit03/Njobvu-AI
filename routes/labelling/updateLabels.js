@@ -212,6 +212,16 @@ async function updateLabels(req, res) {
                     classFilter,
             );
         }
+
+        // Fallback redirect to prevent request hanging if formAction is invalid/unmatched
+        return res.redirect(
+            "/labeling?IDX=" +
+                IDX +
+                "&IName=" +
+                IName +
+                "&curr_class=" +
+                currClass,
+        );
     } catch (err) {
         global.logger.error(err);
         return res.status(500).send("Error updating labels");
