@@ -696,17 +696,27 @@ var imageUrl = $("#image_path").val(),
 
 // set the height of the canvas to 75% of the window size originally
 var origin_height = $("#origin_image_height").val(),
-    origin_width = $("#origin_image_width").val(),
-    new_height = $(window).height() * .75,
-    new_width = new_height / scaleFactor,
-    diff_width_ratio = new_width / origin_width;
+    origin_width = $("#origin_image_width").val();
 
-// set the width of the canvas to 93% of window size for ultrawide aspect ratio
-if (new_width > $(window).width()) {
-    new_width = $(window).width() * .95,
-        new_height = new_width * scaleFactor,
-        diff_width_ratio = new_width / origin_width;
+function getCanvasDimensions() {
+    var nh = $(window).height() * .75;
+    var nw = nh / scaleFactor;
+    var r = nw / origin_width;
+
+    // set the width of the canvas to 93% of window size for ultrawide aspect ratio
+    if (nw > $(window).width()) {
+        nw = $(window).width() * .95;
+        nh = nw * scaleFactor;
+        r = nw / origin_width;
+    }
+    return { width: nw, height: nh, ratio: r };
 }
+
+var dims = getCanvasDimensions();
+var new_width = dims.width,
+    new_height = dims.height,
+    diff_width_ratio = dims.ratio;
+
 
 $("#image_width").val(new_width);
 $("#image_height").val(new_height);
@@ -1107,15 +1117,11 @@ $(document).keydown(function(event) {
 // when window resize, rescale canvas
 $(window).resize(function() {
     origin_height = $("#origin_image_height").val();
-    //origin_width = $("#origin_image_width").val();
-    // new_width = $(window).width() * .95;
-    // new_height = new_width * scaleFactor;
-    new_height = $(window).height() * .8;
-    new_width = new_height / scaleFactor;
-    diff_width_ratio = new_width / origin_width;
-    //diff_height_ratio = new_height / origin_height;
-    //console.log(new_width);
-    //console.log(new_height);
+    var dims = getCanvasDimensions();
+    new_width = dims.width;
+    new_height = dims.height;
+    diff_width_ratio = dims.ratio;
+
     $("#image_width").val(new_width);
     $("#image_height").val(new_height);
     canvas.setWidth(new_width);
