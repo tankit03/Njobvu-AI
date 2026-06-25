@@ -6,34 +6,51 @@ jest.mock('decompress-zip/lib/extractors', () => ({
 jest.mock('ffmpeg', () => jest.fn());
 jest.mock('sharp', () => jest.fn());
 jest.mock('unzipper', () => jest.fn());
-jest.mock('child_process', () => ({
-  exec: jest.fn(),
-}));
-jest.mock('sqlite3', () => ({
-  OPEN_CREATE: 1,
-  OPEN_READWRITE: 2,
-  OPEN_READONLY: 1,
-  Database: jest.fn((...args) => {
-    const cb = args[1];
-    if (typeof cb === 'function') cb(null);
-    return {
-      run: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null);
-        return { lastID: 1, changes: 1 };
-      }),
-      get: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null, {});
-      }),
-      all: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null, []);
-      }),
-      close: jest.fn((cb) => cb && cb()),
-    };
-  }),
-}));
+jest.mock('child_process', () => {
+  const mProcess = {
+    stdout: { on: jest.fn() },
+    stderr: { on: jest.fn() },
+    on: jest.fn((event, callback) => {
+      if (event === 'close') {
+        callback(0);
+      }
+    }),
+  };
+  return {
+    exec: jest.fn(),
+    spawn: jest.fn().mockReturnValue(mProcess),
+  };
+});
+jest.mock('sqlite3', () => {
+  const mockDb = {
+    run: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null);
+      return { lastID: 1, changes: 1 };
+    }),
+    get: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null, {});
+    }),
+    all: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null, []);
+    }),
+    close: jest.fn((cb) => cb && cb()),
+  };
+  const mockModule = {
+    OPEN_CREATE: 1,
+    OPEN_READWRITE: 2,
+    OPEN_READONLY: 1,
+    Database: jest.fn((...args) => {
+      const cb = args[1];
+      if (typeof cb === 'function') cb(null);
+      return mockDb;
+    }),
+    verbose: jest.fn().mockImplementation(() => mockModule),
+  };
+  return mockModule;
+});
 jest.mock('socket.io-client', () => ({
   protocol: 'http',
 }));
@@ -68,6 +85,7 @@ jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(false),
   mkdirSync: jest.fn(),
   writeFile: jest.fn((path, data, callback) => callback(null)),
+  writeFileSync: jest.fn(),
   readdirSync: jest.fn().mockReturnValue([]),
   unlinkSync: jest.fn(),
   rename: jest.fn((oldPath, newPath, callback) => callback(null)),
@@ -80,6 +98,11 @@ jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
     upload_images: null,
     upload_video: null,
     upload_bootstrap: null,
+    yolo_archive: { name: 'yolo_archive.zip', mv: jest.fn().mockResolvedValue() },
+    yolo_weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() },
+    coco_archive: { name: 'coco_archive.zip', mv: jest.fn().mockResolvedValue() },
+    viame_model: { name: 'viame.pt', mv: jest.fn().mockResolvedValue() },
+    ...req.files
   };
   next();
 }));
@@ -188,5 +211,36 @@ describe('Project Routes - Basic Tests', () => {
       .set('Cookie', ['Username=testuser']);
 
     expect(res.statusCode).toBe(302);
+  });
+
+  /* 
+  * this tests if the import-yolo route responds to yolo archive imports.
+  * This test expects a status code 200.
+  */
+  it('should respond to import-yolo route', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-yolo')
+      .send({
+        project_name: 'test-yolo-project',
+        task_type: 'detect',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+  });
+
+  /* 
+  * this tests if the import-kwcoco route responds to kwcoco archive imports.
+  * This test expects a status code 200.
+  */
+  it('should respond to import-kwcoco route', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-kwcoco')
+      .send({
+        project_name: 'test-coco-project',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
   });
 }); 

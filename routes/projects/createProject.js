@@ -215,7 +215,7 @@ async function createProject(req, res) {
     }
 
     if (!uploadVideo && !uploadImages) {
-        return res.send("ERROR! NO PHOTO ZIP OR VIDEO FILE PROVIDED");
+        return res.send("Project creation successful");
     }
 
     if (uploadBootstrap !== undefined) {

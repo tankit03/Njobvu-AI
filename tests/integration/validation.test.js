@@ -9,46 +9,49 @@ jest.mock('unzipper', () => jest.fn());
 jest.mock('child_process', () => ({
   exec: jest.fn(),
 }));
-jest.mock('sqlite3', () => ({
-  OPEN_CREATE: 1,
-  OPEN_READWRITE: 2,
-  OPEN_READONLY: 1,
-  Database: jest.fn((...args) => {
-    const cb = args[1];
-    if (typeof cb === 'function') cb(null);
-    const dbInstance = {
-      run: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null);
-        return { lastID: 1, changes: 1 };
-      }),
-      get: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null, {});
-      }),
-      all: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null, []);
-      }),
-      close: jest.fn((cb) => cb && cb()),
-      // Add async methods that are added to database instances
-      getAsync: jest.fn().mockResolvedValue({ 
-        'COUNT(*)': 10,
-        Admin: 'testuser',
-        PDescription: 'Test project description',
-        AutoSave: 1
-      }),
-      allAsync: jest.fn().mockResolvedValue([
-        { CName: 'class1' },
-        { CName: 'class2' },
-        { IName: 'image1.jpg' },
-        { IName: 'image2.jpg' },
-        { Username: 'testuser' }
-      ]),
-    };
-    return dbInstance;
-  }),
-}));
+jest.mock('sqlite3', () => {
+  const mockDb = {
+    run: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null);
+      return { lastID: 1, changes: 1 };
+    }),
+    get: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null, {});
+    }),
+    all: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null, []);
+    }),
+    close: jest.fn((cb) => cb && cb()),
+    getAsync: jest.fn().mockResolvedValue({ 
+      'COUNT(*)': 10,
+      Admin: 'testuser',
+      PDescription: 'Test project description',
+      AutoSave: 1
+    }),
+    allAsync: jest.fn().mockResolvedValue([
+      { CName: 'class1' },
+      { CName: 'class2' },
+      { IName: 'image1.jpg' },
+      { IName: 'image2.jpg' },
+      { Username: 'testuser' }
+    ]),
+  };
+  const mockModule = {
+    OPEN_CREATE: 1,
+    OPEN_READWRITE: 2,
+    OPEN_READONLY: 1,
+    Database: jest.fn((...args) => {
+      const cb = args[1];
+      if (typeof cb === 'function') cb(null);
+      return mockDb;
+    }),
+    verbose: jest.fn().mockImplementation(() => mockModule),
+  };
+  return mockModule;
+});
 jest.mock('socket.io-client', () => ({
   protocol: 'http',
 }));
