@@ -6,10 +6,22 @@ jest.mock('decompress-zip/lib/extractors', () => ({
 jest.mock('ffmpeg', () => jest.fn());
 jest.mock('sharp', () => jest.fn());
 jest.mock('unzipper', () => jest.fn());
-jest.mock('child_process', () => ({
-  exec: jest.fn(),
-}));
-jest.mock('sqlite3', () => ({
+jest.mock('child_process', () => {
+  const mProcess = {
+    stdout: { on: jest.fn() },
+    stderr: { on: jest.fn() },
+    on: jest.fn((event, cb) => {
+      if (event === 'close') {
+        process.nextTick(() => cb(0));
+      }
+    }),
+  };
+  return {
+    exec: jest.fn(),
+    spawn: jest.fn().mockReturnValue(mProcess),
+  };
+});
+const mockSqlite = {
   OPEN_CREATE: 1,
   OPEN_READWRITE: 2,
   OPEN_READONLY: 1,
@@ -33,7 +45,9 @@ jest.mock('sqlite3', () => ({
       close: jest.fn((cb) => cb && cb()),
     };
   }),
-}));
+  verbose: jest.fn(() => mockSqlite),
+};
+jest.mock('sqlite3', () => mockSqlite);
 jest.mock('socket.io-client', () => ({
   protocol: 'http',
 }));
@@ -67,7 +81,9 @@ jest.mock('../../queries/queries', () => ({
 jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(false),
   mkdirSync: jest.fn(),
+  rmSync: jest.fn(),
   writeFile: jest.fn((path, data, callback) => callback(null)),
+  writeFileSync: jest.fn(),
   readdirSync: jest.fn().mockReturnValue([]),
   unlinkSync: jest.fn(),
   rename: jest.fn((oldPath, newPath, callback) => callback(null)),
@@ -76,11 +92,21 @@ jest.mock('fs', () => ({
 
 // Mock file upload
 jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
-  req.files = {
-    upload_images: null,
-    upload_video: null,
-    upload_bootstrap: null,
-  };
+  req.files = {};
+  if (req.path === '/createP') {
+    req.files.upload_images = null;
+    req.files.upload_video = null;
+    req.files.upload_bootstrap = null;
+  } else if (req.path === '/api/projects/import-dataset') {
+    req.files.dataset = {
+      name: 'dataset.zip',
+      mv: jest.fn().mockResolvedValue(),
+    };
+    req.files.weights = {
+      name: 'weights.pt',
+      mv: jest.fn().mockResolvedValue(),
+    };
+  }
   next();
 }));
 
@@ -188,5 +214,39 @@ describe('Project Routes - Basic Tests', () => {
       .set('Cookie', ['Username=testuser']);
 
     expect(res.statusCode).toBe(302);
+  });
+
+  /* 
+  * this tests if the import-dataset route responds to YOLO archive import requests.
+  * This test expects a status code 200.
+  */
+  it('should successfully import YOLO dataset archive', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-dataset')
+      .send({
+        projectName: 'test-yolo-project',
+        'import-type': 'yolo'
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  /* 
+  * this tests if the import-dataset route responds to KW Coco archive import requests.
+  * This test expects a status code 200.
+  */
+  it('should successfully import KW Coco dataset archive', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-dataset')
+      .send({
+        projectName: 'test-coco-project',
+        'import-type': 'kwcoco'
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 }); 
