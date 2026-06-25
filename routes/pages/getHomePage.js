@@ -3,8 +3,6 @@ const path = require('path');
 const fs = require('fs');
 
 async function getHomePage(req, res) {
-    console.log("getHomePage");
-
     var page = req.query.page,
         perPage = req.query.perPage,
         user = req.cookies.Username;

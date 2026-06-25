@@ -2,6 +2,7 @@ const express = require('express');
 const path = require("path");
 const cookieParser = require("cookie-parser")
 const fileUpload = require("express-fileupload")
+global.logger = require("./utils/logger");
 const app = express();
 
 // init API routes
@@ -53,6 +54,7 @@ const {
 
 app.set("views", __dirname + "/views"); // set express to look in this folder to render our view
 app.set("view engine", "ejs"); // configure template engine
+app.use(global.logger.requestMiddleware);
 app.use(express.urlencoded({ extended: false }));
 app.use(fileUpload());
 app.use(express.json()); // parse form data client

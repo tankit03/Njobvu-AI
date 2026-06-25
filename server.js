@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////
 // Set up:
 ////////////////////////////////////////////////////////
+global.logger = require('./utils/logger');
 const app = require('./app');
 const { Client } = require("./queries/client");
 
@@ -37,12 +38,12 @@ const allProjectsPath = path.join(__dirname, "public", "projects");
 try {
     if (!fs.existsSync(allProjectsPath)) {
         fs.mkdirSync(allProjectsPath, { recursive: true }); // recursive: true creates parent directories if they don't exist
-        console.log(`Directory '${allProjectsPath}' created.`);
+        global.logger.info(`Directory '${allProjectsPath}' created.`);
     } else {
-        console.log(`Directory '${allProjectsPath}' already exists.`);
+        global.logger.debug(`Directory '${allProjectsPath}' already exists.`);
     }
 } catch (err) {
-    console.error(`Error creating directory: ${err.message}`);
+    global.logger.error(`Error creating directory: ${err.message}`);
 }
 
 for (const project of fs.readdirSync(allProjectsPath)) {
@@ -85,9 +86,9 @@ global.colorsJSON = JSON.parse(
 
 global.db = new sqlite3.Database("./db/manage.db", (err) => {
     if (err) {
-        return console.error(err.message);
+        return global.logger.error(err.message);
     }
-    console.log("Connected to the main database.");
+    global.logger.info("Connected to the main database.");
 });
 
 global.db.getAsync = function(sql) {
@@ -95,12 +96,11 @@ global.db.getAsync = function(sql) {
     return new Promise((resolve, reject) => {
         that.get(sql, function(err, row) {
             if (err) {
-                console.log("getAsync ERROR! ", err);
                 reject(err);
             } else resolve(row);
         });
     }).catch((err) => {
-        console.error(err);
+        global.logger.error("getAsync ERROR!", { sql, error: err.message, stack: err.stack });
     });
 };
 
@@ -109,12 +109,11 @@ global.db.allAsync = function(sql) {
     return new Promise(function(resolve, reject) {
         that.all(sql, function(err, row) {
             if (err) {
-                console.log("allAsync ERROR! ", err);
                 reject(err);
             } else resolve(row);
         });
     }).catch((err) => {
-        console.error(err);
+        global.logger.error("allAsync ERROR!", { sql, error: err.message, stack: err.stack });
     });
 };
 
@@ -123,12 +122,11 @@ global.db.runAsync = function(sql) {
     return new Promise(function(resolve, reject) {
         that.run(sql, function(err, row) {
             if (err) {
-                console.log("runAsync ERROR! ", err);
                 reject(err);
             } else resolve(row);
         });
     }).catch((err) => {
-        console.error("runAsync error: ", err);
+        global.logger.error("runAsync ERROR!", { sql, error: err.message, stack: err.stack });
     });
 };
 
@@ -137,14 +135,13 @@ global.db.execAsync = function(sql) {
     return new Promise(function(resolve, reject) {
         that.exec(sql, function(err, row) {
             if (err) {
-                console.log("execAsync ERROR! ", err);
                 reject(err);
             } else {
                 resolve(row);
             }
         });
     }).catch((err) => {
-        console.error(err);
+        global.logger.error("execAsync ERROR!", { sql, error: err.message, stack: err.stack });
     });
 };
 const fileUpload = require("express-fileupload");
@@ -254,7 +251,7 @@ if (secure) {
     https.createServer(options, app).listen(port);
 } else {
     var server = app.listen(port, () => {
-        console.log(hostname + ":" + port);
+        global.logger.info(`Server started on ${hostname}:${port}`);
     });
 }
 ////////////////////////////////////////////////////////
