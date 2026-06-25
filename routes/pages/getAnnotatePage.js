@@ -1,9 +1,6 @@
 async function getAnnotatePage(req, res) {
     var username = req.cookies.Username;
-    console.log("Received IDX:", req.query.IDX);
     var IDX = parseInt(req.query.IDX, 10);
-
-    console.log("Parsed IDX:", IDX);
     // get URL variables
     var IDX = parseInt(req.query.IDX),
         user = req.cookies.Username;
@@ -34,7 +31,7 @@ async function getAnnotatePage(req, res) {
     var main_path = public_path + "public/projects/";
     var path = main_path + admin + "-" + PName + "/" + PName + ".db";
     if (isNaN(IDX)) {
-        console.error("Invalid IDX:", IDX);
+        global.logger.error("Invalid IDX:", IDX);
         return res.redirect("/home");
     }
 
@@ -44,7 +41,7 @@ async function getAnnotatePage(req, res) {
     var project = projects[IDX];
 
     if (!project) {
-        console.error("No project found for IDX:", IDX);
+        global.logger.error("No project found for IDX:", IDX);
         return res.redirect("/home");
     }
 
@@ -69,27 +66,27 @@ async function getAnnotatePage(req, res) {
     // If you need to connect to this specific database
     var pdb = new sqlite3.Database(db_path, (err) => {
         if (err) {
-            return console.error("Database connection error:", err.message);
+            return global.logger.error("Database connection error:", err.message);
         }
-        console.log("Connected to pdb.");
+        global.logger.info("Connected to pdb.")
     });
     var sdb = new sqlite3.Database(path, (err) => {
         if (err) {
-            return console.error(err.message);
+            return global.logger.error(err.message);
         }
-        console.log("Connected to tdb.");
+        global.logger.info("Connected to tdb.")
     });
     pdb.allAsync = function (sql) {
         var that = this;
         return new Promise(function (resolve, reject) {
             that.all(sql, function (err, row) {
                 if (err) {
-                    console.log("runAsync ERROR! ", err);
+                    global.logger.error("runAsync ERROR!", err)
                     reject(err);
                 } else resolve(row);
             });
         }).catch((err) => {
-            console.log(err);
+            global.logger.error(err);
         });
     };
     // create async database object functions
@@ -98,12 +95,12 @@ async function getAnnotatePage(req, res) {
         return new Promise(function (resolve, reject) {
             that.get(sql, function (err, row) {
                 if (err) {
-                    console.log("runAsync ERROR! ", err);
+                    global.logger.error("runAsync ERROR!", err)
                     reject(err);
                 } else resolve(row);
             });
         }).catch((err) => {
-            console.log(err);
+            global.logger.error(err);
         });
     };
     sdb.allAsync = function (sql) {
@@ -111,12 +108,12 @@ async function getAnnotatePage(req, res) {
         return new Promise(function (resolve, reject) {
             that.all(sql, function (err, row) {
                 if (err) {
-                    console.log("runAsync ERROR! ", err);
+                    global.logger.error("runAsync ERROR!", err)
                     reject(err);
                 } else resolve(row);
             });
         }).catch((err) => {
-            console.log(err);
+            global.logger.error(err);
         });
     };
     var Classes = await pdb.allAsync("SELECT * FROM `Classes`");
@@ -164,9 +161,8 @@ async function getAnnotatePage(req, res) {
     // close the database
     sdb.close(function (err) {
         if (err) {
-            console.error(err);
+            global.logger.error(err);
         } else {
-            console.log("sdb closed successfully");
         }
     });
     // console.log(icounts, counts);

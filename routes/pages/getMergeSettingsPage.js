@@ -31,8 +31,6 @@ async function getMergeSettingsPage(req, res) {
     );
 
     console.log("username: ", user);
-    console.log("getMergeSettingsPage");
-
     try {
         res.render("settings/mergeSettings", {
             title: "mergeSettings",
@@ -45,7 +43,7 @@ async function getMergeSettingsPage(req, res) {
             mergeProjects: mergeProjects,
         });
     } catch (error) {
-        console.error("Error rendering projSettings:", error);
+        global.logger.error("Error rendering projSettings:", error);
         res.status(500).send("Error loading page");
     }
 }

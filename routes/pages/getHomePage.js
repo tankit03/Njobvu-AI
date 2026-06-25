@@ -86,17 +86,15 @@ async function getHomePage(req, res) {
                             err.message,
                         );
                     }
-                    console.log("Connected to hdb.");
+                    global.logger.info("Connected to hdb.")
                 });
 
                 // Test database connection by checking if tables exist
                 hdb.get("SELECT name FROM sqlite_master WHERE type='table' AND name='Images'", (err, row) => {
                     if (err) {
-                        console.error("Error checking Images table:", err);
+                        global.logger.error("Error checking Images table:", err);
                     } else if (row) {
-                        console.log("Images table exists");
                     } else {
-                        console.log("Images table does not exist");
                     }
                 });
 
@@ -106,12 +104,12 @@ async function getHomePage(req, res) {
                     return new Promise(function (resolve, reject) {
                         that.get(sql, function (err, row) {
                             if (err) {
-                                console.log("runAsync ERROR! ", err);
+                                global.logger.error("runAsync ERROR!", err)
                                 reject(err);
                             } else resolve(row);
                         });
                     }).catch((err) => {
-                        console.log(err);
+                        global.logger.error(err);
                         return null;
                     });
                 };
@@ -120,12 +118,12 @@ async function getHomePage(req, res) {
                     return new Promise(function (resolve, reject) {
                         that.all(sql, function (err, row) {
                             if (err) {
-                                console.log("runAsync ERROR! ", err);
+                                global.logger.error("runAsync ERROR!", err)
                                 reject(err);
                             } else resolve(row);
                         });
                     }).catch((err) => {
-                        console.log(err);
+                        global.logger.error(err);
                         return [];
                     });
                 };
@@ -161,9 +159,8 @@ async function getHomePage(req, res) {
 
                 hdb.close(function (err) {
                     if (err) {
-                        console.error(err);
+                        global.logger.error(err);
                     } else {
-                        console.log("hdb closed successfully");
                     }
                 });
             }

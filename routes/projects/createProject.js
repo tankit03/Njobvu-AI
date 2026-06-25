@@ -45,12 +45,12 @@ async function createProject(req, res) {
 
         fs.writeFile(pythonPathFile, "", function (err) {
             if (err) {
-                console.log(err);
+                global.logger.error(err);
             }
         });
         fs.writeFile(darknetPathFile, "", function (err) {
             if (err) {
-                console.log(err);
+                global.logger.error(err);
             }
         });
     }
@@ -70,7 +70,7 @@ async function createProject(req, res) {
         await queries.project.migrateProjectDb(projectPath);
         await queries.managed.grantUserAccess(username, projectName, username);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error creating project");
     }
 
@@ -91,7 +91,7 @@ async function createProject(req, res) {
             }
         }
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.send("Error creating project");
     }
 
@@ -109,7 +109,7 @@ async function createProject(req, res) {
 
             rimraf(zipPath, (err) => {
                 if (err) {
-                    console.error(err);
+                    global.logger.error(err);
                     res.status(500).send("Error removing zip file");
                 }
             });
@@ -146,14 +146,14 @@ async function createProject(req, res) {
                         0,
                     );
                 } catch (err) {
-                    console.error(err);
+                    global.logger.error(err);
                     return await res.status(500).send("Error uploading images");
                 }
             }
 
             if (!uploadBootstrap) res.send("Project creation successful");
         } catch (err) {
-            console.error(err);
+            global.logger.error(err);
             return res.status(500).send("Error extracting zip");
         }
     }
@@ -235,7 +235,7 @@ async function createProject(req, res) {
             await bzip.close();
             rimraf(bzipPath, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 }
             });
 
@@ -300,7 +300,7 @@ async function createProject(req, res) {
             });
 
             child.on("error", (err) => {
-                console.error(`Error occurred: ${err.message}`);
+                global.logger.error(`Error occurred: ${err.message}`);
             });
 
             child.on("exit", (code) => {
@@ -308,7 +308,7 @@ async function createProject(req, res) {
                 applyBootstrapLabels();
             });
         } catch (err) {
-            console.error(err);
+            global.logger.error(err);
             return res.status(500).send("Error bootstrapping");
         }
 
@@ -323,7 +323,7 @@ async function createProject(req, res) {
                 imageResults = await queries.project.getAllImages(projectPath);
                 classList = await queries.project.getAllClasses(projectPath);
             } catch (err) {
-                console.error(err);
+                global.logger.error(err);
                 return res.status(500).send("Failure bootstrapping labels");
             }
 
@@ -368,7 +368,7 @@ async function createProject(req, res) {
                                 className,
                             );
                         } catch (err) {
-                            console.error(err);
+                            global.logger.error(err);
                             return res
                                 .status(500)
                                 .send("Error adding class name to project");
@@ -387,7 +387,7 @@ async function createProject(req, res) {
                             labelHeight,
                         );
                     } catch (err) {
-                        console.error(err);
+                        global.logger.error(err);
                         res.status(500).send("Error creating labels");
                     }
 
