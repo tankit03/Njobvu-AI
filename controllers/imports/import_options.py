@@ -486,45 +486,59 @@ def coco_archive_import(db_name, input_dir, output, weights_file=None):
     coco_images = coco_data.get('images', [])
     image_id_to_new_name = {}
 
+    import re
+
+    # helper function to extract trailing digits from a filename stem
+    def get_digits_suffix(filename):
+        stem = os.path.splitext(os.path.basename(filename))[0]
+        match = re.search(r'(\d+)\s*$', stem)
+
+        return int(match.group(1)) if match else None
+
+    # map the isolated integer frame number to its actual disk path
     all_files_in_archive = {}
     for root, dirs, files in os.walk(input_dir):
+        if '__MACOSX' in root or '.pytest_cache' in root:
+            continue
+
         for file in files:
             if file.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')):
-                all_files_in_archive[file.lower()] = os.path.join(root, file)
+                frame_num = get_digits_suffix(file)
+
+                if frame_num is not None:
+                    all_files_in_archive[frame_num] = os.path.join(root, file)
+
+    print(f"Indexed {len(all_files_in_archive)} physical image stems via numeric frame matching.")
 
     for img_entry in coco_images:
         img_id = img_entry.get('id')
         file_name = img_entry.get('file_name')
 
-        found_path = None
-        try_path_1 = os.path.join(os.path.dirname(coco_json_path), file_name)
+        base_filename = os.path.basename(file_name)
+        target_frame_num = get_digits_suffix(base_filename)
 
-        if os.path.exists(try_path_1):
-            found_path = try_path_1
-        else:
-            try_path_2 = os.path.join(input_dir, file_name)
+        print(f"Attempting to match JSON target '{base_filename}' using frame number ID: {target_frame_num}")
 
-            if os.path.exists(try_path_2):
-                found_path = try_path_2
-            else:
-                base_name = os.path.basename(file_name)
-                if base_name.lower() in all_files_in_archive:
-                    found_path = all_files_in_archive[base_name.lower()]
+        if target_frame_num in all_files_in_archive:
+            found_path = all_files_in_archive[target_frame_num]
 
-        if found_path:
-            rel_path = os.path.relpath(found_path, input_dir)
-            new_image_name = rel_path.replace(os.sep, '_')
+            # use the actual filename from the JSON so the bounding boxes stay consistent
+            new_image_name = base_filename
 
             shutil.copy(found_path, os.path.join(images_path, new_image_name))
+            print(f"Successfully copied: {os.path.basename(found_path)} -> {new_image_name}")
 
             cursor.execute("INSERT OR IGNORE INTO Images (IName, reviewImage, validateImage) VALUES (?, 0, 0)", (new_image_name,))
             image_id_to_new_name[img_id] = new_image_name
         else:
-            print(f"Warning: Image file not found for COCO entry: {file_name}")
+            print(f"FATAL ERROR: Frame ID '{target_frame_num}' from JSON entry '{base_filename}' cannot be matched to any file on disk.", file=sys.stderr)
+            sys.exit(1)
 
-    # 5. populate Labels
+    # 5. populate labels
     annotations = coco_data.get('annotations', [])
     label_id = 1
+    print(f"Processing {len(annotations)} bounding box annotations...")
+
     for ann in annotations:
         image_id = ann.get('image_id')
         cat_id = ann.get('category_id')
@@ -545,8 +559,8 @@ def coco_archive_import(db_name, input_dir, output, weights_file=None):
 
     conn.commit()
     conn.close()
-    print("COCO Archive Import completed successfully.")
 
+    print(f"COCO Archive Import completed successfully. Inserted {label_id - 1} labels.")
 
 # Main argument parsing and execution logic
 if __name__ == '__main__':

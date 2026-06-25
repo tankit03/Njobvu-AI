@@ -34,7 +34,7 @@ const importYolo = async (req, res) => {
         try {
             await unzip(archivePath, unzippedPath);
         } catch (error) {
-            return res.status(500).json({ success: false, message: 'Failed to unzip YOLO archive.' });
+            fs.rmSync(projectPath, { recursive: true, force: true });
         }
 
         const mainPath = path.join(__dirname, '..', '..', 'public', 'projects');

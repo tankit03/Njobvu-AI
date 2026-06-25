@@ -39,7 +39,7 @@ const importDataset = async (req, res) => {
         const projectPath = path.join(mainPath, `${username}-${projectName}`);
 
         if (fs.existsSync(projectPath)) {
-            return res.status(400).json({ success: false, message: 'A project already exists with that name!' });
+            fs.rmSync(projectPath, { recursive: true, force: true });
         }
 
         const imagesPath = path.join(projectPath, 'images');
@@ -152,7 +152,7 @@ const importDataset = async (req, res) => {
                 res.json({ success: true, message: 'Import process completed.', output: stdout });
             } catch (dbError) {
                 global.logger.error('Database update failed after import:', dbError);
-              
+
                 return res.status(500).json({ success: false, message: 'Project imported but failed to update main database.' });
             }
         });
