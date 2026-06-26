@@ -132,6 +132,7 @@ var ShapeDrawer = (function() {
                 activeObj.lockMovementX = true;
                 activeObj.lockMovementY = true;
             }
+            inst.currentDrawingShape = null;
         }
 
         if (inst.shapeStrategy === RectangleStrategy) {
@@ -692,11 +693,11 @@ var counter = parseInt($('#labels-counter').val()),
 
 // Define the URL where your background image is located
 var imageUrl = $("#image_path").val(),
-    scaleFactor = $("#image_ratio").val();
+    scaleFactor = parseFloat($("#image_ratio").val());
 
 // set the height of the canvas to 75% of the window size originally
-var origin_height = $("#origin_image_height").val(),
-    origin_width = $("#origin_image_width").val();
+var origin_height = parseFloat($("#origin_image_height").val()),
+    origin_width = parseFloat($("#origin_image_width").val());
 
 function getCanvasDimensions() {
     var nh = $(window).height() * .75;
@@ -726,8 +727,8 @@ canvas.setHeight(new_height);
 
 // set background
 canvas.setBackgroundImage(imageUrl, canvas.renderAll.bind(canvas), {
-    width: $("#canvas").width(),
-    height: $("#canvas").height()
+    width: canvas.getWidth(),
+    height: canvas.getHeight()
 });
 canvas.calcOffset();
 
@@ -741,8 +742,8 @@ if (imageUrl.includes(".tiff") || imageUrl.includes(".tif") || imageUrl.includes
         //console.log(xhr.response)
         var tiff = new Tiff({ buffer: xhr.response });
         canvas.setBackgroundImage(tiff.toDataURL(), canvas.renderAll.bind(canvas), {
-            width: $("#canvas").width(),
-            height: $("#canvas").height()
+            width: canvas.getWidth(),
+            height: canvas.getHeight()
         });
         canvas.calcOffset();
     };
@@ -959,8 +960,8 @@ function resetLabels() {
         $(".labels").remove();
         canvas.clear();
         canvas.setBackgroundImage(imageUrl, canvas.renderAll.bind(canvas), {
-            width: $("#canvas").width(),
-            height: $("#canvas").height()
+            width: canvas.getWidth(),
+            height: canvas.getHeight()
         });
     }
 }
@@ -969,8 +970,8 @@ $("#reset-labeling").click(resetLabels);
 // undo label action
 function undoLabel() {
     canvas.setBackgroundImage(imageUrl, canvas.renderAll.bind(canvas), {
-        width: $("#canvas").width(),
-        height: $("#canvas").height()
+        width: canvas.getWidth(),
+        height: canvas.getHeight()
     });
     if ($(".labels").length != 0) {
         $(".labels").last().remove();
@@ -1127,12 +1128,17 @@ $(window).resize(function() {
     canvas.setWidth(new_width);
     canvas.setHeight(new_height);
     canvas.setBackgroundImage(imageUrl, canvas.renderAll.bind(canvas), {
-        width: $("#canvas").width(),
-        height: $("#canvas").height()
+        width: canvas.getWidth(),
+        height: canvas.getHeight()
     });
     canvas.calcOffset();
     resizeRectangles(diff_width_ratio);
     //resizeRectangles(diff_height_ratio);
+});
+
+// Force resize trigger after full window load
+$(window).on('load', function() {
+    $(window).trigger('resize');
 });
 
 // delete unwanted objects (simple clicks on canvas creates unwanted objects)
