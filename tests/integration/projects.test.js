@@ -115,11 +115,18 @@ jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
 
 // Mock StreamZip
 jest.mock('node-stream-zip', () => {
-  return jest.fn().mockImplementation(() => ({
+  const mockAsync = jest.fn().mockImplementation(() => ({
     extract: jest.fn().mockResolvedValue(),
     close: jest.fn().mockResolvedValue(),
     on: jest.fn(),
   }));
+  const mockZip = jest.fn().mockImplementation(() => ({
+    extract: jest.fn().mockResolvedValue(),
+    close: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+  }));
+  mockZip.async = mockAsync;
+  return mockZip;
 });
 
 // Mock rimraf
@@ -145,6 +152,7 @@ describe('Project Routes - Basic Tests', () => {
     };
     global.currentPath = '/test/path/';
     global.projectDbClients = {};
+    global.readdirAsync = jest.fn().mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -219,8 +227,71 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.statusCode).toBe(302);
   });
 
-  /* 
-  * this tests if the import-yolo route responds to yolo archive imports.
+/*
+  * this tests if the createProject route handles multiple bootstrap zip uploads correctly.
+  */
+  it('should accept and save multiple bootstrap zip files during project creation', async () => {
+    const mockMv = jest.fn().mockResolvedValue(true);
+    global.mockFiles = {
+      upload_images: {
+        name: 'images.zip',
+        mv: jest.fn().mockResolvedValue(true),
+      },
+      upload_video: null,
+      upload_bootstrap: [
+        { name: 'model1.zip', mv: mockMv },
+        { name: 'model2.zip', mv: mockMv },
+      ],
+    };
+
+    // Mock child_process exec to return mock process that triggers exit
+    const childProcess = require('child_process');
+    childProcess.exec.mockReturnValue({
+      on: jest.fn((event, callback) => {
+        if (event === 'exit') {
+          process.nextTick(() => callback(0));
+        }
+        return this;
+      }),
+    });
+
+    // Mock process.chdir to avoid actual directory change error
+    const originalChdir = process.chdir;
+    process.chdir = jest.fn();
+
+    // Mock queries.project.getAllImages
+    const queries = require('../../queries/queries');
+    queries.project.getAllImages = jest.fn().mockResolvedValue({ rows: [] });
+
+    // Mock fs.readFileSync to return JSON array for bootstrap output
+    const fs = require('fs');
+    const originalReadFileSync = fs.readFileSync;
+    fs.readFileSync.mockImplementation((path, options) => {
+      if (path && typeof path === 'string' && path.endsWith('out.json')) {
+        return '[]';
+      }
+      return originalReadFileSync(path, options);
+    });
+
+    const res = await request(app)
+      .post('/createP')
+      .send({
+        project_name: 'test-project-multi',
+        input_classes: 'class1,class2',
+        frame_rate: '1',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toBe('Project creation successful');
+    expect(mockMv).toHaveBeenCalledTimes(2);
+
+    // Restore original readFileSync and process.chdir
+    fs.readFileSync = originalReadFileSync;
+    process.chdir = originalChdir;
+  });
+
+  /* * this tests if the import-yolo route responds to yolo archive imports.
   * This test expects a status code 200.
   */
   it('should respond to import-yolo route', async () => {
@@ -235,8 +306,7 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  /* 
-  * this tests if the import-kwcoco route responds to kwcoco archive imports.
+  /* * this tests if the import-kwcoco route responds to kwcoco archive imports.
   * This test expects a status code 200.
   */
   it('should respond to import-kwcoco route', async () => {
@@ -250,8 +320,7 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  /* 
-  * this tests if the import-dataset route responds to YOLO archive import requests.
+  /* * this tests if the import-dataset route responds to YOLO archive import requests.
   * This test expects a status code 200.
   */
   it('should successfully import YOLO dataset archive', async () => {
@@ -267,8 +336,7 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.body.success).toBe(true);
   });
 
-  /* 
-  * this tests if the import-dataset route responds to KW Coco archive import requests.
+  /* * this tests if the import-dataset route responds to KW Coco archive import requests.
   * This test expects a status code 200.
   */
   it('should successfully import KW Coco dataset archive', async () => {
@@ -283,4 +351,4 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
   });
-}); 
+});

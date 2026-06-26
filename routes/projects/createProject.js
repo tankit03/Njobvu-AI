@@ -222,10 +222,15 @@ async function createProject(req, res) {
     }
 
     if (uploadBootstrap !== undefined && uploadBootstrap !== null) {
-        var bzipPath = bootstrapPath + "/" + uploadBootstrap.name;
-        var outBootstrapJson = "";
+        const bootstrapFiles = Array.isArray(uploadBootstrap) ? uploadBootstrap : [uploadBootstrap];
+        for (const file of bootstrapFiles) {
+            const tempZipPath = bootstrapPath + "/" + file.name;
+            await file.mv(tempZipPath);
+        }
 
-        await uploadBootstrap.mv(bzipPath);
+        // for legacy single-file compatibility
+        var bzipPath = bootstrapPath + "/" + bootstrapFiles[0].name;
+        var outBootstrapJson = "";
 
         var bzip = new StreamZip.async({ file: bzipPath });
 
@@ -405,6 +410,7 @@ async function createProject(req, res) {
                     classSet.add(className);
                 }
             }
+            res.send("Project creation successful");
         }
     }
 }
