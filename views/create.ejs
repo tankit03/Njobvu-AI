@@ -23,6 +23,9 @@
                     <li class="nav-item">
                         <a id="tab-kwcoco" class="nav-link" href="#" onclick="switchFlow('kwcoco')" style="border-radius: 0">KW Coco Archive</a>
                     </li>
+                    <li class="nav-item">
+                        <a id="tab-bootstrap" class="nav-link" href="#" onclick="switchFlow('bootstrap')" style="border-radius: 0">Bootstrap With Model(s)</a>
+                    </li>
                 </ul>
             </div>
 
@@ -45,12 +48,6 @@
                         <label for="blank_input_classes">Input classes (separated with commas)</label>
                         <input id="blank_input_classes" name="input_classes" aria-label="Input classes. Separated by commas." type="text" class="form-control" placeholder="cat,dog,large mouse" required>
                         <p>Do not add leading or trailing spaces between classes</p>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="upload_bootstrap">Upload Model Zips (.data + .cfg + .weights).zip (multiple allowed)</label>
-                        <input id="upload_bootstrap" aria-label="Upload (.data + .cfg + .weights).zip" name="upload_bootstrap" type="file" class="form-control-file" multiple>
                     </div>
                 </div>
                 <div class="col text-center">
@@ -119,6 +116,39 @@
                 </div>
             </form>
 
+            <form class="add-project-form flow-content" action="/createP" method='POST' enctype="multipart/form-data" id="bootstrapForm">
+                <h3>Add New Project</h3>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="bootstrap_project_name">Project Name</label>
+                        <input id="bootstrap_project_name" name="project_name" aria-label="Project name" type="text" class="form-control" placeholder="Project Name" required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="bootstrap_upload_images">
+                            Upload Images or Videos (.zip or .mp4/.avi/.mov) (Optional)
+                        </label>
+                        <input id="bootstrap_upload_images" name="upload_images" aria-label="Choose file" type="file" class="form-control-file">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label for="bootstrap_input_classes">Input classes (separated with commas)</label>
+                        <input id="bootstrap_input_classes" name="input_classes" aria-label="Input classes. Separated by commas." type="text" class="form-control" placeholder="cat,dog,large mouse" required>
+                        <p>Do not add leading or trailing spaces between classes</p>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="upload_bootstrap">Upload Model Zips (.data + .cfg + .weights).zip (multiple allowed)</label>
+                        <input id="upload_bootstrap" aria-label="Upload (.data + .cfg + .weights).zip" name="upload_bootstrap" type="file" class="form-control-file" multiple required>
+                    </div>
+                </div>
+                <div class="col text-center">
+                    <hr class="my-4">
+                    <input type="submit" aria-label="submit" class="btn btn-primary btn-lg" value="submit" style="border-radius: 0">
+                </div>
+            </form>
+
             <div class="col text-center" style="margin-top: 15px;">
                 <label for="progress" id="progress" aria-live="polite" aria-atomic="true" style="font-weight: bold; color: #1569AE;"></label>
             </div>
@@ -133,7 +163,8 @@
         document.getElementById('tab-blank').classList.remove('active');
         document.getElementById('tab-yolo').classList.remove('active');
         document.getElementById('tab-kwcoco').classList.remove('active');
-        
+        document.getElementById('tab-bootstrap').classList.remove('active');
+
         document.getElementById('tab-' + flow).classList.add('active');
 
         document.querySelectorAll('.flow-content').forEach(form => {
@@ -144,7 +175,7 @@
 
     function validateProjectName(name) {
         if (!name) return false;
-        
+
         const invalidChars = ['/', '@', '\\', '.', "'", ' '];
         for (let char of invalidChars) {
             if (name.includes(char)) {
@@ -217,6 +248,28 @@
 
             if (formId === 'blankForm') {
                 const uploadImages = document.getElementById('blank_upload_images');
+
+                if (uploadImages.files.length > 0) {
+                    const file = uploadImages.files[0];
+
+                    if (file.name.endsWith('.mp4') || file.name.endsWith('.mov') || file.name.endsWith('.avi')) {
+                        const frameRate = prompt("Please enter a number for the framerate the video should be split by. (ex: 30)");
+
+                        if (frameRate) {
+                            formData.delete('upload_images');
+                            formData.append('upload_video', file);
+                            formData.append('frame_rate', frameRate);
+                        } else {
+                            progress.textContent = "";
+                            document.querySelectorAll('input[type="submit"]').forEach(btn => btn.style.display = "inline-block");
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (formId === 'bootstrapForm') {
+                const uploadImages = document.getElementById('bootstrap_upload_images');
 
                 if (uploadImages.files.length > 0) {
                     const file = uploadImages.files[0];
