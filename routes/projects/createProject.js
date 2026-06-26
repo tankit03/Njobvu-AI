@@ -221,7 +221,7 @@ async function createProject(req, res) {
         return res.send("Project creation successful");
     }
 
-    if (uploadBootstrap !== undefined) {
+    if (uploadBootstrap !== undefined && uploadBootstrap !== null) {
         var bzipPath = bootstrapPath + "/" + uploadBootstrap.name;
         var outBootstrapJson = "";
 

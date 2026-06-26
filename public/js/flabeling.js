@@ -116,22 +116,16 @@ var ShapeDrawer = (function() {
         if (inst.currentDrawingShape != null) {
             var activeObj = inst.currentDrawingShape;
 
-            // Check if label inputs already exist
-            if ($(".label-" + activeObj.id).length == 6) {
+            if (inst.shapeStrategy === RectangleStrategy) {
+                var w = activeObj.width;
+                var h = activeObj.height;
+                console.log("[onMouseUp] activeObj.id:", activeObj.id, "width:", w, "height:", h, "scaledW:", w / diff_width_ratio, "scaledH:", h / diff_width_ratio, "diff_width_ratio:", diff_width_ratio);
 
-            } else {
-                if (inst.shapeStrategy === RectangleStrategy) {
-                    var w = activeObj.width;
-                    var h = activeObj.height;
-
-                    $('#dynamic_form').append(
-                        '<input class="labels label-' + activeObj.id + ' label-w" type="hidden" name="W" value="' + (w / diff_width_ratio) + '">' +
-                        '<input class="labels label-' + activeObj.id + ' label-h" type="hidden" name="H" value="' + (h / diff_width_ratio) + '">'
-                    );
-                }
-                activeObj.lockMovementX = true;
-                activeObj.lockMovementY = true;
+                $(".label-" + activeObj.id + ".label-w").val(w / diff_width_ratio);
+                $(".label-" + activeObj.id + ".label-h").val(h / diff_width_ratio);
             }
+            activeObj.lockMovementX = true;
+            activeObj.lockMovementY = true;
             inst.currentDrawingShape = null;
         }
 
@@ -269,6 +263,7 @@ var ShapeDrawer = (function() {
 
             // Add null check before accessing ID
             if (activeObj.id) {
+                console.log("[onMouseMove] activeObj.id:", activeObj.id, "left:", activeObj.left, "top:", activeObj.top, "scaledX:", activeObj.left / diff_width_ratio, "scaledY:", activeObj.top / diff_width_ratio, "diff_width_ratio:", diff_width_ratio);
                 $(".label-" + activeObj.id + ".label-x").val(activeObj.left / diff_width_ratio);
                 $(".label-" + activeObj.id + ".label-y").val(activeObj.top / diff_width_ratio);
             }
@@ -285,11 +280,14 @@ var ShapeDrawer = (function() {
     };
 
     function addLabelToForm(id, curr_class, origX, origY, diff_width_ratio) {
+        console.log("[addLabelToForm] id:", id, "curr_class:", curr_class, "origX:", origX, "origY:", origY, "diff_width_ratio:", diff_width_ratio, "scaledX:", origX / diff_width_ratio, "scaledY:", origY / diff_width_ratio);
         $('#dynamic_form').append(
             '<input class="labels label-' + id + ' label-id" type="hidden" name="LabelingID" value="' + id + '">' +
             '<input class="labels label-' + id + ' label-c" type="hidden" name="CName" value="' + curr_class + '">' +
             '<input class="labels label-' + id + ' label-x" type="hidden" name="X" value="' + (origX / diff_width_ratio) + '">' +
-            '<input class="labels label-' + id + ' label-y" type="hidden" name="Y" value="' + (origY / diff_width_ratio) + '">'
+            '<input class="labels label-' + id + ' label-y" type="hidden" name="Y" value="' + (origY / diff_width_ratio) + '">' +
+            '<input class="labels label-' + id + ' label-w" type="hidden" name="W" value="0">' +
+            '<input class="labels label-' + id + ' label-h" type="hidden" name="H" value="0">'
         );
     }
 
@@ -752,7 +750,7 @@ if (imageUrl.includes(".tiff") || imageUrl.includes(".tif") || imageUrl.includes
 
 // TODO: reize rectangles when canvas is resized
 function resizeRectangles(diff_width_ratio) {
-    //console.log(canvas.getObjects());
+    console.log("[resizeRectangles] diff_width_ratio:", diff_width_ratio);
     for (var i = 0; i < canvas.getObjects().length; i++) {
         var obj = canvas.item(i);
         if (!obj || !obj.id) continue;
@@ -761,11 +759,17 @@ function resizeRectangles(diff_width_ratio) {
         obj.lockMovementX = false;
         obj.lockMovementY = false;
 
+        var inputX = $(".label-" + obj.id + ".label-x").val();
+        var inputY = $(".label-" + obj.id + ".label-y").val();
+        var inputW = $(".label-" + obj.id + ".label-w").val();
+        var inputH = $(".label-" + obj.id + ".label-h").val();
+        console.log("[resizeRectangles] obj.id:", obj.id, "inputX:", inputX, "inputY:", inputY, "inputW:", inputW, "inputH:", inputH, "newLeft:", parseFloat(inputX) * diff_width_ratio, "newWidth:", parseFloat(inputW) * diff_width_ratio);
+
         obj.set({
-            left: parseFloat($(".label-" + obj.id + ".label-x").val()) * diff_width_ratio,
-            top: parseFloat($(".label-" + obj.id + ".label-y").val()) * diff_width_ratio,
-            width: parseFloat($(".label-" + obj.id + ".label-w").val()) * diff_width_ratio,
-            height: parseFloat($(".label-" + obj.id + ".label-h").val()) * diff_width_ratio
+            left: parseFloat(inputX) * diff_width_ratio,
+            top: parseFloat(inputY) * diff_width_ratio,
+            width: parseFloat(inputW) * diff_width_ratio,
+            height: parseFloat(inputH) * diff_width_ratio
         });
 
         obj.lockMovementX = true;
@@ -794,8 +798,10 @@ for (var i = 0; i < list_labels.length; i += 6) {
     var wVal = list_labels[i + 4].value;
     var hVal = list_labels[i + 5].value;
 
+    console.log("[redraw loop] labelId:", labelId, "className:", className, "xVal:", xVal, "yVal:", yVal, "wVal:", wVal, "hVal:", hVal, "diff_width_ratio:", diff_width_ratio);
+
     if (!xVal.includes(",") && !yVal.includes(",")) { //This is a rectangle
-        console.log("[redraw] Rectangle:", labelId);
+        console.log("[redraw] Rectangle:", labelId, "left:", parseFloat(xVal) * diff_width_ratio, "width:", parseFloat(wVal) * diff_width_ratio);
         var rect = new fabric.Rect({
             id: labelId,
 
@@ -1154,7 +1160,7 @@ setInterval(function() {
         var width = currObject.width;
         // console.log(`Current object width ${width}`);
 
-        if (height < 5 && width < 5 && !canvas.isDrawing) {
+        if (height < 5 && width < 5 && !shapetool.isDrawing) {
             console.log(`Too short removing ${canvas.item(i)}`);
             $(".label-" + canvas.item(i).id).remove();
             canvas.remove(currObject);
