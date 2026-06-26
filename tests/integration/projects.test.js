@@ -9,11 +9,8 @@ jest.mock('unzipper', () => jest.fn());
 jest.mock('child_process', () => ({
   exec: jest.fn(),
 }));
-jest.mock('sqlite3', () => ({
-  OPEN_CREATE: 1,
-  OPEN_READWRITE: 2,
-  OPEN_READONLY: 1,
-  Database: jest.fn((...args) => {
+jest.mock('sqlite3', () => {
+  const Database = jest.fn((...args) => {
     const cb = args[1];
     if (typeof cb === 'function') cb(null);
     return {
@@ -32,8 +29,15 @@ jest.mock('sqlite3', () => ({
       }),
       close: jest.fn((cb) => cb && cb()),
     };
-  }),
-}));
+  });
+  return {
+    OPEN_CREATE: 1,
+    OPEN_READWRITE: 2,
+    OPEN_READONLY: 1,
+    Database,
+    verbose: jest.fn(() => ({ Database })),
+  };
+});
 jest.mock('socket.io-client', () => ({
   protocol: 'http',
 }));
@@ -68,6 +72,7 @@ jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(false),
   mkdirSync: jest.fn(),
   writeFile: jest.fn((path, data, callback) => callback(null)),
+  writeFileSync: jest.fn(),
   readdirSync: jest.fn().mockReturnValue([]),
   unlinkSync: jest.fn(),
   rename: jest.fn((oldPath, newPath, callback) => callback(null)),
@@ -75,22 +80,30 @@ jest.mock('fs', () => ({
 }));
 
 // Mock file upload
+global.mockFiles = {
+  upload_images: null,
+  upload_video: null,
+  upload_bootstrap: null,
+};
 jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
-  req.files = {
-    upload_images: null,
-    upload_video: null,
-    upload_bootstrap: null,
-  };
+  req.files = global.mockFiles;
   next();
 }));
 
 // Mock StreamZip
 jest.mock('node-stream-zip', () => {
-  return jest.fn().mockImplementation(() => ({
+  const mockAsync = jest.fn().mockImplementation(() => ({
     extract: jest.fn().mockResolvedValue(),
     close: jest.fn().mockResolvedValue(),
     on: jest.fn(),
   }));
+  const mockZip = jest.fn().mockImplementation(() => ({
+    extract: jest.fn().mockResolvedValue(),
+    close: jest.fn().mockResolvedValue(),
+    on: jest.fn(),
+  }));
+  mockZip.async = mockAsync;
+  return mockZip;
 });
 
 // Mock rimraf
@@ -116,6 +129,7 @@ describe('Project Routes - Basic Tests', () => {
     };
     global.currentPath = '/test/path/';
     global.projectDbClients = {};
+    global.readdirAsync = jest.fn().mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -188,5 +202,69 @@ describe('Project Routes - Basic Tests', () => {
       .set('Cookie', ['Username=testuser']);
 
     expect(res.statusCode).toBe(302);
+  });
+
+  /*
+  * this tests if the createProject route handles multiple bootstrap zip uploads correctly.
+  */
+  it('should accept and save multiple bootstrap zip files during project creation', async () => {
+    const mockMv = jest.fn().mockResolvedValue(true);
+    global.mockFiles = {
+      upload_images: {
+        name: 'images.zip',
+        mv: jest.fn().mockResolvedValue(true),
+      },
+      upload_video: null,
+      upload_bootstrap: [
+        { name: 'model1.zip', mv: mockMv },
+        { name: 'model2.zip', mv: mockMv },
+      ],
+    };
+
+    // Mock child_process exec to return mock process that triggers exit
+    const childProcess = require('child_process');
+    childProcess.exec.mockReturnValue({
+      on: jest.fn((event, callback) => {
+        if (event === 'exit') {
+          process.nextTick(() => callback(0));
+        }
+        return this;
+      }),
+    });
+
+    // Mock process.chdir to avoid actual directory change error
+    const originalChdir = process.chdir;
+    process.chdir = jest.fn();
+
+    // Mock queries.project.getAllImages
+    const queries = require('../../queries/queries');
+    queries.project.getAllImages = jest.fn().mockResolvedValue({ rows: [] });
+
+    // Mock fs.readFileSync to return JSON array for bootstrap output
+    const fs = require('fs');
+    const originalReadFileSync = fs.readFileSync;
+    fs.readFileSync.mockImplementation((path, options) => {
+      if (path && typeof path === 'string' && path.endsWith('out.json')) {
+        return '[]';
+      }
+      return originalReadFileSync(path, options);
+    });
+
+    const res = await request(app)
+      .post('/createP')
+      .send({
+        project_name: 'test-project-multi',
+        input_classes: 'class1,class2',
+        frame_rate: '1',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toBe('Project creation successful');
+    expect(mockMv).toHaveBeenCalledTimes(2);
+
+    // Restore original readFileSync and process.chdir
+    fs.readFileSync = originalReadFileSync;
+    process.chdir = originalChdir;
   });
 }); 

@@ -9,11 +9,8 @@ jest.mock('unzipper', () => jest.fn());
 jest.mock('child_process', () => ({
   exec: jest.fn(),
 }));
-jest.mock('sqlite3', () => ({
-  OPEN_CREATE: 1,
-  OPEN_READWRITE: 2,
-  OPEN_READONLY: 1,
-  Database: jest.fn((...args) => {
+jest.mock('sqlite3', () => {
+  const Database = jest.fn((...args) => {
     const cb = args[1];
     if (typeof cb === 'function') cb(null);
     const dbInstance = {
@@ -47,8 +44,15 @@ jest.mock('sqlite3', () => ({
       ]),
     };
     return dbInstance;
-  }),
-}));
+  });
+  return {
+    OPEN_CREATE: 1,
+    OPEN_READWRITE: 2,
+    OPEN_READONLY: 1,
+    Database,
+    verbose: jest.fn(() => ({ Database })),
+  };
+});
 jest.mock('socket.io-client', () => ({
   protocol: 'http',
 }));
