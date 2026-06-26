@@ -1,6 +1,4 @@
 async function getLabelingPage(req, res) {
-    console.log("getLabelingPage");
-
     var IDX = parseInt(req.query.IDX),
         IName = String(req.query.IName),
         curr_class = req.query.curr_class,
@@ -39,9 +37,9 @@ async function getLabelingPage(req, res) {
         project_path + "/" + PName + ".db",
         (err) => {
             if (err) {
-                return console.error(err.message);
+                return global.logger.error(err.message);
             }
-            console.log("Connected to ldb.");
+            global.logger.info("Connected to ldb.")
         },
     );
 
@@ -51,12 +49,12 @@ async function getLabelingPage(req, res) {
         return new Promise(function (resolve, reject) {
             that.get(sql, function (err, row) {
                 if (err) {
-                    console.log("runAsync ERROR! ", err);
+                    global.logger.error("runAsync ERROR!", err)
                     reject(err);
                 } else resolve(row);
             });
         }).catch((err) => {
-            console.log(err);
+            global.logger.error(err);
         });
     };
     ldb.allAsync = function (sql) {
@@ -64,12 +62,12 @@ async function getLabelingPage(req, res) {
         return new Promise(function (resolve, reject) {
             that.all(sql, function (err, row) {
                 if (err) {
-                    console.log("runAsync ERROR! ", err);
+                    global.logger.error("runAsync ERROR!", err)
                     reject(err);
                 } else resolve(row);
             });
         }).catch((err) => {
-            console.log(err);
+            global.logger.error(err);
         });
     };
     ldb.eachAsync = function (sql) {
@@ -77,16 +75,16 @@ async function getLabelingPage(req, res) {
         return new Promise(function (resolve, reject) {
             that.each(sql, function (err, row) {
                 if (err) {
-                    console.log("runAsync ERROR! ", err);
+                    global.logger.error("runAsync ERROR!", err)
                     reject(err);
                 } else resolve(row);
             });
         }).catch((err) => {
-            console.log(err);
+            global.logger.error(err);
         });
     };
 
-    console.log(String(IName));
+    global.logger.debug(String(IName));
 
     var results1 = await ldb.allAsync("SELECT * FROM `Classes`");
     var Classes = [];
@@ -172,9 +170,8 @@ async function getLabelingPage(req, res) {
         // close the database
         ldb.close(function (err) {
             if (err) {
-                console.error(err);
+                global.logger.error(err);
             } else {
-                console.log("ldb closed successfully");
             }
         });
 
@@ -187,7 +184,7 @@ async function getLabelingPage(req, res) {
             colors.push(colorsJSON[i]);
             i++;
         }
-        console.log(results3);
+        global.logger.debug(results3);
         res.render("labeling", {
             title: "labeling",
             user: user,

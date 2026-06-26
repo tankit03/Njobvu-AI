@@ -6,37 +6,54 @@ jest.mock('decompress-zip/lib/extractors', () => ({
 jest.mock('ffmpeg', () => jest.fn());
 jest.mock('sharp', () => jest.fn());
 jest.mock('unzipper', () => jest.fn());
-jest.mock('child_process', () => ({
-  exec: jest.fn(),
-}));
-jest.mock('sqlite3', () => {
-  const Database = jest.fn((...args) => {
-    const cb = args[1];
-    if (typeof cb === 'function') cb(null);
-    return {
-      run: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null);
-        return { lastID: 1, changes: 1 };
-      }),
-      get: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null, {});
-      }),
-      all: jest.fn((...cbArgs) => {
-        const cb = cbArgs[cbArgs.length - 1];
-        if (typeof cb === 'function') cb(null, []);
-      }),
-      close: jest.fn((cb) => cb && cb()),
-    };
-  });
+
+jest.mock('child_process', () => {
+  const mProcess = {
+    stdout: { on: jest.fn() },
+    stderr: { on: jest.fn() },
+    on: jest.fn((event, callback) => {
+      if (event === 'close') {
+        callback(0);
+      }
+    }),
+  };
   return {
+    exec: jest.fn(),
+    spawn: jest.fn().mockReturnValue(mProcess),
+  };
+});
+
+jest.mock('sqlite3', () => {
+  const mockDb = {
+    run: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null);
+      return { lastID: 1, changes: 1 };
+    }),
+    get: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null, {});
+    }),
+    all: jest.fn((...cbArgs) => {
+      const cb = cbArgs[cbArgs.length - 1];
+      if (typeof cb === 'function') cb(null, []);
+    }),
+    close: jest.fn((cb) => cb && cb()),
+  };
+
+  const mockModule = {
     OPEN_CREATE: 1,
     OPEN_READWRITE: 2,
     OPEN_READONLY: 1,
-    Database,
-    verbose: jest.fn(() => ({ Database })),
+    Database: jest.fn((...args) => {
+      const cb = args[1];
+      if (typeof cb === 'function') cb(null);
+      return mockDb;
+    }),
+    verbose: jest.fn().mockImplementation(() => mockModule),
   };
+
+  return mockModule;
 });
 jest.mock('socket.io-client', () => ({
   protocol: 'http',
@@ -80,13 +97,19 @@ jest.mock('fs', () => ({
 }));
 
 // Mock file upload
-global.mockFiles = {
-  upload_images: null,
-  upload_video: null,
-  upload_bootstrap: null,
-};
 jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
-  req.files = global.mockFiles;
+  req.files = {
+    upload_images: null,
+    upload_video: null,
+    upload_bootstrap: null,
+    yolo_archive: { name: 'yolo_archive.zip', mv: jest.fn().mockResolvedValue() },
+    yolo_weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() },
+    coco_archive: { name: 'coco_archive.zip', mv: jest.fn().mockResolvedValue() },
+    viame_model: { name: 'viame.pt', mv: jest.fn().mockResolvedValue() },
+    dataset: { name: 'dataset.zip', mv: jest.fn().mockResolvedValue() },
+    weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() },
+    ...req.files
+  };
   next();
 }));
 
@@ -204,7 +227,7 @@ describe('Project Routes - Basic Tests', () => {
     expect(res.statusCode).toBe(302);
   });
 
-  /*
+/*
   * this tests if the createProject route handles multiple bootstrap zip uploads correctly.
   */
   it('should accept and save multiple bootstrap zip files during project creation', async () => {
@@ -267,4 +290,65 @@ describe('Project Routes - Basic Tests', () => {
     fs.readFileSync = originalReadFileSync;
     process.chdir = originalChdir;
   });
-}); 
+
+  /* * this tests if the import-yolo route responds to yolo archive imports.
+  * This test expects a status code 200.
+  */
+  it('should respond to import-yolo route', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-yolo')
+      .send({
+        project_name: 'test-yolo-project',
+        task_type: 'detect',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+  });
+
+  /* * this tests if the import-kwcoco route responds to kwcoco archive imports.
+  * This test expects a status code 200.
+  */
+  it('should respond to import-kwcoco route', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-kwcoco')
+      .send({
+        project_name: 'test-coco-project',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+  });
+
+  /* * this tests if the import-dataset route responds to YOLO archive import requests.
+  * This test expects a status code 200.
+  */
+  it('should successfully import YOLO dataset archive', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-dataset')
+      .send({
+        projectName: 'test-yolo-project',
+        'import-type': 'yolo'
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  /* * this tests if the import-dataset route responds to KW Coco archive import requests.
+  * This test expects a status code 200.
+  */
+  it('should successfully import KW Coco dataset archive', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-dataset')
+      .send({
+        projectName: 'test-coco-project',
+        'import-type': 'kwcoco'
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+});

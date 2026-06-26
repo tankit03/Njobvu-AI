@@ -7,11 +7,14 @@ const rimraf = require("../../public/libraries/rimraf");
 const { Client } = require("../../queries/client");
 
 async function createProject(req, res) {
+    const files = req.files || {};
+
+    const uploadImages = files["upload_images"] || null;
+    const uploadVideo = files["upload_video"] || null;
+    const uploadBootstrap = files["upload_bootstrap"] ?? null;
+
     var publicPath = currentPath;
     var projectName = req.body["project_name"],
-        uploadImages = req.files["upload_images"],
-        uploadVideo = req.files["upload_video"],
-        uploadBootstrap = req.files["upload_bootstrap"],
         frameRate = req.body["frame_rate"],
         inputClasses = req.body["input_classes"],
         autoSave = 1,
@@ -43,14 +46,14 @@ async function createProject(req, res) {
         fs.mkdirSync(logsPath);
         fs.mkdirSync(pythonPath);
 
-        fs.writeFile(pythonPathFile, "", function (err) {
+        fs.writeFile(pythonPathFile, "", function(err) {
             if (err) {
-                console.log(err);
+                global.logger.error(err);
             }
         });
-        fs.writeFile(darknetPathFile, "", function (err) {
+        fs.writeFile(darknetPathFile, "", function(err) {
             if (err) {
-                console.log(err);
+                global.logger.error(err);
             }
         });
     }
@@ -70,15 +73,15 @@ async function createProject(req, res) {
         await queries.project.migrateProjectDb(projectPath);
         await queries.managed.grantUserAccess(username, projectName, username);
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.status(500).send("Error creating project");
     }
 
     try {
-        console.log(projectPath);
+        global.logger.debug(projectPath);
         const classes = await queries.project.getAllClasses(projectPath);
 
-        console.log(classes);
+        global.logger.debug(classes);
 
         const currentClasses = [];
         for (var i = 0; i < classes.rows.length; i++) {
@@ -91,7 +94,7 @@ async function createProject(req, res) {
             }
         }
     } catch (err) {
-        console.error(err);
+        global.logger.error(err);
         return res.send("Error creating project");
     }
 
@@ -99,7 +102,7 @@ async function createProject(req, res) {
         var zipPath = imagesPath + "/" + uploadImages.name; // $LABELING_TOOL_PATH/public/projects/{projectName}/{zip_file_name}
 
         await uploadImages.mv(zipPath);
-        console.log("File Uploaded", uploadImages.name);
+        global.logger.debug("File Uploaded", uploadImages.name);
 
         var zip = new StreamZip.async({ file: zipPath });
 
@@ -109,12 +112,12 @@ async function createProject(req, res) {
 
             rimraf(zipPath, (err) => {
                 if (err) {
-                    console.error(err);
+                    global.logger.error(err);
                     res.status(500).send("Error removing zip file");
                 }
             });
 
-            files = fs.readdirSync(imagesPath);
+            const files = fs.readdirSync(imagesPath);
 
             for (var i = 0; i < files.length; i++) {
                 if (files[i] == "__MACOSX") {
@@ -122,7 +125,7 @@ async function createProject(req, res) {
                 }
 
                 if (files[i].endsWith(".zip")) {
-                    fs.unlink(imagesPath + "/" + files[i], () => {});
+                    fs.unlink(imagesPath + "/" + files[i], () => { });
                     continue;
                 }
 
@@ -136,7 +139,7 @@ async function createProject(req, res) {
                 files[i] = files[i].split(" ").join("_");
                 files[i] = files[i].split("+").join("_");
 
-                fs.rename(temp, imagesPath + "/" + files[i], () => {});
+                fs.rename(temp, imagesPath + "/" + files[i], () => { });
 
                 try {
                     await queries.project.addImages(
@@ -146,14 +149,14 @@ async function createProject(req, res) {
                         0,
                     );
                 } catch (err) {
-                    console.error(err);
+                    global.logger.error(err);
                     return await res.status(500).send("Error uploading images");
                 }
             }
 
             if (!uploadBootstrap) res.send("Project creation successful");
         } catch (err) {
-            console.error(err);
+            global.logger.error(err);
             return res.status(500).send("Error extracting zip");
         }
     }
@@ -173,7 +176,7 @@ async function createProject(req, res) {
 
             cleanFiles();
         } catch (e) {
-            console.log("ERROR " + e);
+            global.logger.debug("ERROR " + e);
         }
 
         async function cleanFiles() {
@@ -192,7 +195,7 @@ async function createProject(req, res) {
                     files[i].endsWith(".avi") ||
                     files[i].endsWith(".mov")
                 ) {
-                    fs.unlink(imagesPath + "/" + files[i], () => {});
+                    fs.unlink(imagesPath + "/" + files[i], () => { });
                 }
 
                 if (files[i] === "blob") {
@@ -205,7 +208,7 @@ async function createProject(req, res) {
                 files[i] = files[i].split(" ").join("_");
                 files[i] = files[i].split("+").join("_");
 
-                fs.rename(temp, imagesPath + "/" + files[i], () => {});
+                fs.rename(temp, imagesPath + "/" + files[i], () => { });
 
                 await queries.project.addImages(projectPath, files[i], 0, 0);
             }
@@ -215,17 +218,17 @@ async function createProject(req, res) {
     }
 
     if (!uploadVideo && !uploadImages) {
-        return res.send("ERROR! NO PHOTO ZIP OR VIDEO FILE PROVIDED");
+        return res.send("Project creation successful");
     }
 
-    if (uploadBootstrap !== undefined) {
+    if (uploadBootstrap !== undefined && uploadBootstrap !== null) {
         const bootstrapFiles = Array.isArray(uploadBootstrap) ? uploadBootstrap : [uploadBootstrap];
         for (const file of bootstrapFiles) {
             const tempZipPath = bootstrapPath + "/" + file.name;
             await file.mv(tempZipPath);
         }
 
-        // For legacy single-file compatibility (until the CV pipeline agent updates it)
+        // for legacy single-file compatibility
         var bzipPath = bootstrapPath + "/" + bootstrapFiles[0].name;
         var outBootstrapJson = "";
 
@@ -240,7 +243,7 @@ async function createProject(req, res) {
             await bzip.close();
             rimraf(bzipPath, (err) => {
                 if (err) {
-                    console.log(err);
+                    global.logger.error(err);
                 }
             });
 
@@ -254,7 +257,7 @@ async function createProject(req, res) {
                     bfiles[i] = bfiles[i].split(" ").join("_");
                     bfiles[i] = bfiles[i].split("+").join("_");
 
-                    fs.rename(temp, bootstrapPath + "/" + bfiles[i], () => {});
+                    fs.rename(temp, bootstrapPath + "/" + bfiles[i], () => { });
 
                     if (bfiles[i].endsWith(".weights"))
                         weightBootstrapPath = bootstrapPath + "/" + bfiles[i];
@@ -271,7 +274,7 @@ async function createProject(req, res) {
                     !bfiles[i].endsWith(".cfg") &&
                     !bfiles[i].endsWith(".data")
                 ) {
-                    fs.unlink(bootstrapPath + "/" + bfiles[i], () => {});
+                    fs.unlink(bootstrapPath + "/" + bfiles[i], () => { });
                 }
             }
 
@@ -298,22 +301,22 @@ async function createProject(req, res) {
 
             var child = exec(cmd, (err, stdout, stderr) => {
                 if (err) {
-                    console.log(`This is the error: ${err.message}`);
+                    global.logger.debug(`This is the error: ${err.message}`);
                 } else if (stderr) {
-                    console.log(`This is the stderr: ${stderr}`);
+                    global.logger.debug(`This is the stderr: ${stderr}`);
                 }
             });
 
             child.on("error", (err) => {
-                console.error(`Error occurred: ${err.message}`);
+                global.logger.error(`Error occurred: ${err.message}`);
             });
 
             child.on("exit", (code) => {
-                console.log(`Child process exited with code ${code}`);
+                global.logger.debug(`Child process exited with code ${code}`);
                 applyBootstrapLabels();
             });
         } catch (err) {
-            console.error(err);
+            global.logger.error(err);
             return res.status(500).send("Error bootstrapping");
         }
 
@@ -328,7 +331,7 @@ async function createProject(req, res) {
                 imageResults = await queries.project.getAllImages(projectPath);
                 classList = await queries.project.getAllClasses(projectPath);
             } catch (err) {
-                console.error(err);
+                global.logger.error(err);
                 return res.status(500).send("Failure bootstrapping labels");
             }
 
@@ -345,8 +348,8 @@ async function createProject(req, res) {
 
             for (let i = 0; i < imageResults.length; i++) {
                 var img = fs.readFileSync(
-                        `${imagesPath}/${imageResults[i].IName}`,
-                    ),
+                    `${imagesPath}/${imageResults[i].IName}`,
+                ),
                     imgData = probe.sync(img),
                     imgW = imgData.width,
                     imgH = imgData.height;
@@ -373,7 +376,7 @@ async function createProject(req, res) {
                                 className,
                             );
                         } catch (err) {
-                            console.error(err);
+                            global.logger.error(err);
                             return res
                                 .status(500)
                                 .send("Error adding class name to project");
@@ -392,7 +395,7 @@ async function createProject(req, res) {
                             labelHeight,
                         );
                     } catch (err) {
-                        console.error(err);
+                        global.logger.error(err);
                         res.status(500).send("Error creating labels");
                     }
 
