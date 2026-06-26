@@ -117,7 +117,7 @@ async function createProject(req, res) {
                 }
             });
 
-            files = fs.readdirSync(imagesPath);
+            const files = fs.readdirSync(imagesPath);
 
             for (var i = 0; i < files.length; i++) {
                 if (files[i] == "__MACOSX") {
