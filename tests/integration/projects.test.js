@@ -291,6 +291,178 @@ describe('Project Routes - Basic Tests', () => {
     process.chdir = originalChdir;
   });
 
+  /*
+  * this tests if the createProject route handles PyTorch (.pt) bootstrap zip uploads correctly.
+  */
+  it('should accept and save PyTorch (.pt) bootstrap models during project creation', async () => {
+    const mockMv = jest.fn().mockResolvedValue(true);
+    global.mockFiles = {
+      upload_images: {
+        name: 'images.zip',
+        mv: jest.fn().mockResolvedValue(true),
+      },
+      upload_video: null,
+      upload_bootstrap: [
+        { name: 'model1.zip', mv: mockMv },
+      ],
+    };
+
+    // Mock child_process exec to verify the command
+    const childProcess = require('child_process');
+    let capturedCmd = '';
+    childProcess.exec.mockImplementation((cmd, callback) => {
+      capturedCmd = cmd;
+      const mChild = {
+        on: jest.fn((event, callback) => {
+          if (event === 'exit') {
+            process.nextTick(() => callback(0));
+          }
+          return mChild;
+        }),
+      };
+      if (typeof callback === 'function') {
+        process.nextTick(() => callback(null, '', ''));
+      }
+      return mChild;
+    });
+
+    // Mock process.chdir to avoid actual directory change error
+    const originalChdir = process.chdir;
+    process.chdir = jest.fn();
+
+    // Mock queries.project.getAllImages
+    const queries = require('../../queries/queries');
+    queries.project.getAllImages = jest.fn().mockResolvedValue({ rows: [] });
+
+    // Mock fs
+    const fs = require('fs');
+    const originalReadFileSync = fs.readFileSync;
+    const originalReaddirSync = fs.readdirSync;
+    const originalExistsSync = fs.existsSync;
+    
+    fs.readdirSync = jest.fn().mockReturnValue(['best.pt']);
+    fs.existsSync = jest.fn().mockImplementation((path) => {
+      if (path && typeof path === 'string') {
+        if (path.endsWith('best.pt')) return true;
+        if (path.endsWith('out.json')) return true;
+      }
+      return originalExistsSync(path);
+    });
+    fs.readFileSync.mockImplementation((path, options) => {
+      if (path && typeof path === 'string' && path.endsWith('out.json')) {
+        return '[]';
+      }
+      return originalReadFileSync(path, options);
+    });
+
+    const res = await request(app)
+      .post('/createP')
+      .send({
+        project_name: 'test-project-pt',
+        input_classes: 'class1,class2',
+        frame_rate: '1',
+        model_format: 'ultralytics',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toBe('Project creation successful');
+    expect(capturedCmd).toContain('best.pt');
+    expect(capturedCmd).not.toContain('-d'); // PyTorch command shouldn't have -d or -c
+    expect(capturedCmd).not.toContain('-c');
+
+    // Restore original
+    fs.readFileSync = originalReadFileSync;
+    fs.readdirSync = originalReaddirSync;
+    fs.existsSync = originalExistsSync;
+    process.chdir = originalChdir;
+  });
+
+  /*
+  * this tests if the createProject route handles multiple bootstrap zip uploads with ultralytics format correctly.
+  */
+  it('should accept and save multiple bootstrap zip files with ultralytics format during project creation', async () => {
+    const mockMv = jest.fn().mockResolvedValue(true);
+    global.mockFiles = {
+      upload_images: {
+        name: 'images.zip',
+        mv: jest.fn().mockResolvedValue(true),
+      },
+      upload_video: null,
+      upload_bootstrap: [
+        { name: 'model1.zip', mv: mockMv },
+        { name: 'model2.zip', mv: mockMv },
+      ],
+    };
+
+    // Mock child_process exec to return mock process that triggers exit
+    const childProcess = require('child_process');
+    childProcess.exec.mockImplementation((cmd, callback) => {
+      const mChild = {
+        on: jest.fn((event, callback) => {
+          if (event === 'exit') {
+            process.nextTick(() => callback(0));
+          }
+          return mChild;
+        }),
+      };
+      if (typeof callback === 'function') {
+        process.nextTick(() => callback(null, '', ''));
+      }
+      return mChild;
+    });
+
+    // Mock process.chdir to make sure it is not called for ultralytics format
+    const originalChdir = process.chdir;
+    process.chdir = jest.fn();
+
+    // Mock queries.project.getAllImages
+    const queries = require('../../queries/queries');
+    queries.project.getAllImages = jest.fn().mockResolvedValue({ rows: [] });
+
+    // Mock fs
+    const fs = require('fs');
+    const originalReadFileSync = fs.readFileSync;
+    const originalReaddirSync = fs.readdirSync;
+    const originalExistsSync = fs.existsSync;
+    
+    fs.readdirSync = jest.fn().mockReturnValue(['best.pt']);
+    fs.existsSync = jest.fn().mockImplementation((path) => {
+      if (path && typeof path === 'string') {
+        if (path.endsWith('best.pt')) return true;
+        if (path.endsWith('out.json')) return true;
+      }
+      return originalExistsSync(path);
+    });
+    fs.readFileSync.mockImplementation((path, options) => {
+      if (path && typeof path === 'string' && path.endsWith('out.json')) {
+        return '[]';
+      }
+      return originalReadFileSync(path, options);
+    });
+
+    const res = await request(app)
+      .post('/createP')
+      .send({
+        project_name: 'test-project-multi-ultralytics',
+        input_classes: 'class1,class2',
+        frame_rate: '1',
+        model_format: 'ultralytics',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toBe('Project creation successful');
+    expect(mockMv).toHaveBeenCalledTimes(2);
+    expect(process.chdir).not.toHaveBeenCalled();
+
+    // Restore original readFileSync and process.chdir
+    fs.readFileSync = originalReadFileSync;
+    fs.readdirSync = originalReaddirSync;
+    fs.existsSync = originalExistsSync;
+    process.chdir = originalChdir;
+  });
+
   /* * this tests if the import-yolo route responds to yolo archive imports.
   * This test expects a status code 200.
   */
