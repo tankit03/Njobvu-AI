@@ -245,7 +245,7 @@ async function createProject(req, res) {
 
                 await bzip.extract(null, modelDir);
                 await bzip.close();
-                
+
                 rimraf(tempZipPath, (err) => {
                     if (err) {
                         global.logger.error(err);
@@ -299,16 +299,18 @@ async function createProject(req, res) {
                 outJsonFiles.push(outBootstrapJson);
 
                 const isPyTorch = weightBootstrapPath.endsWith(".pt");
+
                 let pythonBin = "python3";
-                if (fs.existsSync("/home/fc/micah/venv/bin/python3")) {
-                    pythonBin = "/home/fc/micah/venv/bin/python3";
+
+                if (fs.existsSync(global.configFile["default_python_venv_path"])) {
+                    pythonBin = global.configFile["default_python_venv_path"];
                 }
 
                 var cmd;
                 if (isPyTorch) {
                     cmd = `${pythonBin} ${yoloScript} -t ${runTxtPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
                 } else {
-                    var darknetPath = "/export/darknet";
+                    let darknetPath = "/export/darknet";
                     cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknetPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
                     process.chdir(darknetPath);
                 }
