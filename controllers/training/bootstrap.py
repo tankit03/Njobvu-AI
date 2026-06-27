@@ -49,16 +49,17 @@ python_path = ""
 python_script = ""
 percentage = ""
 python_options = ""
+model_format = "darknet"
 
 # Remove 1st argument from the
 # list of command line arguments
 argumentList = sys.argv[1:]
 
 # Options
-options = "d:c:t:w:y:o:h"
+options = "d:c:t:w:y:o:f:h"
 
 # Long options
-long_options = ["Data Path", "CFG Path", "Text Path", "Weight Path", "Darknet Path", "Output Path", "Help"]
+long_options = ["Data Path", "CFG Path", "Text Path", "Weight Path", "Darknet Path", "Output Path", "Format", "Help"]
 
 #########################################################
 # Help Information - NOT USED					#
@@ -123,6 +124,8 @@ try:
 			weight_path = currentValue
 		elif currentArgument in ('-o', "--output_path"):
 			output_path = currentValue
+		elif currentArgument in ('-f', "--Format"):
+			model_format = currentValue
 #Generate Train.txt
 	# genTraintxt(data_path)
 
@@ -130,19 +133,20 @@ except getopt.error as err:
 	showHelpInfo(err)
 
 else:
-	is_pytorch = weight_path.endswith('.pt')
+	is_pytorch = weight_path.endswith('.pt') or model_format == "ultralytics"
 	if text_path == "":
-		err = "You need more options to run the tool"
+		err = "You need more options to run the tool (text_path is required)"
 		showHelpInfo(err)
 	elif output_path == "":
-		err = "You need more options to run the tool"
+		err = "You need more options to run the tool (output_path is required)"
 		showHelpInfo(err)
-	elif not is_pytorch and data_path == "":
-		err = "You need more options to run the tool"
-		showHelpInfo(err)
-	elif not is_pytorch and cfg_path == "":
-		err = "You need more options to run the tool"
-		showHelpInfo(err)
+	elif not is_pytorch:
+		if data_path == "":
+			err = "You need more options to run the tool (data_path is required for Darknet)"
+			showHelpInfo(err)
+		elif cfg_path == "":
+			err = "You need more options to run the tool (cfg_path is required for Darknet)"
+			showHelpInfo(err)
 
 def run_ultralytics_inference(weight_path, text_path, output_path):
 	try:
@@ -203,16 +207,14 @@ def run_ultralytics_inference(weight_path, text_path, output_path):
 		print(f"Exception during Ultralytics inference: {e}")
 		sys.exit(1)
 
-if weight_path.endswith('.pt'):
+is_pytorch = weight_path.endswith('.pt') or model_format == "ultralytics"
+if is_pytorch:
 	run_ultralytics_inference(weight_path, text_path, output_path)
 else:
 	#Command to start running darknet using the training files
 	cmd = "cd " + darknet_path + "; ./darknet detector test " + data_path + " " + cfg_path + " " + weight_path + " -dont_show -ext_output -out " + output_path + " < " + text_path
 	print(cmd)
-
-	# process_code,process_output,process_err,process_mix = call_command(cmd)
 	call_command(cmd)
-
 
 # ./darknet detector test /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj.cfg /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj.data /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj_final.weights -dont_show -ext_output -out output.txt < train.txt
 
