@@ -291,6 +291,72 @@ describe('Project Routes - Basic Tests', () => {
     process.chdir = originalChdir;
   });
 
+  /*
+  * this tests if the createProject route handles multiple bootstrap zip uploads with ultralytics format correctly.
+  */
+  it('should accept and save multiple bootstrap zip files with ultralytics format during project creation', async () => {
+    const mockMv = jest.fn().mockResolvedValue(true);
+    global.mockFiles = {
+      upload_images: {
+        name: 'images.zip',
+        mv: jest.fn().mockResolvedValue(true),
+      },
+      upload_video: null,
+      upload_bootstrap: [
+        { name: 'model1.zip', mv: mockMv },
+        { name: 'model2.zip', mv: mockMv },
+      ],
+    };
+
+    // Mock child_process exec to return mock process that triggers exit
+    const childProcess = require('child_process');
+    childProcess.exec.mockReturnValue({
+      on: jest.fn((event, callback) => {
+        if (event === 'exit') {
+          process.nextTick(() => callback(0));
+        }
+        return this;
+      }),
+    });
+
+    // Mock process.chdir to make sure it is not called for ultralytics format
+    const originalChdir = process.chdir;
+    process.chdir = jest.fn();
+
+    // Mock queries.project.getAllImages
+    const queries = require('../../queries/queries');
+    queries.project.getAllImages = jest.fn().mockResolvedValue({ rows: [] });
+
+    // Mock fs.readFileSync to return JSON array for bootstrap output
+    const fs = require('fs');
+    const originalReadFileSync = fs.readFileSync;
+    fs.readFileSync.mockImplementation((path, options) => {
+      if (path && typeof path === 'string' && path.endsWith('out.json')) {
+        return '[]';
+      }
+      return originalReadFileSync(path, options);
+    });
+
+    const res = await request(app)
+      .post('/createP')
+      .send({
+        project_name: 'test-project-multi-ultralytics',
+        input_classes: 'class1,class2',
+        frame_rate: '1',
+        model_format: 'ultralytics',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toBe('Project creation successful');
+    expect(mockMv).toHaveBeenCalledTimes(2);
+    expect(process.chdir).not.toHaveBeenCalled();
+
+    // Restore original readFileSync and process.chdir
+    fs.readFileSync = originalReadFileSync;
+    process.chdir = originalChdir;
+  });
+
   /* * this tests if the import-yolo route responds to yolo archive imports.
   * This test expects a status code 200.
   */

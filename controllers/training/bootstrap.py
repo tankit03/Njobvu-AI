@@ -49,16 +49,17 @@ python_path = ""
 python_script = ""
 percentage = ""
 python_options = ""
+model_format = "darknet"
 
 # Remove 1st argument from the
 # list of command line arguments
 argumentList = sys.argv[1:]
 
 # Options
-options = "d:c:t:w:y:o:h"
+options = "d:c:t:w:y:o:f:h"
 
 # Long options
-long_options = ["Data Path", "CFG Path", "Text Path", "Weight Path", "Darknet Path", "Output Path", "Help"]
+long_options = ["Data Path", "CFG Path", "Text Path", "Weight Path", "Darknet Path", "Output Path", "Format", "Help"]
 
 #########################################################
 # Help Information - NOT USED					#
@@ -123,6 +124,8 @@ try:
 			weight_path = currentValue
 		elif currentArgument in ('-o', "--output_path"):
 			output_path = currentValue
+		elif currentArgument in ('-f', "--Format"):
+			model_format = currentValue
 #Generate Train.txt
 	# genTraintxt(data_path)
 
@@ -130,25 +133,27 @@ except getopt.error as err:
 	showHelpInfo(err)
 
 else:
-	if data_path == "":
-		err = "You need more options to run the tool"
-		showHelpInfo(err)
-	elif text_path == "":
-		err = "You need more options to run the tool"
-		showHelpInfo(err)
-	elif cfg_path == "":
-		err = "You need more options to run the tool"
+	if text_path == "":
+		err = "You need more options to run the tool (text_path is required)"
 		showHelpInfo(err)
 	elif output_path == "":
-		err = "You need more options to run the tool"
+		err = "You need more options to run the tool (output_path is required)"
 		showHelpInfo(err)
+	elif model_format == "darknet":
+		if data_path == "":
+			err = "You need more options to run the tool (data_path is required for Darknet)"
+			showHelpInfo(err)
+		elif cfg_path == "":
+			err = "You need more options to run the tool (cfg_path is required for Darknet)"
+			showHelpInfo(err)
 
 #Command to start running darknet using the training files
-cmd = "cd " + darknet_path + "; ./darknet detector test " + data_path + " " + cfg_path + " " + weight_path + " -dont_show -ext_output -out " + output_path + " < " + text_path
-print(cmd)
-
-# process_code,process_output,process_err,process_mix = call_command(cmd)
-call_command(cmd)
+if model_format == "darknet":
+	cmd = "cd " + darknet_path + "; ./darknet detector test " + data_path + " " + cfg_path + " " + weight_path + " -dont_show -ext_output -out " + output_path + " < " + text_path
+	print(cmd)
+	call_command(cmd)
+else:
+	print("Ultralytics YOLO inference is not yet implemented in Python script")
 
 # ./darknet detector test /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj.cfg /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj.data /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj_final.weights -dont_show -ext_output -out output.txt < train.txt
 

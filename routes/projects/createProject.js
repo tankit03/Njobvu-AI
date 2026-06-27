@@ -224,6 +224,7 @@ async function createProject(req, res) {
     if (uploadBootstrap !== undefined && uploadBootstrap !== null) {
         const bootstrapFiles = Array.isArray(uploadBootstrap) ? uploadBootstrap : [uploadBootstrap];
         const outJsonFiles = [];
+        const modelFormat = req.body["model_format"] || "darknet";
 
         for (let idx = 0; idx < bootstrapFiles.length; idx++) {
             const file = bootstrapFiles[idx];
@@ -255,31 +256,41 @@ async function createProject(req, res) {
                 let bfiles = fs.readdirSync(modelDir);
 
                 for (var i = 0; i < bfiles.length; i++) {
-                    if (!bfiles[i].endsWith(".zip")) {
-                        let temp = modelDir + "/" + bfiles[i];
-
-                        bfiles[i] = bfiles[i].trim();
-                        bfiles[i] = bfiles[i].split(" ").join("_");
-                        bfiles[i] = bfiles[i].split("+").join("_");
-
-                        fs.rename(temp, modelDir + "/" + bfiles[i], () => { });
-
-                        if (bfiles[i].endsWith(".weights"))
-                            weightBootstrapPath = modelDir + "/" + bfiles[i];
-
-                        if (bfiles[i].endsWith(".cfg"))
-                            cfgBootstrapPath = modelDir + "/" + bfiles[i];
-
-                        if (bfiles[i].endsWith(".data"))
-                            dataBootstrapPath = modelDir + "/" + bfiles[i];
+                    if (bfiles[i] === "__MACOSX") {
+                        continue;
+                    }
+                    if (bfiles[i].endsWith(".zip")) {
+                        continue;
                     }
 
-                    if (
-                        !bfiles[i].endsWith(".weights") &&
-                        !bfiles[i].endsWith(".cfg") &&
-                        !bfiles[i].endsWith(".data")
-                    ) {
-                        fs.unlink(modelDir + "/" + bfiles[i], () => { });
+                    let temp = modelDir + "/" + bfiles[i];
+
+                    bfiles[i] = bfiles[i].trim();
+                    bfiles[i] = bfiles[i].split(" ").join("_");
+                    bfiles[i] = bfiles[i].split("+").join("_");
+
+                    const fullPath = modelDir + "/" + bfiles[i];
+
+                    if (modelFormat === "darknet") {
+                        if (bfiles[i].endsWith(".weights")) {
+                            weightBootstrapPath = fullPath;
+                            fs.rename(temp, fullPath, () => { });
+                        } else if (bfiles[i].endsWith(".cfg")) {
+                            cfgBootstrapPath = fullPath;
+                            fs.rename(temp, fullPath, () => { });
+                        } else if (bfiles[i].endsWith(".data")) {
+                            dataBootstrapPath = fullPath;
+                            fs.rename(temp, fullPath, () => { });
+                        } else {
+                            fs.unlink(fullPath, () => { });
+                        }
+                    } else if (modelFormat === "ultralytics") {
+                        if (bfiles[i].endsWith(".pt")) {
+                            weightBootstrapPath = fullPath;
+                            fs.rename(temp, fullPath, () => { });
+                        } else {
+                            fs.unlink(fullPath, () => { });
+                        }
                     }
                 }
 
@@ -298,9 +309,13 @@ async function createProject(req, res) {
                 outJsonFiles.push(outBootstrapJson);
 
                 var darknetPath = "/export/darknet";
-                var cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknetPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
-
-                process.chdir(darknetPath);
+                var cmd;
+                if (modelFormat === "darknet") {
+                    cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknetPath} -w ${weightBootstrapPath} -o ${outBootstrapJson} -f ${modelFormat}`;
+                    process.chdir(darknetPath);
+                } else {
+                    cmd = `python3 ${yoloScript} -t ${runTxtPath} -w ${weightBootstrapPath} -o ${outBootstrapJson} -f ${modelFormat}`;
+                }
 
                 await new Promise((resolve) => {
                     var child = exec(cmd, (err, stdout, stderr) => {

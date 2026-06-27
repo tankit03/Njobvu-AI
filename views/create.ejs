@@ -139,8 +139,15 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label for="upload_bootstrap">Upload Model Zips (.data + .cfg + .weights).zip (multiple allowed)</label>
-                        <input id="upload_bootstrap" aria-label="Upload (.data + .cfg + .weights).zip" name="upload_bootstrap" type="file" class="form-control-file" multiple required>
+                        <label for="bootstrap_model_format">Model Format</label>
+                        <select id="bootstrap_model_format" name="model_format" class="form-control">
+                            <option value="darknet">Darknet (.data + .cfg + .weights)</option>
+                            <option value="ultralytics">Ultralytics YOLO (PyTorch .pt)</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="upload_bootstrap">Upload Model Zips (multiple allowed)</label>
+                        <input id="upload_bootstrap" aria-label="Upload Model Zips" name="upload_bootstrap" type="file" class="form-control-file" multiple required>
                     </div>
                 </div>
                 <div class="col text-center">
@@ -200,6 +207,7 @@
             let nameFieldId = 'blank_project_name';
             if (formId === 'yoloForm') nameFieldId = 'yolo_project_name';
             if (formId === 'kwcocoForm') nameFieldId = 'coco_project_name';
+            if (formId === 'bootstrapForm') nameFieldId = 'bootstrap_project_name';
 
             const projectName = document.getElementById(nameFieldId).value;
             if (!validateProjectName(projectName)) {
