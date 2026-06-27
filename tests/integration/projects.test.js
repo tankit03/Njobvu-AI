@@ -98,7 +98,7 @@ jest.mock('fs', () => ({
 
 // Mock file upload
 jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
-  req.files = {
+  req.files = global.mockFiles || {
     upload_images: null,
     upload_video: null,
     upload_bootstrap: null,
@@ -107,8 +107,7 @@ jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
     coco_archive: { name: 'coco_archive.zip', mv: jest.fn().mockResolvedValue() },
     viame_model: { name: 'viame.pt', mv: jest.fn().mockResolvedValue() },
     dataset: { name: 'dataset.zip', mv: jest.fn().mockResolvedValue() },
-    weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() },
-    ...req.files
+    weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() }
   };
   next();
 }));
@@ -157,6 +156,7 @@ describe('Project Routes - Basic Tests', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    delete global.mockFiles;
   });
 
   /* 

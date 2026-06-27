@@ -223,107 +223,119 @@ async function createProject(req, res) {
 
     if (uploadBootstrap !== undefined && uploadBootstrap !== null) {
         const bootstrapFiles = Array.isArray(uploadBootstrap) ? uploadBootstrap : [uploadBootstrap];
-        for (const file of bootstrapFiles) {
-            const tempZipPath = bootstrapPath + "/" + file.name;
-            await file.mv(tempZipPath);
-        }
+        const outJsonFiles = [];
 
-        // for legacy single-file compatibility
-        var bzipPath = bootstrapPath + "/" + bootstrapFiles[0].name;
-        var outBootstrapJson = "";
+        for (let idx = 0; idx < bootstrapFiles.length; idx++) {
+            const file = bootstrapFiles[idx];
+            const modelDir = bootstrapPath + "/model_" + idx;
 
-        var bzip = new StreamZip.async({ file: bzipPath });
-
-        try {
-            let weightBootstrapPath = "",
-                cfgBootstrapPath = "",
-                dataBootstrapPath = "";
-
-            await bzip.extract(null, bootstrapPath);
-            await bzip.close();
-            rimraf(bzipPath, (err) => {
-                if (err) {
-                    global.logger.error(err);
-                }
-            });
-
-            let bfiles = fs.readdirSync(bootstrapPath);
-
-            for (var i = 0; i < bfiles.length; i++) {
-                if (!bfiles[i].endsWith(".zip")) {
-                    let temp = bootstrapPath + "/" + bfiles[i];
-
-                    bfiles[i] = bfiles[i].trim();
-                    bfiles[i] = bfiles[i].split(" ").join("_");
-                    bfiles[i] = bfiles[i].split("+").join("_");
-
-                    fs.rename(temp, bootstrapPath + "/" + bfiles[i], () => { });
-
-                    if (bfiles[i].endsWith(".weights"))
-                        weightBootstrapPath = bootstrapPath + "/" + bfiles[i];
-
-                    if (bfiles[i].endsWith(".cfg"))
-                        cfgBootstrapPath = bootstrapPath + "/" + bfiles[i];
-
-                    if (bfiles[i].endsWith(".data"))
-                        dataBootstrapPath = bootstrapPath + "/" + bfiles[i];
-                }
-
-                if (
-                    !bfiles[i].endsWith(".weights") &&
-                    !bfiles[i].endsWith(".cfg") &&
-                    !bfiles[i].endsWith(".data")
-                ) {
-                    fs.unlink(bootstrapPath + "/" + bfiles[i], () => { });
-                }
+            if (!fs.existsSync(modelDir)) {
+                fs.mkdirSync(modelDir);
             }
 
-            imagesToWrite = await readdirAsync(imagesPath);
+            const tempZipPath = modelDir + "/" + file.name;
+            await file.mv(tempZipPath);
 
-            let runData = imagesToWrite
-                .map((i) => imagesPath + "/" + i)
-                .join("\n");
+            const bzip = new StreamZip.async({ file: tempZipPath });
 
-            let runTxtPath = bootstrapPath + "/" + "run.txt";
+            try {
+                let weightBootstrapPath = "",
+                    cfgBootstrapPath = "",
+                    dataBootstrapPath = "";
 
-            fs.writeFileSync(runTxtPath, runData, (err) => {
-                if (err) throw err;
-            });
+                await bzip.extract(null, modelDir);
+                await bzip.close();
+                
+                rimraf(tempZipPath, (err) => {
+                    if (err) {
+                        global.logger.error(err);
+                    }
+                });
 
-            var yoloScript = publicPath + "controllers/training/bootstrap.py";
+                let bfiles = fs.readdirSync(modelDir);
 
-            outBootstrapJson = bootstrapPath + "/out.json";
+                for (var i = 0; i < bfiles.length; i++) {
+                    if (!bfiles[i].endsWith(".zip")) {
+                        let temp = modelDir + "/" + bfiles[i];
 
-            var darknetPath = "/export/darknet";
-            var cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknetPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
+                        bfiles[i] = bfiles[i].trim();
+                        bfiles[i] = bfiles[i].split(" ").join("_");
+                        bfiles[i] = bfiles[i].split("+").join("_");
 
-            process.chdir(darknetPath);
+                        fs.rename(temp, modelDir + "/" + bfiles[i], () => { });
 
-            var child = exec(cmd, (err, stdout, stderr) => {
-                if (err) {
-                    global.logger.debug(`This is the error: ${err.message}`);
-                } else if (stderr) {
-                    global.logger.debug(`This is the stderr: ${stderr}`);
+                        if (bfiles[i].endsWith(".weights"))
+                            weightBootstrapPath = modelDir + "/" + bfiles[i];
+
+                        if (bfiles[i].endsWith(".cfg"))
+                            cfgBootstrapPath = modelDir + "/" + bfiles[i];
+
+                        if (bfiles[i].endsWith(".data"))
+                            dataBootstrapPath = modelDir + "/" + bfiles[i];
+                    }
+
+                    if (
+                        !bfiles[i].endsWith(".weights") &&
+                        !bfiles[i].endsWith(".cfg") &&
+                        !bfiles[i].endsWith(".data")
+                    ) {
+                        fs.unlink(modelDir + "/" + bfiles[i], () => { });
+                    }
                 }
-            });
 
-            child.on("error", (err) => {
-                global.logger.error(`Error occurred: ${err.message}`);
-            });
+                const imagesToWrite = await readdirAsync(imagesPath);
 
-            child.on("exit", (code) => {
-                global.logger.debug(`Child process exited with code ${code}`);
-                applyBootstrapLabels();
-            });
+                let runData = imagesToWrite
+                    .map((img) => imagesPath + "/" + img)
+                    .join("\n");
+
+                let runTxtPath = modelDir + "/run.txt";
+
+                fs.writeFileSync(runTxtPath, runData);
+
+                var yoloScript = publicPath + "controllers/training/bootstrap.py";
+                const outBootstrapJson = modelDir + "/out.json";
+                outJsonFiles.push(outBootstrapJson);
+
+                var darknetPath = "/export/darknet";
+                var cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknetPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
+
+                process.chdir(darknetPath);
+
+                await new Promise((resolve) => {
+                    var child = exec(cmd, (err, stdout, stderr) => {
+                        if (err) {
+                            global.logger.debug(`This is the error: ${err.message}`);
+                        } else if (stderr) {
+                            global.logger.debug(`This is the stderr: ${stderr}`);
+                        }
+                    });
+
+                    child.on("error", (err) => {
+                        global.logger.error(`Error occurred: ${err.message}`);
+                        resolve();
+                    });
+
+                    child.on("exit", (code) => {
+                        global.logger.debug(`Child process exited with code ${code}`);
+                        resolve();
+                    });
+                });
+            } catch (err) {
+                global.logger.error(err);
+                return res.status(500).send("Error bootstrapping model " + file.name);
+            }
+        }
+
+        try {
+            await applyBootstrapLabels(outJsonFiles);
+            res.send("Project creation successful");
         } catch (err) {
             global.logger.error(err);
             return res.status(500).send("Error bootstrapping");
         }
 
-        async function applyBootstrapLabels() {
-            let rawLabelBootstrapData = fs.readFileSync(outBootstrapJson);
-            let labelBootstrapData = JSON.parse(rawLabelBootstrapData);
-
+        async function applyBootstrapLabels(outJsonFiles) {
             let imageResults;
             let classList;
 
@@ -332,7 +344,7 @@ async function createProject(req, res) {
                 classList = await queries.project.getAllClasses(projectPath);
             } catch (err) {
                 global.logger.error(err);
-                return res.status(500).send("Failure bootstrapping labels");
+                throw err;
             }
 
             imageResults = imageResults.rows;
@@ -347,70 +359,80 @@ async function createProject(req, res) {
             var labelID = 0;
 
             for (let i = 0; i < imageResults.length; i++) {
+                var imageName = imageResults[i].IName;
                 var img = fs.readFileSync(
-                    `${imagesPath}/${imageResults[i].IName}`,
+                    `${imagesPath}/${imageName}`,
                 ),
-                    imgData = probe.sync(img),
+                    imgData = global.probe.sync(img),
                     imgW = imgData.width,
                     imgH = imgData.height;
 
-                for (let j = 0; j < labelBootstrapData[i].objects.length; j++) {
-                    var boostrapObj = labelBootstrapData[i].objects[j];
-                    var relativeCoords = boostrapObj.relative_coordinates;
+                for (const outJsonFile of outJsonFiles) {
+                    if (!fs.existsSync(outJsonFile)) continue;
+                    let rawLabelBootstrapData = fs.readFileSync(outJsonFile);
+                    let labelBootstrapData = JSON.parse(rawLabelBootstrapData);
 
-                    var labelWidth = imgW * relativeCoords.width;
-                    var labelHeight = imgH * relativeCoords.height;
-                    var leftX = relativeCoords.center_x * imgW - labelWidth / 2;
-                    var bottomY =
-                        relativeCoords.center_y * imgH - labelHeight / 2;
-                    var className = boostrapObj.name;
-                    var confidence = Math.round(
-                        Number(boostrapObj.confidence) * 100,
-                    );
-                    labelID += 1;
+                    if (labelBootstrapData && labelBootstrapData[i] && labelBootstrapData[i].objects) {
+                        for (let j = 0; j < labelBootstrapData[i].objects.length; j++) {
+                            var boostrapObj = labelBootstrapData[i].objects[j];
+                            var relativeCoords = boostrapObj.relative_coordinates;
 
-                    if (!classSet.has(className)) {
-                        try {
-                            await queries.project.createClass(
-                                projectPath,
-                                className,
+                            var labelWidth = imgW * relativeCoords.width;
+                            var labelHeight = imgH * relativeCoords.height;
+                            var leftX = relativeCoords.center_x * imgW - labelWidth / 2;
+                            var bottomY =
+                                relativeCoords.center_y * imgH - labelHeight / 2;
+                            var className = boostrapObj.name;
+                            var confidence = Math.round(
+                                Number(boostrapObj.confidence) * 100,
                             );
-                        } catch (err) {
-                            global.logger.error(err);
-                            return res
-                                .status(500)
-                                .send("Error adding class name to project");
+                            labelID += 1;
+
+                            if (!classSet.has(className)) {
+                                try {
+                                    await queries.project.createClass(
+                                        projectPath,
+                                        className,
+                                    );
+                                    classSet.add(className);
+                                } catch (err) {
+                                    global.logger.error(err);
+                                    throw err;
+                                }
+                            }
+
+                            try {
+                                await queries.project.createLabel(
+                                    projectPath,
+                                    Number(labelID),
+                                    className,
+                                    Number(leftX),
+                                    Number(bottomY),
+                                    Number(labelWidth),
+                                    Number(labelHeight),
+                                    labelHeight,
+                                );
+                            } catch (err) {
+                                global.logger.error(err);
+                                throw err;
+                            }
+
+                            try {
+                                await queries.project.createValidation(
+                                    projectPath,
+                                    confidence,
+                                    labelID,
+                                    className,
+                                    imageName,
+                                );
+                            } catch (err) {
+                                global.logger.error(err);
+                                throw err;
+                            }
                         }
                     }
-
-                    try {
-                        await queries.project.createLabel(
-                            projectPath,
-                            Number(labelID),
-                            className,
-                            Number(leftX),
-                            Number(bottomY),
-                            Number(labelWidth),
-                            Number(labelHeight),
-                            labelHeight,
-                        );
-                    } catch (err) {
-                        global.logger.error(err);
-                        res.status(500).send("Error creating labels");
-                    }
-
-                    await queries.project.createValidation(
-                        projectPath,
-                        confidence,
-                        labelID,
-                        className,
-                        imageName,
-                    );
-
-                    classSet.add(className);
                 }
             }
-            res.send("Project creation successful");
         }
     }
 }
