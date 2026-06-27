@@ -130,25 +130,89 @@ except getopt.error as err:
 	showHelpInfo(err)
 
 else:
-	if data_path == "":
-		err = "You need more options to run the tool"
-		showHelpInfo(err)
-	elif text_path == "":
-		err = "You need more options to run the tool"
-		showHelpInfo(err)
-	elif cfg_path == "":
+	is_pytorch = weight_path.endswith('.pt')
+	if text_path == "":
 		err = "You need more options to run the tool"
 		showHelpInfo(err)
 	elif output_path == "":
 		err = "You need more options to run the tool"
 		showHelpInfo(err)
+	elif not is_pytorch and data_path == "":
+		err = "You need more options to run the tool"
+		showHelpInfo(err)
+	elif not is_pytorch and cfg_path == "":
+		err = "You need more options to run the tool"
+		showHelpInfo(err)
 
-#Command to start running darknet using the training files
-cmd = "cd " + darknet_path + "; ./darknet detector test " + data_path + " " + cfg_path + " " + weight_path + " -dont_show -ext_output -out " + output_path + " < " + text_path
-print(cmd)
+def run_ultralytics_inference(weight_path, text_path, output_path):
+	try:
+		from ultralytics import YOLO
+		import json
+		import os
+	except ImportError as e:
+		print("Error: Ultralytics is required for PyTorch models. Please run within a virtualenv or install it: pip install ultralytics")
+		sys.exit(1)
 
-# process_code,process_output,process_err,process_mix = call_command(cmd)
-call_command(cmd)
+	try:
+		model = YOLO(weight_path)
+		
+		with open(text_path, 'r') as f:
+			image_paths = [line.strip() for line in f if line.strip()]
+
+		results_json = []
+
+		for img_path in image_paths:
+			if not os.path.exists(img_path):
+				results_json.append({"objects": []})
+				continue
+
+			results = model.predict(img_path, verbose=False)
+			img_objects = []
+
+			if results and len(results) > 0:
+				result = results[0]
+				boxes = result.boxes
+				if boxes is not None:
+					for box in boxes:
+						cls_id = int(box.cls[0].item())
+						name = model.names.get(cls_id, f"class_{cls_id}")
+						confidence = float(box.conf[0].item())
+						
+						xywhn = box.xywhn[0].tolist()
+						
+						img_objects.append({
+							"class_id": cls_id,
+							"name": name,
+							"relative_coordinates": {
+								"center_x": xywhn[0],
+								"center_y": xywhn[1],
+								"width": xywhn[2],
+								"height": xywhn[3]
+							},
+							"confidence": confidence
+						})
+
+			results_json.append({
+				"objects": img_objects
+			})
+
+		with open(output_path, 'w') as f:
+			json.dump(results_json, f, indent=4)
+			
+	except Exception as e:
+		print(f"Exception during Ultralytics inference: {e}")
+		sys.exit(1)
+
+if weight_path.endswith('.pt'):
+	run_ultralytics_inference(weight_path, text_path, output_path)
+else:
+	#Command to start running darknet using the training files
+	cmd = "cd " + darknet_path + "; ./darknet detector test " + data_path + " " + cfg_path + " " + weight_path + " -dont_show -ext_output -out " + output_path + " < " + text_path
+	print(cmd)
+
+	# process_code,process_output,process_err,process_mix = call_command(cmd)
+	call_command(cmd)
+
 
 # ./darknet detector test /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj.cfg /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj.data /export/labeling_tool/public/projects/cappel-Cara_Dataset/training/logs/1667329701610/obj_final.weights -dont_show -ext_output -out output.txt < train.txt
 

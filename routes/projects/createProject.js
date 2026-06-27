@@ -264,7 +264,7 @@ async function createProject(req, res) {
 
                         fs.rename(temp, modelDir + "/" + bfiles[i], () => { });
 
-                        if (bfiles[i].endsWith(".weights"))
+                        if (bfiles[i].endsWith(".weights") || bfiles[i].endsWith(".pt"))
                             weightBootstrapPath = modelDir + "/" + bfiles[i];
 
                         if (bfiles[i].endsWith(".cfg"))
@@ -276,6 +276,7 @@ async function createProject(req, res) {
 
                     if (
                         !bfiles[i].endsWith(".weights") &&
+                        !bfiles[i].endsWith(".pt") &&
                         !bfiles[i].endsWith(".cfg") &&
                         !bfiles[i].endsWith(".data")
                     ) {
@@ -297,10 +298,20 @@ async function createProject(req, res) {
                 const outBootstrapJson = modelDir + "/out.json";
                 outJsonFiles.push(outBootstrapJson);
 
-                var darknetPath = "/export/darknet";
-                var cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknetPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
+                const isPyTorch = weightBootstrapPath.endsWith(".pt");
+                let pythonBin = "python3";
+                if (fs.existsSync("/home/fc/micah/venv/bin/python3")) {
+                    pythonBin = "/home/fc/micah/venv/bin/python3";
+                }
 
-                process.chdir(darknetPath);
+                var cmd;
+                if (isPyTorch) {
+                    cmd = `${pythonBin} ${yoloScript} -t ${runTxtPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
+                } else {
+                    var darknetPath = "/export/darknet";
+                    cmd = `python3 ${yoloScript} -d ${dataBootstrapPath} -c ${cfgBootstrapPath} -t ${runTxtPath} -y ${darknetPath} -w ${weightBootstrapPath} -o ${outBootstrapJson}`;
+                    process.chdir(darknetPath);
+                }
 
                 await new Promise((resolve) => {
                     var child = exec(cmd, (err, stdout, stderr) => {
