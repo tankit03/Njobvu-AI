@@ -272,17 +272,26 @@ async function createProject(req, res) {
                     const fullPath = modelDir + "/" + bfiles[i];
 
                     if (modelFormat === "darknet") {
-                        if (bfiles[i].endsWith(".weights")) {
-                            weightBootstrapPath = fullPath;
-                            fs.rename(temp, fullPath, () => { });
-                        } else if (bfiles[i].endsWith(".cfg")) {
-                            cfgBootstrapPath = fullPath;
-                            fs.rename(temp, fullPath, () => { });
-                        } else if (bfiles[i].endsWith(".data")) {
-                            dataBootstrapPath = fullPath;
-                            fs.rename(temp, fullPath, () => { });
-                        } else {
-                            fs.unlink(fullPath, () => { });
+                        switch (bfiles[i].split(".").at(-1)) {
+                            case "weights":
+                                weightBootstrapPath = fullPath;
+                                fs.rename(temp, fullPath, () => { });
+
+                                break;
+                            case "cfg":
+
+                                cfgBootstrapPath = fullPath;
+                                fs.rename(temp, fullPath, () => { });
+                                break;
+                            case ".data":
+                                dataBootstrapPath = fullPath;
+                                fs.rename(temp, fullPath, () => { });
+
+                                break;
+                            default:
+                                fs.unlink(fullPath, () => { });
+
+                                break;
                         }
                     } else if (modelFormat === "ultralytics") {
                         if (bfiles[i].endsWith(".pt")) {
