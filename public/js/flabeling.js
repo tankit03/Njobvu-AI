@@ -932,18 +932,19 @@ function deleteObjects() {
     var activeObject = canvas.getActiveObject(),
         activeGroup = canvas.getActiveGroup();
     if (activeObject) {
-        if (confirm('Are you sure?')) {
+        // if (confirm('Are you sure?')) {
 
-            $(".label-" + activeObject.id).remove();
-            canvas.remove(activeObject);
-            for (var i = 0; i < canvas.getObjects().length; i++) {
-                if (canvas.item(i).get("type") === 'text') {
-                    canvas.remove(canvas.item(i));
-                }
+        $(".label-" + activeObject.id).remove();
+        canvas.remove(activeObject);
+        for (var i = 0; i < canvas.getObjects().length; i++) {
+            if (canvas.item(i).get("type") === 'text') {
+                canvas.remove(canvas.item(i));
             }
-            counter -= 1;
-            $('#labels-counter').val(counter);
         }
+        counter -= 1;
+        $('#labels-counter').val(counter);
+
+        // }
     }
     else if (activeGroup) {
         if (confirm('Are you sure?')) {
