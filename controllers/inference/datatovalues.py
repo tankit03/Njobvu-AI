@@ -235,19 +235,20 @@ cmd = (
     darknet_path
     + f" {yolo_task}"
     + f" {yolo_mode}"
-    + " predict model="
+    + ' predict model="'
     + weight_path
-    + " source="
+    + '" source="'
     + image_path
-    + " project="
+    + '" project="'
     + data_path
-    + " name=output device="
+    + '" name=output device='
     + device
     + " save_txt=True save_conf=True"
     + " "
     + adv_options
-    + " 2>&1 > "
+    + ' 2>&1 > "'
     + log_file
+    + '"'
 )
 
 print(cmd)
