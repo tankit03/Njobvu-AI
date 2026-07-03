@@ -155,7 +155,7 @@ const importIfcb = async (req, res) => {
 
         await queries.project.migrateProjectDb(projectPath);
 
-        // Start transaction for fast batch inserting
+        // start transaction for fast batch inserting
         if (newClient && typeof newClient.run === 'function') {
             await newClient.run("BEGIN TRANSACTION", []);
         }
@@ -187,7 +187,7 @@ const importIfcb = async (req, res) => {
             }
         } catch (dbErr) {
             if (newClient && typeof newClient.run === 'function') {
-                await newClient.run("ROLLBACK", []).catch(() => {});
+                await newClient.run("ROLLBACK", []).catch(() => { });
             }
             throw dbErr;
         }
