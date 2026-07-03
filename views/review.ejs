@@ -186,8 +186,6 @@
             });
 
             document.getElementById("checkAllButton").addEventListener("click", function () {
-                console.log(document.querySelectorAll(".badCheckbox"));
-
                 document.querySelectorAll(".badCheckbox").forEach(checkbox => {
                     checkbox.checked = true;
                 });
