@@ -9,28 +9,35 @@ const pythonPath = config.default_python_path || 'python3';
 
 const findFiles = (dir, ext) => {
     let results = [];
+
     if (!fs.existsSync(dir)) return results;
+
     const list = fs.readdirSync(dir);
+
     list.forEach((file) => {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
+
         if (stat && stat.isDirectory()) {
             results = results.concat(findFiles(filePath, ext));
         } else if (file.toLowerCase().endsWith(ext.toLowerCase())) {
             results.push(filePath);
         }
     });
+
     return results;
 };
 
 const importIfcb = async (req, res) => {
     let projectPath = '';
+
     try {
         if (!req.files || !req.files.ifcb_archive) {
             return res.status(400).json({ success: false, message: 'IFCB archive file is required.' });
         }
 
         const projectName = req.body.project_name || req.body.projectName;
+
         if (!projectName) {
             return res.status(400).json({ success: false, message: 'Project name is required.' });
         }
@@ -38,20 +45,21 @@ const importIfcb = async (req, res) => {
         const username = req.cookies.Username || 'admin';
         const archiveFile = req.files.ifcb_archive;
         const uploadPath = path.join(__dirname, '..', '..', 'tmp', 'uploads');
-        
+
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
-        
+
         const archivePath = path.join(uploadPath, Date.now() + '-' + archiveFile.name);
         await archiveFile.mv(archivePath);
 
-        const unzippedPath = path.join(path.dirname(archivePath), path.basename(archivePath, '.zip'));
+        const unzippedPath = path.join(path.dirname(archivePath), path.parse(archivePath).name);
 
         try {
             await unzip(archivePath, unzippedPath);
+            global.logger.debug("successfully extracted IFCB archive");
         } catch (error) {
-            console.error('Failed to unzip IFCB archive:', error);
+            global.logger.error('failed to unzip IFCB archive: ' + error);
             return res.status(500).json({ success: false, message: 'Failed to unzip IFCB archive.' });
         }
 
@@ -71,7 +79,7 @@ const importIfcb = async (req, res) => {
         const pythonPathFile = path.join(trainingPath, 'Paths.txt');
         const darknetPathFile = path.join(trainingPath, 'darknetPaths.txt');
 
-        // Create directory structure
+        // create directory structure
         fs.mkdirSync(projectPath, { recursive: true });
         fs.mkdirSync(imagesPath);
         fs.mkdirSync(bootstrapPath);
@@ -82,53 +90,60 @@ const importIfcb = async (req, res) => {
         fs.writeFileSync(pythonPathFile, "");
         fs.writeFileSync(darknetPathFile, "");
 
-        // Find .roi files
+        // find .roi files
         const roiFiles = findFiles(unzippedPath, '.roi');
         if (roiFiles.length === 0) {
             fs.rmSync(projectPath, { recursive: true, force: true });
             fs.rmSync(unzippedPath, { recursive: true, force: true });
+
             return res.status(400).json({ success: false, message: 'No .roi files found in the archive.' });
         }
 
         const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'get_images_fromROI.py');
 
-        // Process each .roi file sequentially
         for (const roiFile of roiFiles) {
-            // Find matching .adc file in the same directory
+            // find matching .adc file in the same directory
             const roiDir = path.dirname(roiFile);
             const baseName = path.basename(roiFile, path.extname(roiFile));
             let adcFile = path.join(roiDir, baseName + '.adc');
-            
+
             if (!fs.existsSync(adcFile)) {
-                // Try case-insensitive or .ADC
+                // try case-insensitive or .ADC
                 const adcFileUpper = path.join(roiDir, baseName + '.ADC');
+
                 if (fs.existsSync(adcFileUpper)) {
                     adcFile = adcFileUpper;
                 } else {
-                    // Look for any .adc file with matching prefix in the directory
+                    // look for any .adc file with matching prefix in the directory
                     const adcs = findFiles(roiDir, '.adc');
                     const match = adcs.find(a => path.basename(a, path.extname(a)).toLowerCase() === baseName.toLowerCase());
+
                     if (match) {
                         adcFile = match;
                     } else {
-                        // Skip if no matching .adc file is found
-                        console.warn(`No matching ADC file found for ROI: ${roiFile}`);
+                        // skip if no matching .adc file is found
+                        global.logger.warn(`no matching ADC file found for ROI: ${roiFile}`);
                         continue;
                     }
                 }
             }
 
-            // Spawn python extraction script
+            // spawn python extraction script
             const args = [scriptPath, roiFile, '-a', adcFile, '-o', imagesPath];
+
+            global.logger.debug(`starting IFCB python script: ${pythonPath} ${args}`);
+
             await new Promise((resolve, reject) => {
                 const pythonProcess = spawn(pythonPath, args);
+
                 let stderr = '';
                 pythonProcess.stderr.on('data', (data) => {
                     stderr += data.toString();
                 });
+
                 pythonProcess.on('close', (code) => {
                     if (code !== 0) {
-                        console.error(`IFCB python script exited with code ${code}:`, stderr);
+                        global.logger.error(`IFCB python script exited with code ${code}: ` + stderr);
                         reject(new Error(stderr || `Python process failed with exit code ${code}`));
                     } else {
                         resolve();
@@ -137,11 +152,11 @@ const importIfcb = async (req, res) => {
             });
         }
 
-        // Add extracted images to project database
+        // add extracted images to project database
         const files = fs.readdirSync(imagesPath);
         let imageCount = 0;
 
-        // Initialize project database client
+        // initialize project database client
         await queries.managed.createProject(
             projectName,
             "IFCB Imported Project",
@@ -166,10 +181,10 @@ const importIfcb = async (req, res) => {
             if (file === "__MACOSX" || file === "blob" || file.endsWith(".zip")) {
                 continue;
             }
-            
+
             const temp = path.join(imagesPath, file);
             let cleanedName = file.trim().replace(/\s+/g, '_').replace(/\+/g, '_');
-            
+
             if (cleanedName !== file) {
                 fs.renameSync(temp, path.join(imagesPath, cleanedName));
             }
@@ -178,15 +193,16 @@ const importIfcb = async (req, res) => {
             imageCount++;
         }
 
-        // Clean up unzipped folder
+        // clean up unzipped folder
         fs.rmSync(unzippedPath, { recursive: true, force: true });
 
         res.json({ success: true, message: `IFCB Import completed. Extracted ${imageCount} images.` });
     } catch (err) {
-        console.error('IFCB import failed:', err);
+        global.logger.error('IFCB import failed: ' + err);
         if (projectPath && fs.existsSync(projectPath)) {
             fs.rmSync(projectPath, { recursive: true, force: true });
         }
+
         res.status(500).json({ success: false, message: err.message || 'IFCB import process failed' });
     }
 };
