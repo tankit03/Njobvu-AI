@@ -160,6 +160,12 @@
                                                         <% } %>
                                                 </select>
                                             </div>
+                                            <div class="form-group col-md-2">
+                                                <h5><label for="device">Device:</label></h5>
+                                                <input type="text" id="device" name="device" value="1"
+                                                    style="width: 100%;">
+                                                <p>(cpu,gpu#,mps)</p>
+                                            </div>
                                         </div>
                                         <br>
                                         <div class="form-row">
@@ -344,7 +350,7 @@
                             formData.append("yolo_task", document.getElementById("yolo_task").value);
                             formData.append("yolo_mode", document.getElementById("yolo_mode").value);
                             // formData.append("options", document.getElementById("options").value);
-                            // formData.append("device", document.getElementById("device").value);
+                            formData.append("device", document.getElementById("device").value);
 
                             console.log(formData);
 

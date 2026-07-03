@@ -3,7 +3,7 @@ const path = require("path");
 
 async function yoloInference(req, res) {
     try {
-        const { exec } = require("child_process");
+        const { spawn } = require("child_process");
 
         var date = Date.now();
 
@@ -14,7 +14,7 @@ async function yoloInference(req, res) {
             yolovxPath = req.body.yolovx_path,
             log = `${date}.log`,
             inferenceFile = req.body.inference_file,
-            device = req.body.device,
+            device = req.body.device || "cpu",
             options = req.body.options,
             yoloTask = req.body.yolo_task,
             weightName = req.body.weights;
@@ -154,57 +154,43 @@ async function yoloInference(req, res) {
             }
         }
 
-        var cmd = `python3 ${yoloScript} -d ${runPath} -i ${inferenceFilePath} -n ${classesPath} -l ${absUltralyticsProjectRun}/${log} -f ${ultralyticsPath} -w ${weightPath} -t ${yoloTask}`;
+        const args = [
+            yoloScript,
+            "-d", runPath,
+            "-i", inferenceFilePath,
+            "-n", classesPath,
+            "-l", `${absUltralyticsProjectRun}/${log}`,
+            "-f", ultralyticsPath,
+            "-w", weightPath,
+            "-t", yoloTask,
+            "-D", device
+        ];
 
-        var success = "";
-        var error = "";
+        const child = spawn("python3", args);
 
-        fs.writeFileSync(`${absUltralyticsProjectRun}/${log}`, `${cmd}\n\n`);
+        child.stdout.on("data", (data) => {
+            global.logger.debug(`stdout: ${data}`);
+        });
 
-        exec(cmd, (err, stdout, stderr) => {
-            if (err) {
-                global.logger.error(err);
-                global.logger.debug(`This is the error: ${err.message}`);
+        child.stderr.on("data", (data) => {
+            global.logger.error(`stderr: ${data}`);
+        });
 
-                if (err.message != "stdout maxBuffer length exceeded") {
-                    success = err.message;
-
-                    fs.writeFile(
-                        `${ultralyticsProjectRun}/${errFile}`,
-                        success,
-                        (err) => {
-                            if (err) throw err;
-                        },
-                    );
-                }
-            } else if (stderr) {
-                global.logger.debug(`This is the stderr: ${stderr}`);
-
-                if (stderr != "stdout maxBuffer length exceeded") {
-                    fs.writeFile(
-                        `${ultralyticsProjectRun}/${errFile}`,
-                        stderr,
-                        (err) => {
-                            if (err) throw err;
-                        },
-                    );
-                }
-            }
-
+        child.on("close", (code) => {
             const completionData = {
-                status: err ? 'error' : 'success',
+                status: code === 0 ? 'success' : 'error',
                 timestamp: date,
                 zipAvailable: fs.existsSync(`${runPath}/inference_results.zip`),
-                csvAvailable: fs.existsSync(`${runPath}/inference_stats.csv`),
-                message: success
+                csvAvailable: fs.existsSync(`${runPath}/inference_stats.csv`)
             };
 
             fs.writeFileSync(
                 `${runPath}/done.log`,
-                `${cmd}\n\n${JSON.stringify(completionData, null, 2)}`
+                JSON.stringify(completionData, null, 2)
             );
         });
 
+        fs.writeFileSync(`${absUltralyticsProjectRun}/${log}`, `Arguments: ${args.join(" ")}\n\n`);
 
         res.send({ Success: `YOLO Inference Started` });
     } catch (err) {
