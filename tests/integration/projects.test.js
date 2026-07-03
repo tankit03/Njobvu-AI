@@ -88,6 +88,7 @@ jest.mock('../../queries/queries', () => ({
 jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(false),
   mkdirSync: jest.fn(),
+  rmSync: jest.fn(),
   writeFile: jest.fn((path, data, callback) => callback(null)),
   writeFileSync: jest.fn(),
   readdirSync: jest.fn().mockReturnValue([]),
@@ -107,7 +108,8 @@ jest.mock('express-fileupload', () => jest.fn(() => (req, res, next) => {
     coco_archive: { name: 'coco_archive.zip', mv: jest.fn().mockResolvedValue() },
     viame_model: { name: 'viame.pt', mv: jest.fn().mockResolvedValue() },
     dataset: { name: 'dataset.zip', mv: jest.fn().mockResolvedValue() },
-    weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() }
+    weights: { name: 'weights.pt', mv: jest.fn().mockResolvedValue() },
+    ifcb_archive: { name: 'ifcb_archive.zip', mv: jest.fn().mockResolvedValue() }
   };
   next();
 }));
@@ -522,5 +524,60 @@ describe('Project Routes - Basic Tests', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
+  });
+
+  /* * this tests if the import-ifcb route responds to IFCB archive imports.
+  * This test expects a status code 400 when no .roi files are found.
+  */
+  it('should respond to import-ifcb route with 400 if no roi files found', async () => {
+    const res = await request(app)
+      .post('/api/projects/import-ifcb')
+      .send({
+        project_name: 'test-ifcb-project',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toContain('No .roi files found');
+  });
+
+  /* * this tests if the import-ifcb route successfully imports IFCB archives.
+  * This test expects a status code 200.
+  */
+  it('should successfully import IFCB archive when roi files exist', async () => {
+    const fs = require('fs');
+    const originalReaddirSync = fs.readdirSync;
+    const originalExistsSync = fs.existsSync;
+    const originalStatSync = fs.statSync;
+
+    fs.readdirSync = jest.fn().mockImplementation((path) => {
+      if (path && (path.includes('uploads') || path.includes('tmp'))) {
+        return ['test.roi', 'test.adc'];
+      }
+      return [];
+    });
+    fs.existsSync = jest.fn().mockImplementation((path) => {
+      if (path && path.includes('test-ifcb-project-2')) {
+        return false;
+      }
+      return true;
+    });
+    fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+
+    const res = await request(app)
+      .post('/api/projects/import-ifcb')
+      .send({
+        project_name: 'test-ifcb-project-2',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    // Restore
+    fs.readdirSync = originalReaddirSync;
+    fs.existsSync = originalExistsSync;
+    fs.statSync = originalStatSync;
   });
 });
