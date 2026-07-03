@@ -155,22 +155,43 @@ const importIfcb = async (req, res) => {
 
         await queries.project.migrateProjectDb(projectPath);
 
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            if (file === "__MACOSX" || file === "blob" || file.endsWith(".zip")) {
-                continue;
-            }
-
-            const temp = path.join(imagesPath, file);
-            let cleanedName = file.trim().replace(/\s+/g, '_').replace(/\+/g, '_');
-
-            if (cleanedName !== file) {
-                fs.renameSync(temp, path.join(imagesPath, cleanedName));
-            }
-
-            await queries.project.addImages(projectPath, cleanedName, 0, 0);
-            imageCount++;
+        // Start transaction for fast batch inserting
+        if (newClient && typeof newClient.run === 'function') {
+            await newClient.run("BEGIN TRANSACTION", []);
         }
+
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file === "__MACOSX" || file === "blob" || file.endsWith(".zip")) {
+                    continue;
+                }
+
+                const temp = path.join(imagesPath, file);
+                let cleanedName = file.trim().replace(/\s+/g, '_').replace(/\+/g, '_');
+
+                if (cleanedName !== file) {
+                    fs.renameSync(temp, path.join(imagesPath, cleanedName));
+                }
+
+                await queries.project.addImages(projectPath, cleanedName, 0, 0);
+                imageCount++;
+
+                if (imageCount % 10000 === 0) {
+                    global.logger.debug(`IFCB DB inserting progress: ${imageCount}/${files.length} images added`);
+                }
+            }
+
+            if (newClient && typeof newClient.run === 'function') {
+                await newClient.run("COMMIT", []);
+            }
+        } catch (dbErr) {
+            if (newClient && typeof newClient.run === 'function') {
+                await newClient.run("ROLLBACK", []).catch(() => {});
+            }
+            throw dbErr;
+        }
+
         global.logger.debug(`IFCB DB population and project setup took ${Date.now() - dbStartTime}ms`);
 
         // clean up unzipped folder
