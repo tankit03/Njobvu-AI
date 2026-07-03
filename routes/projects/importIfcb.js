@@ -30,6 +30,7 @@ const findFiles = (dir, ext) => {
 
 const importIfcb = async (req, res) => {
     let projectPath = '';
+    const importStartTime = Date.now();
 
     try {
         if (!req.files || !req.files.ifcb_archive) {
@@ -55,9 +56,10 @@ const importIfcb = async (req, res) => {
 
         const unzippedPath = path.join(path.dirname(archivePath), path.parse(archivePath).name);
 
+        const unzipStartTime = Date.now();
         try {
             await unzip(archivePath, unzippedPath);
-            global.logger.debug("successfully extracted IFCB archive");
+            global.logger.debug(`successfully extracted IFCB archive in ${Date.now() - unzipStartTime}ms`);
         } catch (error) {
             global.logger.error('failed to unzip IFCB archive: ' + error);
             return res.status(500).json({ success: false, message: 'Failed to unzip IFCB archive.' });
@@ -99,20 +101,26 @@ const importIfcb = async (req, res) => {
             return res.status(400).json({ success: false, message: 'No .roi files found in the archive.' });
         }
 
-                const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'get_images_fromROI.py');
+        const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'get_images_fromROI.py');
         const args = [scriptPath, unzippedPath, '-o', imagesPath];
 
+        const pythonStartTime = Date.now();
         global.logger.debug(`starting IFCB python script: ${pythonPath} ${args}`);
 
         await new Promise((resolve, reject) => {
             const pythonProcess = spawn(pythonPath, args);
 
             let stderr = '';
+            pythonProcess.stdout.on('data', (data) => {
+                global.logger.debug(`IFCB python script stdout: ${data.toString().trim()}`);
+            });
+
             pythonProcess.stderr.on('data', (data) => {
                 stderr += data.toString();
             });
 
             pythonProcess.on('close', (code) => {
+                global.logger.debug(`IFCB python script finished in ${Date.now() - pythonStartTime}ms`);
                 if (code !== 0) {
                     global.logger.error(`IFCB python script exited with code ${code}: ` + stderr);
                     reject(new Error(stderr || `Python process failed with exit code ${code}`));
@@ -123,6 +131,7 @@ const importIfcb = async (req, res) => {
         });
 
         // add extracted images to project database
+        const dbStartTime = Date.now();
         const files = fs.readdirSync(imagesPath);
         let imageCount = 0;
 
@@ -162,9 +171,12 @@ const importIfcb = async (req, res) => {
             await queries.project.addImages(projectPath, cleanedName, 0, 0);
             imageCount++;
         }
+        global.logger.debug(`IFCB DB population and project setup took ${Date.now() - dbStartTime}ms`);
 
         // clean up unzipped folder
         fs.rmSync(unzippedPath, { recursive: true, force: true });
+
+        global.logger.debug(`IFCB total import process took ${Date.now() - importStartTime}ms`);
 
         res.json({ success: true, message: `IFCB Import completed. Extracted ${imageCount} images.` });
     } catch (err) {
