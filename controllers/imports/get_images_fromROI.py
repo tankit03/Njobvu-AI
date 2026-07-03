@@ -9,24 +9,51 @@ import numpy as np
 from PIL import Image
 
 
-def parse_adc(adc_path: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+class ImagePlaceholder:
+    def __init__(self, shape):
+        self.shape = shape
+
+
+def parse_adc(adc_path: str) -> np.ndarray:
     rows = []
-    with open(adc_path, newline="") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            rows.append([float(v) for v in row])
-    data = np.array(rows)
-    return data
+    expected_len = None
+    with open(adc_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            if "," in line:
+                parts = line.split(",")
+            else:
+                parts = line.split()
+            
+            try:
+                row_vals = [float(v.strip()) for v in parts if v.strip()]
+                if not row_vals:
+                    continue
+                if expected_len is None:
+                    expected_len = len(row_vals)
+                elif len(row_vals) != expected_len:
+                    continue
+                rows.append(row_vals)
+            except ValueError:
+                continue
+    return np.array(rows)
 
 
 def get_image_columns(
     basename: str, data: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    num_cols = data.shape[1] if len(data.shape) > 1 else 0
     if basename.startswith("I"):
+        if num_cols < 14:
+            raise ValueError(f"ADC data has only {num_cols} columns, but old IFCB format requires at least 14 columns.")
         x = data[:, 11].astype(int)
         y = data[:, 12].astype(int)
         startbyte = data[:, 13].astype(int)
     else:
+        if num_cols < 18:
+            raise ValueError(f"ADC data has only {num_cols} columns, but new IFCB format requires at least 18 columns.")
         x = data[:, 15].astype(int)
         y = data[:, 16].astype(int)
         startbyte = data[:, 17].astype(int)
@@ -47,7 +74,11 @@ def extract_images(
         print("ADC file is empty", file=sys.stderr)
         return []
 
-    x, y, startbyte = get_image_columns(basename, data)
+    try:
+        x, y, startbyte = get_image_columns(basename, data)
+    except Exception as e:
+        print(f"Error parsing columns from ADC file: {e}", file=sys.stderr)
+        return []
 
     valid = np.where(x > 0)[0] + 1
     if roi_numbers is None:
@@ -60,28 +91,46 @@ def extract_images(
         return []
 
     targets = []
+    if outdir:
+        os.makedirs(outdir, exist_ok=True)
+
     with open(roi_path, "rb") as f:
         for num in roi_numbers:
             idx = num - 1
-            f.seek(int(startbyte[idx]))
-            img_bytes = f.read(x[idx] * y[idx])
-            img_array = np.frombuffer(img_bytes, dtype=np.uint8).reshape(
-                y[idx], x[idx]
-            )
+            expected_size = int(x[idx] * y[idx])
+            try:
+                f.seek(int(startbyte[idx]))
+                img_bytes = f.read(expected_size)
+                if len(img_bytes) < expected_size:
+                    print(f"Warning: ROI {num} in {basename} has truncated image bytes (expected {expected_size}, got {len(img_bytes)}). Skipping.", file=sys.stderr)
+                    continue
+                img_array = np.frombuffer(img_bytes, dtype=np.uint8).reshape(
+                    int(y[idx]), int(x[idx])
+                )
+            except Exception as e:
+                print(f"Error reading/parsing ROI {num} in {basename}: {e}", file=sys.stderr)
+                continue
+
             pid = f"{basename}_{num:05d}"
+            
+            if outdir:
+                try:
+                    Image.fromarray(img_array).save(
+                        os.path.join(outdir, f"{pid}.png")
+                    )
+                    img_to_store = ImagePlaceholder(img_array.shape)
+                except Exception as e:
+                    print(f"Error saving image {pid}.png to {outdir}: {e}", file=sys.stderr)
+                    img_to_store = img_array
+            else:
+                img_to_store = img_array
+
             targets.append(
                 {
                     "targetNumber": num,
                     "pid": pid,
-                    "image": img_array,
+                    "image": img_to_store,
                 }
-            )
-
-    if outdir:
-        os.makedirs(outdir, exist_ok=True)
-        for t in targets:
-            Image.fromarray(t["image"]).save(
-                os.path.join(outdir, f"{t['pid']}.png")
             )
 
     return targets
