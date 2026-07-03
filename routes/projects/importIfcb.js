@@ -99,58 +99,28 @@ const importIfcb = async (req, res) => {
             return res.status(400).json({ success: false, message: 'No .roi files found in the archive.' });
         }
 
-        const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'get_images_fromROI.py');
+                const scriptPath = path.join(__dirname, '..', '..', 'controllers', 'imports', 'get_images_fromROI.py');
+        const args = [scriptPath, unzippedPath, '-o', imagesPath];
 
-        for (const roiFile of roiFiles) {
-            // find matching .adc file in the same directory
-            const roiDir = path.dirname(roiFile);
-            const baseName = path.basename(roiFile, path.extname(roiFile));
-            let adcFile = path.join(roiDir, baseName + '.adc');
+        global.logger.debug(`starting IFCB python script: ${pythonPath} ${args}`);
 
-            if (!fs.existsSync(adcFile)) {
-                // try case-insensitive or .ADC
-                const adcFileUpper = path.join(roiDir, baseName + '.ADC');
+        await new Promise((resolve, reject) => {
+            const pythonProcess = spawn(pythonPath, args);
 
-                if (fs.existsSync(adcFileUpper)) {
-                    adcFile = adcFileUpper;
-                } else {
-                    // look for any .adc file with matching prefix in the directory
-                    const adcs = findFiles(roiDir, '.adc');
-                    const match = adcs.find(a => path.basename(a, path.extname(a)).toLowerCase() === baseName.toLowerCase());
-
-                    if (match) {
-                        adcFile = match;
-                    } else {
-                        // skip if no matching .adc file is found
-                        global.logger.warn(`no matching ADC file found for ROI: ${roiFile}`);
-                        continue;
-                    }
-                }
-            }
-
-            // spawn python extraction script
-            const args = [scriptPath, roiFile, '-a', adcFile, '-o', imagesPath];
-
-            global.logger.debug(`starting IFCB python script: ${pythonPath} ${args}`);
-
-            await new Promise((resolve, reject) => {
-                const pythonProcess = spawn(pythonPath, args);
-
-                let stderr = '';
-                pythonProcess.stderr.on('data', (data) => {
-                    stderr += data.toString();
-                });
-
-                pythonProcess.on('close', (code) => {
-                    if (code !== 0) {
-                        global.logger.error(`IFCB python script exited with code ${code}: ` + stderr);
-                        reject(new Error(stderr || `Python process failed with exit code ${code}`));
-                    } else {
-                        resolve();
-                    }
-                });
+            let stderr = '';
+            pythonProcess.stderr.on('data', (data) => {
+                stderr += data.toString();
             });
-        }
+
+            pythonProcess.on('close', (code) => {
+                if (code !== 0) {
+                    global.logger.error(`IFCB python script exited with code ${code}: ` + stderr);
+                    reject(new Error(stderr || `Python process failed with exit code ${code}`));
+                } else {
+                    resolve();
+                }
+            });
+        });
 
         // add extracted images to project database
         const files = fs.readdirSync(imagesPath);

@@ -138,20 +138,20 @@ def extract_images(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extract ROI images from IFCB .roi files"
+        description="Extract ROI images from IFCB .roi files or directories"
     )
-    parser.add_argument("roi_file", help="Path to the .roi file")
+    parser.add_argument("input_path", help="Path to the .roi file OR a directory containing .roi files")
     parser.add_argument(
         "-a", "--adc",
         default=None,
-        help="Path to the .adc file (default: same basename as .roi in same dir)",
+        help="Path to the .adc file (only applicable if input_path is a single file; default: same basename as .roi in same dir)",
     )
     parser.add_argument(
         "-n", "--roi-numbers",
         type=int,
         nargs="+",
         default=None,
-        help="Specific ROI number(s) to extract (default: all valid ROIs)",
+        help="Specific ROI number(s) to extract (only applicable if input_path is a single file; default: all valid ROIs)",
     )
     parser.add_argument(
         "-o", "--outdir",
@@ -160,27 +160,73 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.adc is None:
-        p = Path(args.roi_file)
-        args.adc = str(p.with_suffix(".adc"))
+    if os.path.isdir(args.input_path):
+        # Scan recursively for .roi files
+        roi_files = []
+        for root, dirs, files in os.walk(args.input_path):
+            for file in files:
+                if file.lower().endswith(".roi"):
+                    roi_files.append(os.path.join(root, file))
+        
+        if not roi_files:
+            print(f"No .roi files found in directory: {args.input_path}", file=sys.stderr)
+            sys.exit(1)
+            
+        print(f"Found {len(roi_files)} .roi files to process.")
+        
+        total_extracted = 0
+        for roi_file in roi_files:
+            p = Path(roi_file)
+            adc_file = str(p.with_suffix(".adc"))
+            if not os.path.exists(adc_file):
+                adc_file_upper = str(p.with_suffix(".ADC"))
+                if os.path.exists(adc_file_upper):
+                    adc_file = adc_file_upper
+                else:
+                    # Look case-insensitively in same dir
+                    parent_dir = os.path.dirname(roi_file)
+                    base_name = os.path.splitext(os.path.basename(roi_file))[0].lower()
+                    found = False
+                    for f in os.listdir(parent_dir):
+                        if f.lower().endswith(".adc") and os.path.splitext(f)[0].lower() == base_name:
+                            adc_file = os.path.join(parent_dir, f)
+                            found = True
+                            break
+                    if not found:
+                        print(f"Warning: No matching ADC file found for {roi_file}. Skipping.", file=sys.stderr)
+                        continue
+            
+            print(f"Processing: {roi_file}")
+            targets = extract_images(
+                roi_file,
+                adc_file,
+                roi_numbers=None,
+                outdir=args.outdir,
+            )
+            total_extracted += len(targets)
+        print(f"Batch extraction complete. Extracted {total_extracted} ROI images in total.")
+    else:
+        if args.adc is None:
+            p = Path(args.input_path)
+            args.adc = str(p.with_suffix(".adc"))
 
-    if not os.path.exists(args.roi_file):
-        print(f"ROI file not found: {args.roi_file}", file=sys.stderr)
-        sys.exit(1)
-    if not os.path.exists(args.adc):
-        print(f"ADC file not found: {args.adc}", file=sys.stderr)
-        sys.exit(1)
+        if not os.path.exists(args.input_path):
+            print(f"ROI file not found: {args.input_path}", file=sys.stderr)
+            sys.exit(1)
+        if not os.path.exists(args.adc):
+            print(f"ADC file not found: {args.adc}", file=sys.stderr)
+            sys.exit(1)
 
-    targets = extract_images(
-        args.roi_file,
-        args.adc,
-        roi_numbers=args.roi_numbers,
-        outdir=args.outdir,
-    )
+        targets = extract_images(
+            args.input_path,
+            args.adc,
+            roi_numbers=args.roi_numbers,
+            outdir=args.outdir,
+        )
 
-    print(f"Extracted {len(targets)} ROI images")
-    for t in targets:
-        print(f"  {t['pid']}: {t['image'].shape}")
+        print(f"Extracted {len(targets)} ROI images")
+        for t in targets:
+            print(f"  {t['pid']}: {t['image'].shape if hasattr(t['image'], 'shape') else 'ImagePlaceholder'}")
 
 
 if __name__ == "__main__":
