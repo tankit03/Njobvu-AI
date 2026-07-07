@@ -1,0 +1,278 @@
+<%- include('../includes/header') %>
+<%- include('../includes/inferenceNav', { activePage }) %>
+
+<script>
+    if ("<%= access.includes(user) %>" == "false") {
+        window.location.replace("/home");
+    }
+</script>
+
+<h1 style="text-align: center;">
+    <%= PName %>
+</h1>
+
+<div id="training" style="width: 100%">
+    <div class="container">
+        <h3>Run VIAME CV Inference</h3>
+
+        <div class="col-12">
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">
+                            <h4>VIAME Path & Model Settings</h4>
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>
+
+                            <!-- Upload Weights Form -->
+                            <form
+                                class="add-weights"
+                                action="/upload_pre_weights"
+                                enctype="multipart/form-data"
+                                method="POST"
+                                id="add-weights"
+                            >
+                                <input type="hidden" name="PName" value="<%= PName %>">
+                                <input type="hidden" name="Admin" value="<%= Admin %>">
+
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <h5>
+                                            <label for="upload-weights">
+                                                Upload VIAME Model/Weights File (.pt, .weights, .habry, .pipe, .conf)
+                                            </label>
+                                        </h5>
+                                        <input
+                                            id="upload-weights"
+                                            name="upload_weights"
+                                            type="file"
+                                            class="form-control-file"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col text-left">
+                                    <button
+                                        id="Createbtn"
+                                        type="submit"
+                                        class="btn btn-primary btn-lg"
+                                        style="border-radius: 0"
+                                    >
+                                        ADD FILE
+                                    </button>
+                                </div>
+                            </form>
+
+                            <br><br>
+
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- INFERENCE SECTION -->
+
+<div id="training" style="width: 100%">
+    <div class="container">
+        <div class="col-12">
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">
+                            <h4>VIAME CV Inference</h4>
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>
+
+                            <!-- Upload Inference File -->
+                            <form
+                                class="add-inference"
+                                action="/upload_inference_file"
+                                enctype="multipart/form-data"
+                                id="add-inference"
+                            >
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <h5>
+                                            <label for="upload-inference">
+                                                Upload inference file (.jpg, .png, .gif, .tif, .mp4)
+                                            </label>
+                                        </h5>
+
+                                        <input
+                                            id="upload-inference"
+                                            name="upload-inference"
+                                            type="file"
+                                            class="form-control-file"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col text-left">
+                                    <button
+                                        id="Createbtn"
+                                        type="submit"
+                                        class="btn btn-primary btn-lg"
+                                        style="border-radius: 0"
+                                    >
+                                        ADD FILE
+                                    </button>
+                                </div>
+                            </form>
+
+                            <br><br>
+
+                            <!-- VIAME Inference Config -->
+                            <form
+                                action="/viame-inf"
+                                enctype="multipart/form-data"
+                                id="viame-inf"
+                                method="post"
+                            >
+                                <input type="hidden" name="PName" value="<%= PName %>">
+                                <input type="hidden" name="Admin" value="<%= Admin %>">
+
+                                <div class="form-row">
+                                    <div class="form-group col-md-3">
+                                        <h5><label for="Weights_inf">VIAME Model/Weights/Pipeline File:</label></h5>
+                                        <select name="Weights_inf" id="Weights_inf" style="width: 100%;">
+                                            <% for (var i = 0; i < global_weights.length; i++) { %>
+                                                <option><%= global_weights[i] %></option>
+                                            <% } %>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group col-md-3">
+                                        <h5><label for="Inference">Inference Files/Folders:</label></h5>
+                                        <select name="Inference" id="Inference" style="width: 100%;">
+                                            <% for (var i = 0; i < global_inference_upload.length; i++) { %>
+                                                <option><%= global_inference_upload[i] %></option>
+                                            <% } %>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group col-md-3">
+                                        <h5><label for="Device">Inference Device:</label></h5>
+                                        <select name="Device" id="Device" style="width: 100%;">
+                                            <option value="cpu">CPU</option>
+                                            <option value="cuda">CUDA GPU</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <br>
+
+                                <div class="form-row">
+                                    <div class="col text-left">
+                                        <button
+                                            id="Infbtn"
+                                            type="submit"
+                                            class="btn btn-primary btn-lg"
+                                            style="border-radius: 0"
+                                        >
+                                            RUN INFERENCE
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <br><br><br>
+
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.forms['add-weights'].addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    var formData = new FormData();
+
+    const upload_project = document.getElementById('upload-weights');
+    const files = upload_project.files[0];
+
+    if (!files || !files.size > 0) {
+        alert("File must have a size > 0")
+    } else {
+        formData.append('upload_weights', files);
+
+        formData.append("PName", "<%= PName %>");
+        formData.append("Admin", "<%= Admin %>");
+
+        fetch(event.target.action, {
+            method: 'POST',
+            body: formData
+        }).then((resp) => {
+            return resp.json();
+        }).then((body) => {
+            alert(body.Success);
+
+            window.location.replace("/inference/viameSettings?IDX=<%= IDX %>");
+        }).catch((error) => {
+            console.log(error);
+        });
+    }
+});
+
+document.getElementById("viame-inf").addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    let weights_file = document.getElementById("Weights_inf").value;
+    let inference_file = document.getElementById("Inference").value;
+    let device = document.getElementById("Device").value;
+
+    if (weights_file == "") {
+        alert("Must select a weights/pipeline file")
+        return;
+    }
+
+    if (inference_file == "") {
+        alert("Must select an inference file")
+        return;
+    }
+
+    var formData = new FormData();
+
+    formData.append("PName", "<%= PName %>");
+    formData.append("Admin", "<%= Admin %>");
+    formData.append("weights", weights_file);
+    formData.append("inference_file", inference_file);
+    formData.append("device", device);
+
+    fetch(event.target.action, {
+        method: 'POST',
+        body: formData
+    }).then((resp) => {
+        return resp.json();
+    }).then((body) => {
+        alert(body.Success);
+        window.location.replace("/inference?IDX=<%= IDX %>");
+    }).catch((error) => {
+        console.log(error);
+    });
+});
+</script>
+
+<%- include('../includes/footer') %>

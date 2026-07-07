@@ -361,17 +361,22 @@ async function getProcessingPage(req, res) {
                 run_types.push("Inception");
             } else if (type.trim() === "yolo") {
                 run_types.push("YOLO");
+            } else if (type.trim() === "viame") {
+                run_types.push("VIAME");
             } else {
                 run_types.push("Unknown");
             }
         } else {
             const inceptionExists = fileExistsRecursive(run_path_inf, "inception.py");
             const yoloExists = fileExistsRecursive(run_path_inf, "datatovalues.py");
+            const viameExists = fileExistsRecursive(run_path_inf, "viame.py");
 
             if (inceptionExists) {
                 run_types.push("Inception");
             } else if (yoloExists) {
                 run_types.push("YOLO");
+            } else if (viameExists) {
+                run_types.push("VIAME");
             } else {
                 run_types.push("Unknown");
             }
