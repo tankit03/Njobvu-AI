@@ -176,16 +176,23 @@ def main():
                 for img_file in image_files:
                     f_out.write(os.path.join(actual_image_path, img_file) + "\n")
                     
-            # Check if we are running kwiver runner vs wrapper script
             is_kwiver = os.path.basename(viame_exe) == "kwiver"
             if is_kwiver:
-                cmd = [
-                    viame_exe,
-                    "runner",
+                cmd = [viame_exe, "runner"]
+                if viame_root:
+                    for p_inc in [
+                        os.path.join(viame_root, "configs", "pipelines"),
+                        os.path.join(viame_root, "configs"),
+                        os.path.join(viame_root, "share", "viame", "configs", "pipelines"),
+                        os.path.join(viame_root, "share", "viame", "configs"),
+                    ]:
+                        if os.path.isdir(p_inc):
+                            cmd.extend(["-I", p_inc])
+                cmd.extend([
                     "-s", f"input:video_filename={image_list_file}",
                     "-s", f"detector_writer:writer:file_name={temp_output_csv}",
                     args.weight_path
-                ]
+                ])
             else:
                 # Build command: viame pipeline.pipe -s input:video_filename=list.txt -s detector_writer:writer:file_name=output.csv
                 cmd = [
