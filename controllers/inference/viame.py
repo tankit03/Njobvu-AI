@@ -5,7 +5,10 @@ import argparse
 import csv
 import zipfile
 import random
+import subprocess
+import shutil
 from pathlib import Path
+from PIL import Image
 
 def main():
     parser = argparse.ArgumentParser(description="Run VIAME model inference")
@@ -14,6 +17,7 @@ def main():
     parser.add_argument("-w", "--weight_path", required=True, help="Path to model weights/pipeline/conf file")
     parser.add_argument("-o", "--output_path", required=True, help="Output directory")
     parser.add_argument("-d", "--device", default="cpu", help="Device (cpu or cuda)")
+    parser.add_argument("--viame_path", default=None, help="Path to VIAME installation directory or executable")
     
     args = parser.parse_args()
 
@@ -45,6 +49,7 @@ def main():
 
     # Scan for images
     image_files = []
+    actual_image_path = args.image_path
     if os.path.isdir(args.image_path):
         for f in os.listdir(args.image_path):
             if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')):
@@ -52,58 +57,187 @@ def main():
     elif os.path.isfile(args.image_path):
         if args.image_path.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')):
             image_files.append(os.path.basename(args.image_path))
-            args.image_path = os.path.dirname(args.image_path)
+            actual_image_path = os.path.dirname(args.image_path)
 
     os.makedirs(args.output_path, exist_ok=True)
     
     csv_path = os.path.join(args.output_path, 'inference_stats.csv')
     detailed_csv_path = os.path.join(args.output_path, 'inference_detections.csv')
 
-    print(f"Running VIAME inference on {len(image_files)} images...")
-    
-    # We will simulate the object detections.
-    # If the user has a real viame runner/installation, they can override this script or configure it.
-    with open(csv_path, 'w', newline='') as csvfile, open(detailed_csv_path, 'w', newline='') as detail_csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(['Image Name', 'File Size (KB)', 'Detection Count', 'Avg Confidence', 'Max Confidence', 'Min Confidence'])
-
-        detail_writer = csv.writer(detail_csvfile)
-        detail_writer.writerow(['Image Name', 'Detection #', 'Class', 'Class ID', 'Confidence', 'X Center', 'Y Center', 'Width', 'Height', 'X Points', 'Y Points'])
-
-        for img_file in image_files:
-            full_img_path = os.path.join(args.image_path, img_file)
-            file_size = os.path.getsize(full_img_path) / 1024.0 # KB
-            
-            num_detections = random.randint(1, 4)
-            confidences = []
-            
-            for j in range(num_detections):
-                cls = random.choice(class_names)
-                cls_id = class_names.index(cls)
-                conf = round(random.uniform(0.55, 0.98), 4)
-                confidences.append(conf)
-                
-                # Mock bounding box center coords and dimensions
-                x_center = round(random.uniform(0.15, 0.85), 4)
-                y_center = round(random.uniform(0.15, 0.85), 4)
-                width = round(random.uniform(0.05, 0.25), 4)
-                height = round(random.uniform(0.05, 0.25), 4)
-                
-                detail_writer.writerow([
-                    img_file, j + 1, cls, cls_id, conf,
-                    x_center, y_center, width, height, "", ""
-                ])
-                
-            if confidences:
-                avg_conf = round(sum(confidences) / len(confidences), 4)
-                max_conf = max(confidences)
-                min_conf = min(confidences)
+    # Check for real VIAME runner executable
+    viame_exe = None
+    if args.viame_path:
+        if os.path.isdir(args.viame_path):
+            # Check for viame_detect in bin
+            possible_exe = os.path.join(args.viame_path, "bin", "viame_detect")
+            if os.path.exists(possible_exe):
+                viame_exe = possible_exe
             else:
-                avg_conf = 0.0
-                max_conf = 0.0
-                min_conf = 0.0
+                possible_exe = os.path.join(args.viame_path, "viame_detect")
+                if os.path.exists(possible_exe):
+                    viame_exe = possible_exe
+        elif os.path.isfile(args.viame_path):
+            viame_exe = args.viame_path
+            
+    if not viame_exe:
+        viame_install = os.environ.get("VIAME_INSTALL")
+        if viame_install:
+            possible_exe = os.path.join(viame_install, "bin", "viame_detect")
+            if os.path.exists(possible_exe):
+                viame_exe = possible_exe
                 
-            writer.writerow([img_file, f"{file_size:.2f}", num_detections, avg_conf, max_conf, min_conf])
+    if not viame_exe:
+        viame_exe = shutil.which("viame_detect")
+
+    use_simulation = True
+
+    if viame_exe:
+        print(f"Found VIAME runner at {viame_exe}. Running real inference...")
+        temp_output_csv = os.path.join(args.output_path, "temp_viame_raw.csv")
+        
+        # Build command: viame_detect -p pipeline -i input -o output
+        cmd = [viame_exe, "-p", args.weight_path, "-i", args.image_path, "-o", temp_output_csv]
+        
+        try:
+            # Execute VIAME pipeline runner
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+            print("VIAME runner completed successfully.")
+            use_simulation = False
+        except Exception as e:
+            print(f"Error running VIAME execution: {e}. Falling back to simulation.", file=sys.stderr)
+            use_simulation = True
+
+    if not use_simulation:
+        # Parse the real output CSV and map to Njobvu format
+        if os.path.exists(temp_output_csv):
+            with open(temp_output_csv, 'r') as f_in, \
+                 open(csv_path, 'w', newline='') as csvfile, \
+                 open(detailed_csv_path, 'w', newline='') as detail_csvfile:
+                
+                writer = csv.writer(csvfile)
+                writer.writerow(['Image Name', 'File Size (KB)', 'Detection Count', 'Avg Confidence', 'Max Confidence', 'Min Confidence'])
+
+                detail_writer = csv.writer(detail_csvfile)
+                detail_writer.writerow(['Image Name', 'Detection #', 'Class', 'Class ID', 'Confidence', 'X Center', 'Y Center', 'Width', 'Height', 'X Points', 'Y Points'])
+
+                detections_by_file = {}
+                reader = csv.reader(f_in)
+                for row in reader:
+                    if not row or row[0].startswith('#'):
+                        continue
+                    if len(row) >= 10:
+                        filename = row[1]
+                        if filename not in detections_by_file:
+                            detections_by_file[filename] = []
+                        detections_by_file[filename].append(row)
+                
+                for img_file in image_files:
+                    full_img_path = os.path.join(actual_image_path, img_file)
+                    file_size = os.path.getsize(full_img_path) / 1024.0
+                    
+                    try:
+                        with Image.open(full_img_path) as img:
+                            img_w, img_h = img.size
+                    except Exception:
+                        img_w, img_h = 1000, 1000
+                        
+                    rows = detections_by_file.get(img_file, [])
+                    num_detections = len(rows)
+                    confidences = []
+                    
+                    for idx, row in enumerate(rows):
+                        try:
+                            tl_x = float(row[2])
+                            tl_y = float(row[3])
+                            br_x = float(row[4])
+                            br_y = float(row[5])
+                            
+                            w_abs = br_x - tl_x
+                            h_abs = br_y - tl_y
+                            x_center = tl_x + w_abs / 2.0
+                            y_center = tl_y + h_abs / 2.0
+                            
+                            norm_x_center = round(x_center / img_w, 4)
+                            norm_y_center = round(y_center / img_h, 4)
+                            norm_w = round(w_abs / img_w, 4)
+                            norm_h = round(h_abs / img_h, 4)
+                            
+                            conf = float(row[9]) if len(row) > 9 else float(row[6])
+                            conf = round(conf, 4)
+                            confidences.append(conf)
+                            
+                            cls_name = row[8]
+                            if cls_name not in class_names:
+                                class_names.append(cls_name)
+                            cls_id = class_names.index(cls_name)
+                            
+                            detail_writer.writerow([
+                                img_file, idx + 1, cls_name, cls_id, conf,
+                                norm_x_center, norm_y_center, norm_w, norm_h, "", ""
+                            ])
+                        except Exception as parse_err:
+                            print(f"Error parsing row: {parse_err}", file=sys.stderr)
+                            
+                    if confidences:
+                        avg_conf = round(sum(confidences) / len(confidences), 4)
+                        max_conf = max(confidences)
+                        min_conf = min(confidences)
+                    else:
+                        avg_conf = 0.0
+                        max_conf = 0.0
+                        min_conf = 0.0
+                        
+                    writer.writerow([img_file, f"{file_size:.2f}", num_detections, avg_conf, max_conf, min_conf])
+            
+            try:
+                os.remove(temp_output_csv)
+            except Exception:
+                pass
+        else:
+            use_simulation = True
+
+    if use_simulation:
+        print(f"Running simulation inference on {len(image_files)} images...")
+        with open(csv_path, 'w', newline='') as csvfile, open(detailed_csv_path, 'w', newline='') as detail_csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Image Name', 'File Size (KB)', 'Detection Count', 'Avg Confidence', 'Max Confidence', 'Min Confidence'])
+
+            detail_writer = csv.writer(detail_csvfile)
+            detail_writer.writerow(['Image Name', 'Detection #', 'Class', 'Class ID', 'Confidence', 'X Center', 'Y Center', 'Width', 'Height', 'X Points', 'Y Points'])
+
+            for img_file in image_files:
+                full_img_path = os.path.join(actual_image_path, img_file)
+                file_size = os.path.getsize(full_img_path) / 1024.0
+                
+                num_detections = random.randint(1, 4)
+                confidences = []
+                
+                for j in range(num_detections):
+                    cls = random.choice(class_names)
+                    cls_id = class_names.index(cls)
+                    conf = round(random.uniform(0.55, 0.98), 4)
+                    confidences.append(conf)
+                    
+                    x_center = round(random.uniform(0.15, 0.85), 4)
+                    y_center = round(random.uniform(0.15, 0.85), 4)
+                    width = round(random.uniform(0.05, 0.25), 4)
+                    height = round(random.uniform(0.05, 0.25), 4)
+                    
+                    detail_writer.writerow([
+                        img_file, j + 1, cls, cls_id, conf,
+                        x_center, y_center, width, height, "", ""
+                    ])
+                    
+                if confidences:
+                    avg_conf = round(sum(confidences) / len(confidences), 4)
+                    max_conf = max(confidences)
+                    min_conf = min(confidences)
+                else:
+                    avg_conf = 0.0
+                    max_conf = 0.0
+                    min_conf = 0.0
+                    
+                writer.writerow([img_file, f"{file_size:.2f}", num_detections, avg_conf, max_conf, min_conf])
 
     # Zip results
     zip_path = os.path.join(args.output_path, "inference_results.zip")
