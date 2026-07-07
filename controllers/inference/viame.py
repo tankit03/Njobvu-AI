@@ -140,6 +140,37 @@ def main():
                 if os.path.exists(possible_setup):
                     setup_script = possible_setup
 
+        # Locate the models folder in the VIAME installation to create a symlink if needed
+        viame_models_dir = None
+        if setup_script:
+            viame_root = os.path.dirname(setup_script)
+        else:
+            viame_root = os.path.dirname(os.path.dirname(viame_exe)) if viame_exe else None
+
+        if viame_root:
+            possible_models_dirs = [
+                os.path.join(viame_root, "configs", "pipelines", "models"),
+                os.path.join(viame_root, "configs", "models"),
+                os.path.join(viame_root, "share", "viame", "configs", "pipelines", "models"),
+                os.path.join(viame_root, "share", "viame", "configs", "models"),
+            ]
+            for p_dir in possible_models_dirs:
+                if os.path.isdir(p_dir):
+                    viame_models_dir = p_dir
+                    break
+
+        project_weights_dir = os.path.dirname(args.weight_path)
+        models_symlink = os.path.join(project_weights_dir, "models")
+        symlink_created = False
+
+        if viame_models_dir and not os.path.exists(models_symlink):
+            try:
+                print(f"Creating symlink from {viame_models_dir} to {models_symlink} to resolve relative model files")
+                os.symlink(viame_models_dir, models_symlink)
+                symlink_created = True
+            except Exception as sym_err:
+                print(f"Warning: Could not create models symlink: {sym_err}", file=sys.stderr)
+
         try:
             with open(image_list_file, 'w') as f_out:
                 for img_file in image_files:
@@ -180,10 +211,16 @@ def main():
             print(f"Error running VIAME execution: {e}. Falling back to simulation.", file=sys.stderr)
             use_simulation = True
             
-        # Clean up image list file
+        # Clean up image list file and symlink
         try:
             if os.path.exists(image_list_file):
                 os.remove(image_list_file)
+        except Exception:
+            pass
+
+        try:
+            if symlink_created and os.path.islink(models_symlink):
+                os.unlink(models_symlink)
         except Exception:
             pass
 
