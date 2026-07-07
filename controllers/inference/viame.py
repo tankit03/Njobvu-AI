@@ -7,6 +7,7 @@ import zipfile
 import random
 import subprocess
 import shutil
+import shlex
 from pathlib import Path
 from PIL import Image
 
@@ -105,6 +106,40 @@ def main():
         temp_output_csv = os.path.join(args.output_path, "temp_viame_raw.csv")
         image_list_file = os.path.join(args.output_path, "temp_image_list.txt")
         
+        # Locate setup_viame.sh
+        setup_script = None
+        if args.viame_path:
+            if os.path.isdir(args.viame_path):
+                possible_setup = os.path.join(args.viame_path, "setup_viame.sh")
+                if os.path.exists(possible_setup):
+                    setup_script = possible_setup
+            elif os.path.isfile(args.viame_path):
+                parent_dir = os.path.dirname(args.viame_path)
+                possible_setup = os.path.join(parent_dir, "setup_viame.sh")
+                if os.path.exists(possible_setup):
+                    setup_script = possible_setup
+                elif os.path.exists(os.path.join(os.path.dirname(parent_dir), "setup_viame.sh")):
+                    setup_script = os.path.join(os.path.dirname(parent_dir), "setup_viame.sh")
+                    
+        if not setup_script:
+            viame_install = os.environ.get("VIAME_INSTALL")
+            if viame_install:
+                possible_setup = os.path.join(viame_install, "setup_viame.sh")
+                if os.path.exists(possible_setup):
+                    setup_script = possible_setup
+                    
+        if not setup_script and viame_exe:
+            # Check parent and grandparent directory of the found executable
+            parent_dir = os.path.dirname(viame_exe)
+            possible_setup = os.path.join(parent_dir, "setup_viame.sh")
+            if os.path.exists(possible_setup):
+                setup_script = possible_setup
+            else:
+                grandparent_dir = os.path.dirname(parent_dir)
+                possible_setup = os.path.join(grandparent_dir, "setup_viame.sh")
+                if os.path.exists(possible_setup):
+                    setup_script = possible_setup
+
         try:
             with open(image_list_file, 'w') as f_out:
                 for img_file in image_files:
@@ -129,8 +164,16 @@ def main():
                     "-s", f"detector_writer:writer:file_name={temp_output_csv}"
                 ]
             
-            # Execute VIAME pipeline runner
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+            # Execute VIAME pipeline runner. Source environment if setup script exists.
+            if setup_script:
+                cmd_str = " ".join(shlex.quote(x) for x in cmd)
+                full_cmd = f"source {shlex.quote(setup_script)} && {cmd_str}"
+                print(f"Executing with sourced environment: {full_cmd}")
+                subprocess.run(full_cmd, shell=True, executable='/bin/bash', stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+            else:
+                print(f"Executing: {' '.join(shlex.quote(x) for x in cmd)}")
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                
             print("VIAME runner completed successfully.")
             use_simulation = False
         except Exception as e:
