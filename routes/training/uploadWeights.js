@@ -14,13 +14,12 @@ async function uploadWeights(req, res) {
         weightsPath = trainingPath + "/weights/",
         weightsFilePath = weightsPath + weightsFile.name;
 
-    // console.log(weights_file.name.split('.').pop());
-    if (
-        weightsFile.name.split(".").pop() != "h5" &&
-        weightsFile.name.split(".").pop() != "weights"
-    ) {
+    const allowedExtensions = ["h5", "weights", "pt", "pipe", "conf", "habry"];
+    const fileExtension = weightsFile.name.split(".").pop().toLowerCase();
+
+    if (!allowedExtensions.includes(fileExtension)) {
         res.send({
-            Success: "ERROR: Wrong filetype. Must be type .h5 or weights",
+            Success: "ERROR: Wrong filetype. Must be type .h5, .weights, .pt, .pipe, .conf, or .habry",
         });
     } else {
         // move python file and check of python path exists
