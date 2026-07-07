@@ -44,6 +44,7 @@ const {
     getYoloXInferenceSettingsPage,
     getYoloXTrainingSettingsPage,
     getInceptionSettingsPage,
+    getViameSettingsPage,
 } = require("./routes/pages");
 
 // middleware
@@ -84,6 +85,7 @@ app.get("/yolo/yolovXSettings", getYoloXSettingsPage);
 app.get("/yolo/yolovXInferenceSettings", getYoloXInferenceSettingsPage);
 app.get("/yolo/yolovXTrainingSettings", getYoloXTrainingSettingsPage);
 app.get("/inference/inceptionSettings", getInceptionSettingsPage);
+app.get("/inference/viameSettings", getViameSettingsPage);
 app.get("/user", getUserPage);
 app.get("/servstats", getServerStatsPage);
 app.get("/homeV", getValidationHomePage);

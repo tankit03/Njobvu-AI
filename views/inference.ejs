@@ -133,7 +133,7 @@
                             </form>
 
                             <td class="text-center">
-                                <% if (run_types[i] === 'YOLO' && run_status_inf[i] !== 'RUNNING' && run_status_inf[i] !== 'FAILED') { %>
+                                <% if ((run_types[i] === 'YOLO' || run_types[i] === 'VIAME') && run_status_inf[i] !== 'RUNNING' && run_status_inf[i] !== 'FAILED') { %>
                                     <div class="input-group input-group-sm mb-2">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text">Min Conf</span>

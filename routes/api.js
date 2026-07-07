@@ -88,11 +88,13 @@ const yoloInference = require("./inference/yoloInference");
 const getRunImages = require("./inference/getRunImages");
 const uploadInferenceFile = require("./inference/uploadInferenceFile");
 const inceptionInference = require("./inference/inceptionInference");
+const viameInference = require("./inference/viameInference");
 const addYoloInferenceToDataset = require("./inference/addYoloInferenceToDataset");
 
 // INFERENCE ROUTES
 api.post("/yolo-inf", yoloInference);
 api.post("/inception-inf", inceptionInference);
+api.post("/viame-inf", viameInference);
 api.post("/upload_inference_file", uploadInferenceFile);
 api.get("/runs/:runId/images", getRunImages);
 api.post("/inference/add-inference-run-to-dataset", addYoloInferenceToDataset);
