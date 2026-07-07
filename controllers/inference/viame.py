@@ -68,26 +68,35 @@ def main():
     viame_exe = None
     if args.viame_path:
         if os.path.isdir(args.viame_path):
-            # Check for viame in bin
-            possible_exe = os.path.join(args.viame_path, "bin", "viame")
-            if os.path.exists(possible_exe):
-                viame_exe = possible_exe
-            else:
-                possible_exe = os.path.join(args.viame_path, "viame")
+            # Check for kwiver/viame in bin
+            for name in ["kwiver", "viame", "viame_detect"]:
+                possible_exe = os.path.join(args.viame_path, "bin", name)
                 if os.path.exists(possible_exe):
                     viame_exe = possible_exe
+                    break
+            if not viame_exe:
+                for name in ["kwiver", "viame", "viame_detect"]:
+                    possible_exe = os.path.join(args.viame_path, name)
+                    if os.path.exists(possible_exe):
+                        viame_exe = possible_exe
+                        break
         elif os.path.isfile(args.viame_path):
             viame_exe = args.viame_path
             
     if not viame_exe:
         viame_install = os.environ.get("VIAME_INSTALL")
         if viame_install:
-            possible_exe = os.path.join(viame_install, "bin", "viame")
-            if os.path.exists(possible_exe):
-                viame_exe = possible_exe
+            for name in ["kwiver", "viame", "viame_detect"]:
+                possible_exe = os.path.join(viame_install, "bin", name)
+                if os.path.exists(possible_exe):
+                    viame_exe = possible_exe
+                    break
                 
     if not viame_exe:
-        viame_exe = shutil.which("viame")
+        for name in ["kwiver", "viame", "viame_detect"]:
+            viame_exe = shutil.which(name)
+            if viame_exe:
+                break
 
     use_simulation = True
 
@@ -101,13 +110,24 @@ def main():
                 for img_file in image_files:
                     f_out.write(os.path.join(actual_image_path, img_file) + "\n")
                     
-            # Build command: viame pipeline.pipe -s input:video_filename=list.txt -s detector_writer:writer:file_name=output.csv
-            cmd = [
-                viame_exe,
-                args.weight_path,
-                "-s", f"input:video_filename={image_list_file}",
-                "-s", f"detector_writer:writer:file_name={temp_output_csv}"
-            ]
+            # Check if we are running kwiver runner vs wrapper script
+            is_kwiver = os.path.basename(viame_exe) == "kwiver"
+            if is_kwiver:
+                cmd = [
+                    viame_exe,
+                    "runner",
+                    "-s", f"input:video_filename={image_list_file}",
+                    "-s", f"detector_writer:writer:file_name={temp_output_csv}",
+                    args.weight_path
+                ]
+            else:
+                # Build command: viame pipeline.pipe -s input:video_filename=list.txt -s detector_writer:writer:file_name=output.csv
+                cmd = [
+                    viame_exe,
+                    args.weight_path,
+                    "-s", f"input:video_filename={image_list_file}",
+                    "-s", f"detector_writer:writer:file_name={temp_output_csv}"
+                ]
             
             # Execute VIAME pipeline runner
             subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
