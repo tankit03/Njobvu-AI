@@ -68,12 +68,12 @@ def main():
     viame_exe = None
     if args.viame_path:
         if os.path.isdir(args.viame_path):
-            # Check for viame_detect in bin
-            possible_exe = os.path.join(args.viame_path, "bin", "viame_detect")
+            # Check for viame in bin
+            possible_exe = os.path.join(args.viame_path, "bin", "viame")
             if os.path.exists(possible_exe):
                 viame_exe = possible_exe
             else:
-                possible_exe = os.path.join(args.viame_path, "viame_detect")
+                possible_exe = os.path.join(args.viame_path, "viame")
                 if os.path.exists(possible_exe):
                     viame_exe = possible_exe
         elif os.path.isfile(args.viame_path):
@@ -82,23 +82,33 @@ def main():
     if not viame_exe:
         viame_install = os.environ.get("VIAME_INSTALL")
         if viame_install:
-            possible_exe = os.path.join(viame_install, "bin", "viame_detect")
+            possible_exe = os.path.join(viame_install, "bin", "viame")
             if os.path.exists(possible_exe):
                 viame_exe = possible_exe
                 
     if not viame_exe:
-        viame_exe = shutil.which("viame_detect")
+        viame_exe = shutil.which("viame")
 
     use_simulation = True
 
     if viame_exe:
         print(f"Found VIAME runner at {viame_exe}. Running real inference...")
         temp_output_csv = os.path.join(args.output_path, "temp_viame_raw.csv")
-        
-        # Build command: viame_detect -p pipeline -i input -o output
-        cmd = [viame_exe, "-p", args.weight_path, "-i", args.image_path, "-o", temp_output_csv]
+        image_list_file = os.path.join(args.output_path, "temp_image_list.txt")
         
         try:
+            with open(image_list_file, 'w') as f_out:
+                for img_file in image_files:
+                    f_out.write(os.path.join(actual_image_path, img_file) + "\n")
+                    
+            # Build command: viame pipeline.pipe -s input:video_filename=list.txt -s detector_writer:writer:file_name=output.csv
+            cmd = [
+                viame_exe,
+                args.weight_path,
+                "-s", f"input:video_filename={image_list_file}",
+                "-s", f"detector_writer:writer:file_name={temp_output_csv}"
+            ]
+            
             # Execute VIAME pipeline runner
             subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
             print("VIAME runner completed successfully.")
@@ -106,6 +116,13 @@ def main():
         except Exception as e:
             print(f"Error running VIAME execution: {e}. Falling back to simulation.", file=sys.stderr)
             use_simulation = True
+            
+        # Clean up image list file
+        try:
+            if os.path.exists(image_list_file):
+                os.remove(image_list_file)
+        except Exception:
+            pass
 
     if not use_simulation:
         # Parse the real output CSV and map to Njobvu format
@@ -126,7 +143,7 @@ def main():
                     if not row or row[0].startswith('#'):
                         continue
                     if len(row) >= 10:
-                        filename = row[1]
+                        filename = os.path.basename(row[1])
                         if filename not in detections_by_file:
                             detections_by_file[filename] = []
                         detections_by_file[filename].append(row)
