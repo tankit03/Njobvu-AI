@@ -29,12 +29,12 @@ const findFiles = (dir, ext) => {
 
 const normalizeKey = (str) => {
     if (!str) return "";
-    let s = str.replace(/\.[^/.]+$/, ""); // Remove extension
-    // Replace D2_ with D20 or I_ with I20
+    let s = str.replace(/\.[^/.]+$/, ""); // remove extension
+    // replace D2_ with D20 or I_ with I20
     s = s.replace(/^([a-zA-Z])2?_/, "$120");
-    // Replace all remaining underscores with zeros
+    // replace all remaining underscores with zeros
     s = s.replace(/_/g, "0");
-    // Remove all non-alphanumeric characters and lowercase it
+    // remove all non-alphanumeric characters and lowercase it
     s = s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
     return s;
 };
@@ -246,18 +246,10 @@ const importIfcb = async (req, res) => {
                 await queries.project.addImages(projectPath, cleanedName, 0, 0);
                 imageCount++;
 
-<<<<<<< HEAD
-                // If an annotation exists for this image, add a label spanning the whole image
+                // if an annotation exists for this image, add a label spanning the whole image
                 const normFilenameKey = normalizeKey(cleanedName);
                 if (annotationMap.has(normFilenameKey)) {
                     const className = annotationMap.get(normFilenameKey);
-=======
-                // if an annotation exists for this image, add a label spanning the whole image
-                const roiName = path.parse(cleanedName).name;
-
-                if (annotationMap.has(roiName)) {
-                    const className = annotationMap.get(roiName);
->>>>>>> 8df551106109e300425af05f090e1ab9d5f7cf00
 
                     // probe dimensions using partial file read
                     let imgWidth = 0;
