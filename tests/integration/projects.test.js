@@ -599,7 +599,7 @@ describe('Project Routes - Basic Tests', () => {
         return ['test.roi', 'test.adc', 'labels.csv'];
       }
       if (path && path.includes('images')) {
-        return ['test_00001.png'];
+        return ['D2_221129T115128_IFCB122_00015.png'];
       }
       return [];
     });
@@ -611,10 +611,10 @@ describe('Project Routes - Basic Tests', () => {
     });
     fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
 
-    // Mock CSV contents
+    // Mock CSV contents with different prefix to test year prefix normalization (D2_22 vs D2022)
     fs.readFileSync = jest.fn().mockImplementation((path) => {
       if (path && path.includes('labels.csv')) {
-        return 'roi,class,classID\ntest_00001,Alexandrium catenella,109470\n';
+        return 'roi,class,classID\nD20221129T115128_IFCB122_00015,Alexandrium catenella,109470\n';
       }
       return '';
     });
