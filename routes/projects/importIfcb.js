@@ -25,7 +25,18 @@ const findFiles = (dir, ext) => {
         }
     });
 
-    return results;
+};
+
+const normalizeKey = (str) => {
+    if (!str) return "";
+    let s = str.replace(/\.[^/.]+$/, ""); // Remove extension
+    // Replace D2_ with D20 or I_ with I20
+    s = s.replace(/^([a-zA-Z])2?_/, "$120");
+    // Replace all remaining underscores with zeros
+    s = s.replace(/_/g, "0");
+    // Remove all non-alphanumeric characters and lowercase it
+    s = s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    return s;
 };
 
 const importIfcb = async (req, res) => {
@@ -178,7 +189,7 @@ const importIfcb = async (req, res) => {
                                 const roiName = cols[roiColIdx];
                                 const className = cols[classColIdx];
                                 if (roiName && className) {
-                                    annotationMap.set(roiName, className);
+                                    annotationMap.set(normalizeKey(roiName), className);
                                     classSet.add(className);
                                 }
                             }
@@ -223,9 +234,9 @@ const importIfcb = async (req, res) => {
                 imageCount++;
 
                 // If an annotation exists for this image, add a label spanning the whole image
-                const roiName = path.parse(cleanedName).name;
-                if (annotationMap.has(roiName)) {
-                    const className = annotationMap.get(roiName);
+                const normFilenameKey = normalizeKey(cleanedName);
+                if (annotationMap.has(normFilenameKey)) {
+                    const className = annotationMap.get(normFilenameKey);
 
                     // Probe dimensions using partial file read
                     let imgWidth = 0;
