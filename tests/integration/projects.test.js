@@ -580,4 +580,74 @@ describe('Project Routes - Basic Tests', () => {
     fs.existsSync = originalExistsSync;
     fs.statSync = originalStatSync;
   });
+
+  /* * this tests if the import-ifcb route successfully imports IFCB archives with annotations from a CSV.
+  * This test expects a status code 200.
+  */
+  it('should successfully import IFCB archive with annotations when CSV file exists', async () => {
+    const fs = require('fs');
+    const originalReaddirSync = fs.readdirSync;
+    const originalExistsSync = fs.existsSync;
+    const originalStatSync = fs.statSync;
+    const originalReadFileSync = fs.readFileSync;
+    const originalOpenSync = fs.openSync;
+    const originalReadSync = fs.readSync;
+    const originalCloseSync = fs.closeSync;
+
+    fs.readdirSync = jest.fn().mockImplementation((path) => {
+      if (path && (path.includes('uploads') || path.includes('tmp'))) {
+        return ['test.roi', 'test.adc', 'labels.csv'];
+      }
+      if (path && path.includes('images')) {
+        return ['test_00001.png'];
+      }
+      return [];
+    });
+    fs.existsSync = jest.fn().mockImplementation((path) => {
+      if (path && path.includes('test-ifcb-project-csv')) {
+        return false;
+      }
+      return true;
+    });
+    fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+
+    // Mock CSV contents
+    fs.readFileSync = jest.fn().mockImplementation((path) => {
+      if (path && path.includes('labels.csv')) {
+        return 'roi,class,classID\ntest_00001,Alexandrium catenella,109470\n';
+      }
+      return '';
+    });
+
+    // Mock file descriptor operations for image size probing
+    fs.openSync = jest.fn().mockReturnValue(123);
+    fs.readSync = jest.fn();
+    fs.closeSync = jest.fn();
+
+    // Mock global probe
+    const originalProbe = global.probe;
+    global.probe = {
+      sync: jest.fn().mockReturnValue({ width: 100, height: 120 })
+    };
+
+    const res = await request(app)
+      .post('/api/projects/import-ifcb')
+      .send({
+        project_name: 'test-ifcb-project-csv',
+      })
+      .set('Cookie', ['Username=testuser']);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    // Restore
+    fs.readdirSync = originalReaddirSync;
+    fs.existsSync = originalExistsSync;
+    fs.statSync = originalStatSync;
+    fs.readFileSync = originalReadFileSync;
+    fs.openSync = originalOpenSync;
+    fs.readSync = originalReadSync;
+    fs.closeSync = originalCloseSync;
+    global.probe = originalProbe;
+  });
 });
