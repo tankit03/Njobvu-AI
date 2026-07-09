@@ -25,6 +25,7 @@ const findFiles = (dir, ext) => {
         }
     });
 
+    return results;
 };
 
 const normalizeKey = (str) => {
