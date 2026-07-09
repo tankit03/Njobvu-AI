@@ -123,6 +123,7 @@ const importIfcb = async (req, res) => {
                 global.logger.debug(`IFCB python script finished in ${Date.now() - pythonStartTime}ms`);
                 if (code !== 0) {
                     global.logger.error(`IFCB python script exited with code ${code}: ` + stderr);
+
                     reject(new Error(stderr || `Python process failed with exit code ${code}`));
                 } else {
                     resolve();
@@ -155,7 +156,7 @@ const importIfcb = async (req, res) => {
 
         await queries.project.migrateProjectDb(projectPath);
 
-        // Find if there is a CSV annotation file
+        // find if there is a CSV annotation file
         const csvFiles = findFiles(unzippedPath, '.csv');
         const annotationMap = new Map();
         const classSet = new Set();
@@ -164,34 +165,47 @@ const importIfcb = async (req, res) => {
             try {
                 const csvContent = fs.readFileSync(csvFiles[0], 'utf-8');
                 const lines = csvContent.split(/\r?\n/);
-                if (lines.length > 0) {
-                    const header = lines[0].split(',').map(c => c.replace(/^["']|["']$/g, '').trim().toLowerCase());
-                    const roiColIdx = header.findIndex(col => col.includes('roi') || col.includes('image') || col.includes('file'));
-                    const classColIdx = header.findIndex(col => col.includes('class') || col.includes('label'));
 
-                    if (roiColIdx !== -1 && classColIdx !== -1) {
-                        for (let i = 1; i < lines.length; i++) {
-                            const line = lines[i].trim();
-                            if (!line) continue;
-                            const cols = line.split(',').map(c => c.replace(/^["']|["']$/g, '').trim());
-                            if (cols.length > Math.max(roiColIdx, classColIdx)) {
-                                const roiName = cols[roiColIdx];
-                                const className = cols[classColIdx];
-                                if (roiName && className) {
-                                    annotationMap.set(roiName, className);
-                                    classSet.add(className);
-                                }
-                            }
+
+                if (lines.length === 0) {
+                    throw new Error("Empty CSV");
+                }
+
+                const header = lines[0].split(',').map(c => c.replace(/^["']|["']$/g, '').trim().toLowerCase());
+                const roiColIdx = header.findIndex(col => col.includes('roi') || col.includes('image') || col.includes('file'));
+                const classColIdx = header.findIndex(col => col.includes('class') || col.includes('label'));
+
+                if (roiColIdx === -1 && classColIdx === -1) {
+                    throw new Error("Required columns missing");
+                }
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+
+                    if (!line) continue;
+
+                    const cols = line.split(',').map(c => c.replace(/^["']|["']$/g, '').trim());
+
+                    if (cols.length > Math.max(roiColIdx, classColIdx)) {
+                        const roiName = cols[roiColIdx];
+                        const className = cols[classColIdx];
+
+                        if (!roiName || !className) {
+                            continue;
                         }
-                        global.logger.debug(`Found ${annotationMap.size} annotations in ${csvFiles[0]}`);
+
+                        annotationMap.set(roiName, className);
+                        classSet.add(className);
                     }
                 }
+
+                global.logger.debug(`Found ${annotationMap.size} annotations in ${csvFiles[0]}`);
             } catch (csvErr) {
                 global.logger.error(`Failed to parse CSV annotation file: ${csvErr}`);
             }
         }
 
-        // Insert unique classes
+        // insert unique classes
         for (const className of classSet) {
             try {
                 await queries.project.sql(projectPath, "INSERT OR IGNORE INTO Classes (CName) VALUES (?)", [className]);
@@ -200,7 +214,7 @@ const importIfcb = async (req, res) => {
             }
         }
 
-        // Start transaction for fast batch inserting
+        // start transaction for fast batch inserting
         if (newClient && typeof newClient.run === 'function') {
             await newClient.run("BEGIN TRANSACTION", []);
         }
@@ -222,21 +236,26 @@ const importIfcb = async (req, res) => {
                 await queries.project.addImages(projectPath, cleanedName, 0, 0);
                 imageCount++;
 
-                // If an annotation exists for this image, add a label spanning the whole image
+                // if an annotation exists for this image, add a label spanning the whole image
                 const roiName = path.parse(cleanedName).name;
+
                 if (annotationMap.has(roiName)) {
                     const className = annotationMap.get(roiName);
 
-                    // Probe dimensions using partial file read
+                    // probe dimensions using partial file read
                     let imgWidth = 0;
                     let imgHeight = 0;
+
                     try {
                         const filePath = path.join(imagesPath, cleanedName);
-                        const fd = fs.openSync(filePath, 'r');
+                        const file = fs.openSync(filePath, 'r');
                         const buffer = Buffer.alloc(128);
-                        fs.readSync(fd, buffer, 0, 128, 0);
-                        fs.closeSync(fd);
+
+                        fs.readSync(file, buffer, 0, 128, 0);
+                        fs.closeSync(file);
+
                         const imgData = global.probe.sync(buffer);
+
                         if (imgData) {
                             imgWidth = imgData.width;
                             imgHeight = imgData.height;
@@ -264,6 +283,7 @@ const importIfcb = async (req, res) => {
             if (newClient && typeof newClient.run === 'function') {
                 await newClient.run("ROLLBACK", []).catch(() => { });
             }
+
             throw dbErr;
         }
 
