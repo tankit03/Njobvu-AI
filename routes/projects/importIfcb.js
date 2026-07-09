@@ -262,7 +262,7 @@ const importIfcb = async (req, res) => {
             }
         } catch (dbErr) {
             if (newClient && typeof newClient.run === 'function') {
-                await newClient.run("ROLLBACK", []).catch(() => {});
+                await newClient.run("ROLLBACK", []).catch(() => { });
             }
             throw dbErr;
         }
