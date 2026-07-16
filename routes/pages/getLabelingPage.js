@@ -119,7 +119,7 @@ async function getLabelingPage(req, res) {
     var access = [];
 
     if (curr_class == null) {
-        curr_class = results1[0].CName;
+        curr_class = (results1 && results1.length > 0) ? results1[0].CName : '';
     }
 
     for (var i = 0; i < acc.length; i++) {
