@@ -382,7 +382,7 @@ async function yoloRun(req, res) {
         requestedDevice = req.body.device, // Original requested device
         options = req.body.options,
         weightName = req.body.weights;
-    device = req.body.device;
+    var device = req.body.device;
     var errFile = `${date}-error.log`;
 
     var publicPath = currentPath,
@@ -399,554 +399,494 @@ async function yoloRun(req, res) {
         wrapperPath =
             publicPath + "controllers/training/train_data_from_project.py";
 
-    if (!fs.existsSync(runPath)) {
-        fs.mkdirSync(runPath);
-    }
-
-    fs.writeFile(`${runPath}/${log}`, "", (err) => {
-        if (err) throw err;
-    });
-
-    cfgTempPath = publicPath + "controllers/training/cfgTemplate.txt";
-    cfgTemp = runPath + "/cfgTemplate.txt";
-    fs.copyFile(cfgTempPath, cfgTemp, (err) => {
-        if (err) {
-            global.logger.error(err);
-        }
-    });
-
-    dataTempPath = publicPath + "controllers/training/dataTemplate.txt";
-    dataTemp = runPath + "/dataTemplate.txt";
-    fs.copyFile(dataTempPath, dataTemp, (err) => {
-        if (err) {
-            global.logger.error(err);
-        }
-    });
-
-    darknetCfgScript = runPath + "/datatovalues.py";
-    if (!fs.existsSync(darknetCfgScript)) {
-        fs.copyFile(yoloScript, darknetCfgScript, (err) => {
-            if (err) {
-                global.logger.error(err);
-            }
-        });
-    }
-
-    // Get images and classes for both detect and classify tasks
-    let existingImages;
-    let existingClasses;
-
-    try {
-        existingImages = await queries.project.getAllImages(projectPath);
-        existingClasses = await queries.project.getAllClasses(projectPath);
-    } catch (err) {
-        global.logger.error(err);
-        return res.status(500).send("Error fetching classes");
-    }
-
-    if (["detect", "segment", "obb"].includes(yoloTask)) {
-        project = `${Admin}-${PName}`;
-
-        let absDarknetProjectPath = runPath;
-        let absDarknetImagesPath = path.join(absDarknetProjectPath, "images");
-        let absDarknetImagesTrain = path.join(absDarknetImagesPath, "train");
-        let absDarknetImagesVal = path.join(absDarknetImagesPath, "val");
-        let absDarknetLabelsPath = path.join(absDarknetProjectPath, "labels");
-        let absDarknetLabelsTrain = path.join(absDarknetLabelsPath, "train");
-        let absDarknetLabelsVal = path.join(absDarknetLabelsPath, "val");
-
-        if (!fs.existsSync(absDarknetImagesPath)) {
-            fs.mkdirSync(absDarknetImagesPath, (err) => {
-                if (err) {
-                    global.logger.error(err);
-                } else {
-                }
-            });
-            fs.mkdirSync(absDarknetImagesTrain, (err) => {
-                if (err) {
-                    global.logger.error(err);
-                } else {
-                }
-            });
-            fs.mkdirSync(absDarknetImagesVal, (err) => {
-                if (err) {
-                    global.logger.error(err);
-                } else {
-                }
-            });
-            fs.mkdirSync(absDarknetLabelsPath, (err) => {
-                if (err) {
-                    global.logger.error(err);
-                } else {
-                }
-            });
-            fs.mkdirSync(absDarknetLabelsTrain, (err) => {
-                if (err) {
-                    global.logger.error(err);
-                } else {
-                }
-            });
-            fs.mkdirSync(absDarknetLabelsVal, (err) => {
-                if (err) {
-                    global.logger.error(err);
-                } else {
-                }
-            });
-        }
-
-        var cnames = [];
+    // Helper function to log background errors to files so UI/system knows training failed
+    const writeErrorLogs = (errMsg) => {
         try {
-        } catch (err) {
-            global.logger.error(err);
-            return res.status(500).send("Error finding classes");
+            if (!fs.existsSync(runPath)) {
+                fs.mkdirSync(runPath, { recursive: true });
+            }
+            fs.writeFileSync(path.join(runPath, errFile), errMsg);
+            fs.writeFileSync(path.join(runPath, "done.log"), errMsg);
+        } catch (writeErr) {
+            global.logger.error("Failed to write background error logs:", writeErr);
         }
+    };
 
-        for (var i = 0; i < existingClasses.rows.length; i++) {
-            cnames.push(existingClasses.rows[i].CName);
-        }
-        var dictImagesLabels = {};
+    const runBackground = async () => {
+        try {
+            if (!fs.existsSync(runPath)) {
+                fs.mkdirSync(runPath);
+            }
 
-        for (var i = 0; i < existingImages.rows.length; i++) {
-            var img = fs.readFileSync(
-                `${imagesPath}/${existingImages.rows[i].IName}`,
-            ),
-                imgData = probe.sync(img),
-                imgW = imgData.width,
-                imgH = imgData.height;
+            fs.writeFileSync(`${runPath}/${log}`, "");
 
-            const imageLabels = await queries.project.getLabelsForImageName(
-                projectPath,
-                existingImages.rows[i].IName,
-            );
+            const cfgTempPath = publicPath + "controllers/training/cfgTemplate.txt";
+            const cfgTemp = runPath + "/cfgTemplate.txt";
+            if (fs.existsSync(cfgTempPath)) {
+                fs.copyFileSync(cfgTempPath, cfgTemp);
+            }
 
-            for (var j = 0; j < imageLabels.rows.length; j++) {
-                const classId = cnames.indexOf(imageLabels.rows[j].CName);
-                if (classId < 0) {
-                    continue;
-                }
+            const dataTempPath = publicPath + "controllers/training/dataTemplate.txt";
+            const dataTemp = runPath + "/dataTemplate.txt";
+            if (fs.existsSync(dataTempPath)) {
+                fs.copyFileSync(dataTempPath, dataTemp);
+            }
 
-                const labelLine = formatYoloLabelForTask(
-                    imageLabels.rows[j],
-                    classId,
-                    imgW,
-                    imgH,
-                    yoloTask,
-                );
-
-                if (!labelLine) {
-                    console.warn(
-                        `Skipping unsupported ${yoloTask} label ${imageLabels.rows[j].LID} for ${existingImages.rows[i].IName}`,
-                    );
-                    continue;
-                }
-
-                if (
-                    dictImagesLabels[existingImages.rows[i].IName] == undefined
-                ) {
-                    dictImagesLabels[existingImages.rows[i].IName] =
-                        `${labelLine}\n`;
-                } else {
-                    dictImagesLabels[existingImages.rows[i].IName] +=
-                        `${labelLine}\n`;
+            const darknetCfgScript = runPath + "/datatovalues.py";
+            if (!fs.existsSync(darknetCfgScript)) {
+                if (fs.existsSync(yoloScript)) {
+                    fs.copyFileSync(yoloScript, darknetCfgScript);
                 }
             }
-            if (imageLabels.rows.length == 0) {
-                dictImagesLabels[existingImages.rows[i].IName] = "";
-            }
-        }
 
-        for (var key in dictImagesLabels) {
-            // remove_dot_ext = key.split(".")[0]
-            removeDotExt = path.parse(key).name;
-            fs.writeFileSync(
-                `${imagesPath}/${removeDotExt}.txt`,
-                dictImagesLabels[key],
-                (err) => {
-                    if (err) throw err;
-                },
-            );
-        }
+            // Get images and classes for both detect and classify tasks
+            let existingImages;
+            let existingClasses;
 
-        var dictImagesCount = existingImages.rows.length;
-
-        var trainDataImageSplit = Math.round(
-            (trainDataPer / 100) * dictImagesCount,
-        );
-
-        for (let i = 0; i < existingImages.rows.length; i++) {
-            var filename = existingImages.rows[i].IName.substr(
-                0,
-                existingImages.rows[i].IName.lastIndexOf("."),
-            );
-
-            var labelFile = filename + ".txt";
-
-            let absDarknetOrgImagesPath = path.join(
-                imagesPath,
-                existingImages.rows[i].IName,
-            );
-
-            let absDarknetOrgLabelsPath = path.join(imagesPath, labelFile);
-
-            let absDarknetTrainImagesPath = path.join(
-                absDarknetImagesTrain,
-                existingImages.rows[i].IName,
-            );
-
-            let absDarknetTrainLabelsPath = path.join(
-                absDarknetLabelsTrain,
-                labelFile,
-            );
-
-            if (i < trainDataImageSplit) {
-                try {
-                    await fs.promises.symlink(
-                        absDarknetOrgImagesPath,
-                        absDarknetTrainImagesPath,
-                        "file"
-                    );
-                } catch (err) {
-                    global.logger.debug("Error creating image training symlink:", err);
-                }
-
-                try {
-                    await fs.promises.symlink(
-                        absDarknetOrgLabelsPath,
-                        absDarknetTrainLabelsPath,
-                        "file"
-                    );
-                } catch (err) {
-                    global.logger.debug("Error creating label training symlink:", err);
-                }
-            } else {
-                let absDarknetValImagesPath = path.join(
-                    absDarknetImagesVal,
-                    existingImages.rows[i].IName,
-                );
-                let absDarknetValLabelsPath = path.join(
-                    absDarknetLabelsVal,
-                    labelFile,
-                );
-
-                try {
-                    await fs.promises.symlink(
-                        absDarknetOrgImagesPath,
-                        absDarknetValImagesPath,
-                        "file"
-                    );
-                } catch (err) {
-                    global.logger.debug("Error creating image validation symlink:", err);
-                }
-
-                try {
-                    await fs.promises.symlink(
-                        absDarknetOrgLabelsPath,
-                        absDarknetValLabelsPath,
-                        "file"
-                    );
-                } catch (err) {
-                    global.logger.debug("Error creating label validation symlink:", err);
-                }
-            }
-        }
-
-        ///////////////////Create symbolic link from darknet to run///////////////////////////////
-        global.logger.debug(`all path training path: ${trainingPath}, weightname: ${weightName}`);
-
-        absWeightProjectPath = path.join(
-            trainingPath,
-            "logs",
-            date.toString(),
-            weightName,
-        );
-
-        if (!fs.existsSync(absWeightProjectPath)) {
             try {
-                await fs.promises.symlink(weightPath, absWeightProjectPath, "file");
+                existingImages = await queries.project.getAllImages(projectPath);
+                existingClasses = await queries.project.getAllClasses(projectPath);
             } catch (err) {
-                global.logger.debug("Error creating symlink:", err);
-            }
-        }
-
-        var classes = "# Train/val/test sets\n";
-        classes = classes + "path: " + runPath + "\n";
-        classes = classes + "train: " + absDarknetImagesTrain + "\n";
-        classes = classes + "val: " + absDarknetImagesVal + "\n";
-        classes = classes + "test: \n";
-        classes = classes + "\n# Classes (COCO classes)\n";
-        classes = classes + "names:\n";
-
-        for (var i = 0; i < existingClasses.rows.length; i++) {
-            classes =
-                classes +
-                "  " +
-                i +
-                ": " +
-                existingClasses.rows[i].CName +
-                "\n";
-        }
-
-        fs.writeFileSync(classesPath, classes, (err) => {
-            if (err) throw err;
-        });
-    } else if (yoloTask == "classify") {
-        // if its classify
-        // train val directories
-        // for the secific project create the directories of all the labels
-        // based on the speciic labels crop it
-        const cropImage = async (sourcePath, targetPath, x_center_abs, y_center_abs, width_abs, height_abs, imageWidth, imageHeight) => {
-            const x1 = Math.floor(x_center_abs - width_abs / 2);
-            const y1 = Math.floor(y_center_abs - height_abs / 2);
-
-            const cropLeft = Math.max(0, x1);
-            const cropTop = Math.max(0, y1);
-            const cropWidth = Math.max(1, Math.min(imageWidth - cropLeft, Math.floor(width_abs)));
-            const cropHeight = Math.max(1, Math.min(imageHeight - cropTop, Math.floor(height_abs)));
-
-            if (cropWidth <= 0 || cropHeight <= 0) {
-                console.warn(`Skipping invalid crop for ${sourcePath}. Original absolute bbox: x=${x_center_abs}, y=${y_center_abs}, w=${width_abs}, h=${height_abs}. Resulting crop: left=${cropLeft}, top=${cropTop}, width=${cropWidth}, height=${cropHeight}.`);
-                return false;
+                global.logger.error("Error fetching classes or images for training:", err);
+                writeErrorLogs("Error fetching classes/images: " + (err.message || err));
+                return;
             }
 
-            try {
-                const cropOptions = {
-                    left: Math.floor(cropLeft),
-                    top: Math.floor(cropTop),
-                    width: Math.floor(cropWidth),
-                    height: Math.floor(cropHeight),
+            if (["detect", "segment", "obb"].includes(yoloTask)) {
+                let project = `${Admin}-${PName}`;
+
+                let absDarknetProjectPath = runPath;
+                let absDarknetImagesPath = path.join(absDarknetProjectPath, "images");
+                let absDarknetImagesTrain = path.join(absDarknetImagesPath, "train");
+                let absDarknetImagesVal = path.join(absDarknetImagesPath, "val");
+                let absDarknetLabelsPath = path.join(absDarknetProjectPath, "labels");
+                let absDarknetLabelsTrain = path.join(absDarknetLabelsPath, "train");
+                let absDarknetLabelsVal = path.join(absDarknetLabelsPath, "val");
+
+                if (!fs.existsSync(absDarknetImagesPath)) {
+                    fs.mkdirSync(absDarknetImagesPath, { recursive: true });
+                    fs.mkdirSync(absDarknetImagesTrain, { recursive: true });
+                    fs.mkdirSync(absDarknetImagesVal, { recursive: true });
+                    fs.mkdirSync(absDarknetLabelsPath, { recursive: true });
+                    fs.mkdirSync(absDarknetLabelsTrain, { recursive: true });
+                    fs.mkdirSync(absDarknetLabelsVal, { recursive: true });
+                }
+
+                var cnames = [];
+                for (var i = 0; i < existingClasses.rows.length; i++) {
+                    cnames.push(existingClasses.rows[i].CName);
+                }
+                var dictImagesLabels = {};
+
+                for (var i = 0; i < existingImages.rows.length; i++) {
+                    var img = fs.readFileSync(
+                        `${imagesPath}/${existingImages.rows[i].IName}`,
+                    ),
+                        imgData = probe.sync(img),
+                        imgW = imgData.width,
+                        imgH = imgData.height;
+
+                    const imageLabels = await queries.project.getLabelsForImageName(
+                        projectPath,
+                        existingImages.rows[i].IName,
+                    );
+
+                    for (var j = 0; j < imageLabels.rows.length; j++) {
+                        const classId = cnames.indexOf(imageLabels.rows[j].CName);
+                        if (classId < 0) {
+                            continue;
+                        }
+
+                        const labelLine = formatYoloLabelForTask(
+                            imageLabels.rows[j],
+                            classId,
+                            imgW,
+                            imgH,
+                            yoloTask,
+                        );
+
+                        if (!labelLine) {
+                            console.warn(
+                                `Skipping unsupported ${yoloTask} label ${imageLabels.rows[j].LID} for ${existingImages.rows[i].IName}`,
+                            );
+                            continue;
+                        }
+
+                        if (
+                            dictImagesLabels[existingImages.rows[i].IName] == undefined
+                        ) {
+                            dictImagesLabels[existingImages.rows[i].IName] =
+                                `${labelLine}\n`;
+                        } else {
+                            dictImagesLabels[existingImages.rows[i].IName] +=
+                                `${labelLine}\n`;
+                        }
+                    }
+                    if (imageLabels.rows.length == 0) {
+                        dictImagesLabels[existingImages.rows[i].IName] = "";
+                    }
+                }
+
+                for (var key in dictImagesLabels) {
+                    removeDotExt = path.parse(key).name;
+                    fs.writeFileSync(
+                        `${imagesPath}/${removeDotExt}.txt`,
+                        dictImagesLabels[key]
+                    );
+                }
+
+                var dictImagesCount = existingImages.rows.length;
+
+                var trainDataImageSplit = Math.round(
+                    (trainDataPer / 100) * dictImagesCount,
+                );
+
+                for (let i = 0; i < existingImages.rows.length; i++) {
+                    var filename = existingImages.rows[i].IName.substr(
+                        0,
+                        existingImages.rows[i].IName.lastIndexOf("."),
+                    );
+
+                    var labelFile = filename + ".txt";
+
+                    let absDarknetOrgImagesPath = path.join(
+                        imagesPath,
+                        existingImages.rows[i].IName,
+                    );
+
+                    let absDarknetOrgLabelsPath = path.join(imagesPath, labelFile);
+
+                    let absDarknetTrainImagesPath = path.join(
+                        absDarknetImagesTrain,
+                        existingImages.rows[i].IName,
+                    );
+
+                    let absDarknetTrainLabelsPath = path.join(
+                        absDarknetLabelsTrain,
+                        labelFile,
+                    );
+
+                    if (i < trainDataImageSplit) {
+                        try {
+                            await fs.promises.symlink(
+                                absDarknetOrgImagesPath,
+                                absDarknetTrainImagesPath,
+                                "file"
+                            );
+                        } catch (err) {
+                            global.logger.debug("Error creating image training symlink:", err);
+                        }
+
+                        try {
+                            await fs.promises.symlink(
+                                absDarknetOrgLabelsPath,
+                                absDarknetTrainLabelsPath,
+                                "file"
+                            );
+                        } catch (err) {
+                            global.logger.debug("Error creating label training symlink:", err);
+                        }
+                    } else {
+                        let absDarknetValImagesPath = path.join(
+                            absDarknetImagesVal,
+                            existingImages.rows[i].IName,
+                        );
+                        let absDarknetValLabelsPath = path.join(
+                            absDarknetLabelsVal,
+                            labelFile,
+                        );
+
+                        try {
+                            await fs.promises.symlink(
+                                absDarknetOrgImagesPath,
+                                absDarknetValImagesPath,
+                                "file"
+                            );
+                        } catch (err) {
+                            global.logger.debug("Error creating image validation symlink:", err);
+                        }
+
+                        try {
+                            await fs.promises.symlink(
+                                absDarknetOrgLabelsPath,
+                                absDarknetValLabelsPath,
+                                "file"
+                            );
+                        } catch (err) {
+                            global.logger.debug("Error creating label validation symlink:", err);
+                        }
+                    }
+                }
+
+                global.logger.debug(`all path training path: ${trainingPath}, weightname: ${weightName}`);
+
+                let absWeightProjectPath = path.join(
+                    trainingPath,
+                    "logs",
+                    date.toString(),
+                    weightName,
+                );
+
+                if (!fs.existsSync(absWeightProjectPath)) {
+                    try {
+                        await fs.promises.symlink(weightPath, absWeightProjectPath, "file");
+                    } catch (err) {
+                        global.logger.debug("Error creating symlink:", err);
+                    }
+                }
+
+                var classes = "# Train/val/test sets\n";
+                classes = classes + "path: " + runPath + "\n";
+                classes = classes + "train: " + absDarknetImagesTrain + "\n";
+                classes = classes + "val: " + absDarknetImagesVal + "\n";
+                classes = classes + "test: \n";
+                classes = classes + "\n# Classes (COCO classes)\n";
+                classes = classes + "names:\n";
+
+                for (var i = 0; i < existingClasses.rows.length; i++) {
+                    classes =
+                        classes +
+                        "  " +
+                        i +
+                        ": " +
+                        existingClasses.rows[i].CName +
+                        "\n";
+                }
+
+                fs.writeFileSync(classesPath, classes);
+            } else if (yoloTask == "classify") {
+                const cropImage = async (sourcePath, targetPath, x_center_abs, y_center_abs, width_abs, height_abs, imageWidth, imageHeight) => {
+                    const x1 = Math.floor(x_center_abs - width_abs / 2);
+                    const y1 = Math.floor(y_center_abs - height_abs / 2);
+
+                    const cropLeft = Math.max(0, x1);
+                    const cropTop = Math.max(0, y1);
+                    const cropWidth = Math.max(1, Math.min(imageWidth - cropLeft, Math.floor(width_abs)));
+                    const cropHeight = Math.max(1, Math.min(imageHeight - cropTop, Math.floor(height_abs)));
+
+                    if (cropWidth <= 0 || cropHeight <= 0) {
+                        console.warn(`Skipping invalid crop for ${sourcePath}. Original absolute bbox: x=${x_center_abs}, y=${y_center_abs}, w=${width_abs}, h=${height_abs}. Resulting crop: left=${cropLeft}, top=${cropTop}, width=${cropWidth}, height=${cropHeight}.`);
+                        return false;
+                    }
+
+                    try {
+                        const cropOptions = {
+                            left: Math.floor(cropLeft),
+                            top: Math.floor(cropTop),
+                            width: Math.floor(cropWidth),
+                            height: Math.floor(cropHeight),
+                        };
+
+                        await sharp(sourcePath)
+                            .extract(cropOptions)
+                            .toFile(targetPath);
+                        global.logger.debug(`Image cropped successfully: ${targetPath}`);
+                        return true;
+                    } catch (err) {
+                        global.logger.error(`Error cropping image ${sourcePath} to ${targetPath}: ${err.message}`);
+                        return false;
+                    }
                 };
 
-                await sharp(sourcePath)
-                    .extract(cropOptions)
-                    .toFile(targetPath);
-                global.logger.debug(`Image cropped successfully: ${targetPath}`);
-                return true;
-            } catch (err) {
-                global.logger.error(`Error cropping image ${sourcePath} to ${targetPath}: ${err.message}`);
-                return false;
-            }
-        };
+                global.logger.debug("Preparing data for classification task...");
 
-        global.logger.debug("Preparing data for classification task...");
+                const absDarknetClassificationDatasetRoot = runPath;
+                const absDarknetClassificationTrainImagesDir = path.join(absDarknetClassificationDatasetRoot, "train");
+                const absDarknetClassificationValImagesDir = path.join(absDarknetClassificationDatasetRoot, "val");
 
-        const absDarknetClassificationDatasetRoot = runPath;
-        const absDarknetClassificationTrainImagesDir = path.join(absDarknetClassificationDatasetRoot, "train");
-        const absDarknetClassificationValImagesDir = path.join(absDarknetClassificationDatasetRoot, "val");
-
-        try {
-            await fs.promises.mkdir(absDarknetClassificationTrainImagesDir, { recursive: true });
-            await fs.promises.mkdir(absDarknetClassificationValImagesDir, { recursive: true });
-            global.logger.debug(`Created base classification directories: ${absDarknetClassificationTrainImagesDir}, ${absDarknetClassificationValImagesDir}`);
-        } catch (err) {
-            global.logger.error("Error creating base classification train/val directories:", err);
-            return res.status(500).send("Error setting up classification directories.");
-        }
-
-        const trainDataImageSplit = Math.round((trainDataPer / 100) * existingImages.rows.length);
-        const shuffledImages = existingImages.rows.sort(() => 0.5 - Math.random());
-
-        for (let i = 0; i < shuffledImages.length; i++) {
-            const image = shuffledImages[i];
-            const sourceImagePath = path.join(imagesPath, image.IName);
-            const isTrain = i < trainDataImageSplit;
-
-            const targetBaseDir = isTrain
-                ? absDarknetClassificationTrainImagesDir
-                : absDarknetClassificationValImagesDir;
-
-            try {
-                const imageMetadata = await sharp(sourceImagePath).metadata();
-                const originalWidth = imageMetadata.width;
-                const originalHeight = imageMetadata.height;
-
-                if (!originalWidth || !originalHeight) {
-                    console.warn(`Could not get dimensions for image ${image.IName}, skipping.`);
-                    continue;
+                try {
+                    await fs.promises.mkdir(absDarknetClassificationTrainImagesDir, { recursive: true });
+                    await fs.promises.mkdir(absDarknetClassificationValImagesDir, { recursive: true });
+                    global.logger.debug(`Created base classification directories: ${absDarknetClassificationTrainImagesDir}, ${absDarknetClassificationValImagesDir}`);
+                } catch (err) {
+                    global.logger.error("Error creating base classification train/val directories:", err);
+                    writeErrorLogs("Error setting up classification directories: " + err.message);
+                    return;
                 }
 
-                const imageLabelsResult = await queries.project.getLabelsForImageName(projectPath, image.IName);
-                const imageLabels = imageLabelsResult.rows;
+                const trainDataImageSplit = Math.round((trainDataPer / 100) * existingImages.rows.length);
+                const shuffledImages = existingImages.rows.sort(() => 0.5 - Math.random());
 
-                if (imageLabels.length === 0) {
-                    console.warn(`Image ${image.IName} has no labels, skipping for classification training.`);
-                    continue;
-                }
+                for (let i = 0; i < shuffledImages.length; i++) {
+                    const image = shuffledImages[i];
+                    const sourceImagePath = path.join(imagesPath, image.IName);
+                    const isTrain = i < trainDataImageSplit;
 
-                let croppedCount = 0;
-                for (const label of imageLabels) {
-                    const className = label.CName;
-                    if (!className) {
-                        console.warn(`Label for image ${image.IName} has no class name, skipping.`);
-                        continue;
-                    }
+                    const targetBaseDir = isTrain
+                        ? absDarknetClassificationTrainImagesDir
+                        : absDarknetClassificationValImagesDir;
 
-                    const classTargetDir = path.join(targetBaseDir, className);
-                    await fs.promises.mkdir(classTargetDir, { recursive: true });
+                    try {
+                        const imageMetadata = await sharp(sourceImagePath).metadata();
+                        const originalWidth = imageMetadata.width;
+                        const originalHeight = imageMetadata.height;
 
-                    const croppedImageName = `${path.parse(image.IName).name}_crop_${label.LID}${path.parse(image.IName).ext}`;
-                    const targetCroppedImagePath = path.join(classTargetDir, croppedImageName);
+                        if (!originalWidth || !originalHeight) {
+                            console.warn(`Could not get dimensions for image ${image.IName}, skipping.`);
+                            continue;
+                        }
 
-                    global.logger.debug(`Debug label values for label ID ${label.LID} in image ${image.IName}:`);
-                    global.logger.debug(`  label.X: ${label.X} (Type: ${typeof label.X})`);
-                    global.logger.debug(`  label.Y: ${label.Y} (Type: ${typeof label.Y})`);
-                    global.logger.debug(`  label.W: ${label.W} (Type: ${typeof label.W})`);
-                    global.logger.debug(`  label.H: ${label.W} (Type: ${typeof label.W})`);
+                        const imageLabelsResult = await queries.project.getLabelsForImageName(projectPath, image.IName);
+                        const imageLabels = imageLabelsResult.rows;
 
-                    const x_center_abs = label.X;
-                    const y_center_abs = label.Y;
-                    const width_abs = label.W;
-                    const height_abs = label.H;
+                        if (imageLabels.length === 0) {
+                            console.warn(`Image ${image.IName} has no labels, skipping for classification training.`);
+                            continue;
+                        }
 
-                    global.logger.debug(`  Assigned x_center_abs: ${x_center_abs} (Type: ${typeof x_center_abs})`);
-                    global.logger.debug(`  Assigned y_center_abs: ${y_center_abs} (Type: ${typeof y_center_abs})`);
-                    global.logger.debug(`  Assigned width_abs: ${width_abs} (Type: ${typeof width_abs})`);
-                    global.logger.debug(`  Assigned height_abs: ${height_abs} (Type: ${typeof height_abs})`);
+                        let croppedCount = 0;
+                        for (const label of imageLabels) {
+                            const className = label.CName;
+                            if (!className) {
+                                console.warn(`Label for image ${image.IName} has no class name, skipping.`);
+                                continue;
+                            }
 
-                    const didCrop = await cropImage(
-                        sourceImagePath,
-                        targetCroppedImagePath,
-                        x_center_abs, y_center_abs, width_abs, height_abs,
-                        originalWidth, originalHeight
-                    );
+                            const classTargetDir = path.join(targetBaseDir, className);
+                            await fs.promises.mkdir(classTargetDir, { recursive: true });
 
-                    if (didCrop) {
-                        croppedCount++;
-                    } else {
-                        global.logger.error(`Failed to crop and save for label ${label.LID} in image ${image.IName}`);
+                            const croppedImageName = `${path.parse(image.IName).name}_crop_${label.LID}${path.parse(image.IName).ext}`;
+                            const targetCroppedImagePath = path.join(classTargetDir, croppedImageName);
+
+                            global.logger.debug(`Debug label values for label ID ${label.LID} in image ${image.IName}:`);
+                            global.logger.debug(`  label.X: ${label.X} (Type: ${typeof label.X})`);
+                            global.logger.debug(`  label.Y: ${label.Y} (Type: ${typeof label.Y})`);
+                            global.logger.debug(`  label.W: ${label.W} (Type: ${typeof label.W})`);
+                            global.logger.debug(`  label.H: ${label.W} (Type: ${typeof label.W})`);
+
+                            const x_center_abs = label.X;
+                            const y_center_abs = label.Y;
+                            const width_abs = label.W;
+                            const height_abs = label.H;
+
+                            global.logger.debug(`  Assigned x_center_abs: ${x_center_abs} (Type: ${typeof x_center_abs})`);
+                            global.logger.debug(`  Assigned y_center_abs: ${y_center_abs} (Type: ${typeof y_center_abs})`);
+                            global.logger.debug(`  Assigned width_abs: ${width_abs} (Type: ${typeof width_abs})`);
+                            global.logger.debug(`  Assigned height_abs: ${height_abs} (Type: ${typeof height_abs})`);
+
+                            const didCrop = await cropImage(
+                                sourceImagePath,
+                                targetCroppedImagePath,
+                                x_center_abs, y_center_abs, width_abs, height_abs,
+                                originalWidth, originalHeight
+                            );
+
+                            if (didCrop) {
+                                croppedCount++;
+                            } else {
+                                global.logger.error(`Failed to crop and save for label ${label.LID} in image ${image.IName}`);
+                            }
+                        }
+                        if (croppedCount === 0) {
+                            console.warn(`No valid crops generated for image ${image.IName}.`);
+                        }
+
+                    } catch (err) {
+                        global.logger.error(`Error processing image ${image.IName} for classification:`, err);
                     }
                 }
-                if (croppedCount === 0) {
-                    console.warn(`No valid crops generated for image ${image.IName}.`);
+
+                var classificationDataYamlContent = "# Ultralytics YOLOv8 Classification Dataset\n";
+                classificationDataYamlContent += `path: ${absDarknetClassificationDatasetRoot}\n`;
+                classificationDataYamlContent += `train: train\n`;
+                classificationDataYamlContent += `val: val\n`;
+                classificationDataYamlContent += `test: \n\n`;
+
+                classificationDataYamlContent += "names:\n";
+                for (var i = 0; i < existingClasses.rows.length; i++) {
+                    classificationDataYamlContent += `  ${i}: ${existingClasses.rows[i].CName}\n`;
                 }
 
-            } catch (err) {
-                global.logger.error(`Error processing image ${image.IName} for classification:`, err);
+                try {
+                    await fs.promises.writeFile(classesPath, classificationDataYamlContent);
+                    global.logger.debug("Done writing YOLO Classification Data YAML file (data.yaml)");
+                } catch (err) {
+                    global.logger.error("Error writing YOLO Classification Data YAML file:", err);
+                    writeErrorLogs("Error generating classification data file: " + err.message);
+                    return;
+                }
             }
-        }
 
-        var classificationDataYamlContent = "# Ultralytics YOLOv8 Classification Dataset\n";
-        classificationDataYamlContent += `path: ${absDarknetClassificationDatasetRoot}\n`;
-        classificationDataYamlContent += `train: train\n`;
-        classificationDataYamlContent += `val: val\n`;
-        classificationDataYamlContent += `test: \n\n`;
+            let absDarknetProjectPath = runPath;
+            let absDarknetProjectRun = absDarknetProjectPath;
 
-        classificationDataYamlContent += "names:\n";
-        for (var i = 0; i < existingClasses.rows.length; i++) {
-            classificationDataYamlContent += `  ${i}: ${existingClasses.rows[i].CName}\n`;
-        }
+            const darknetProjectRun = runPath;
+            const darknetImagesPath = path.join(absDarknetProjectPath, "images");
+            const darknetLabelsPath = path.join(absDarknetProjectPath, "labels");
 
-        try {
-            await fs.promises.writeFile(classesPath, classificationDataYamlContent);
-            global.logger.debug("Done writing YOLO Classification Data YAML file (data.yaml)");
-        } catch (err) {
-            global.logger.error("Error writing YOLO Classification Data YAML file:", err);
-            return res.status(500).send("Error generating classification data file.");
-        }
-    }
+            var cmd = "";
 
-    let absDarknetProjectPath = runPath;
-    let absDarknetProjectRun = absDarknetProjectPath;
+            if (yoloMode == "train") {
+                cmd = `python3 ${yoloScript} -d ${runPath} -t ${yoloTask} -m ${yoloMode} -i ${darknetImagesPath} -n ${classesPath} -p ${trainDataPer} -l ${absDarknetProjectRun}/${log} -f ${darknetPath} -w ${weightPath} -b ${batch} -s ${subdiv} -x ${width} -y ${height} -v ${yoloVersion} -e ${epochs} -I ${imgsz} -D ${device} -o "${options}"`;
+            } else {
+                cmd = `python3 --version`;
+            }
 
-    darknetProjectRun = runPath;
-    darknetImagesPath = path.join(absDarknetProjectPath, "images");
-    darknetLabelsPath = path.join(absDarknetProjectPath, "labels");
+            global.logger.debug(cmd);
 
-    var cmd = "";
-
-    if (yoloMode == "train") {
-        cmd = `python3 ${yoloScript} -d ${runPath} -t ${yoloTask} -m ${yoloMode} -i ${darknetImagesPath} -n ${classesPath} -p ${trainDataPer} -l ${absDarknetProjectRun}/${log} -f ${darknetPath} -w ${weightPath} -b ${batch} -s ${subdiv} -x ${width} -y ${height} -v ${yoloVersion} -e ${epochs} -I ${imgsz} -D ${device} -o "${options}"`;
-    } else {
-        cmd = `python3 --version`;
-    }
-
-    global.logger.debug(cmd);
-
-    fs.appendFile(`${absDarknetProjectRun}/${log}`, `${cmd}\n\n`, (err) => {
-        if (err) global.logger.debug("Error writing initial command to log:", err);
-    });
-
-    var success = "";
-    var error = "";
-
-    global.logger.debug("=== STARTING PYTHON SCRIPT ===");
-
-    fs.writeFileSync(`${absDarknetProjectRun}/${log}`, cmd);
-
-    exec(cmd, { maxBuffer: 1024 * 1024 * 1024 * configFile["training_max_buffer_size"] }, (err, stdout, stderr) => {
-        if (stdout) {
-            global.logger.debug("STDOUT:", stdout);
-            fs.appendFile(`${absDarknetProjectRun}/${log}`, stdout, (err) => {
-                if (err) global.logger.debug("Error writing stdout to log:", err);
+            fs.appendFile(`${absDarknetProjectRun}/${log}`, `${cmd}\n\n`, (err) => {
+                if (err) global.logger.debug("Error writing initial command to log:", err);
             });
+
+            var success = "";
+            var error = "";
+
+            global.logger.debug("=== STARTING PYTHON SCRIPT ===");
+
+            fs.writeFileSync(`${absDarknetProjectRun}/${log}`, cmd);
+
+            const bufferSizeLimit = (global.configFile && global.configFile["training_max_buffer_size"]) || 5;
+            exec(cmd, { maxBuffer: 1024 * 1024 * 1024 * bufferSizeLimit }, (err, stdout, stderr) => {
+                if (stdout) {
+                    global.logger.debug("STDOUT:", stdout);
+                    fs.appendFile(`${absDarknetProjectRun}/${log}`, stdout, (err) => {
+                        if (err) global.logger.debug("Error writing stdout to log:", err);
+                    });
+                }
+                if (err) {
+                    global.logger.error(err);
+                    global.logger.debug(`This is the error: ${err.message}`);
+
+                    if (err.message != "stdout maxBuffer length exceeded") {
+                        success = err.message;
+
+                        fs.writeFile(
+                            `${absDarknetProjectRun}/${errFile}`,
+                            success,
+                            (err) => {
+                                if (err) throw err;
+                            },
+                        );
+                    }
+                } else if (stderr) {
+                    global.logger.debug(`This is the stderr: ${stderr}`);
+
+                    if (stderr != "stdout maxBuffer length exceeded") {
+                        fs.writeFile(
+                            `${absDarknetProjectRun}/${errFile}`,
+                            stderr,
+                            (err) => {
+                                if (err) throw err;
+                            },
+                        );
+                    }
+                }
+
+                fs.writeFileSync(`${runPath}/done.log`, success);
+            });
+        } catch (bgErr) {
+            global.logger.error("Background training preparation failed:", bgErr);
+            writeErrorLogs(bgErr.message || bgErr.toString());
         }
-        if (err) {
-            global.logger.error(err);
-            global.logger.debug(`This is the error: ${err.message}`);
+    };
 
-            if (err.message != "stdout maxBuffer length exceeded") {
-                success = err.message;
-
-                fs.writeFile(
-                    `${absDarknetProjectRun}/${errFile}`,
-                    success,
-                    (err) => {
-                        if (err) throw err;
-                    },
-                );
-            }
-        } else if (stderr) {
-            global.logger.debug(`This is the stderr: ${stderr}`);
-
-            if (stderr != "stdout maxBuffer length exceeded") {
-                fs.writeFile(
-                    `${absDarknetProjectRun}/${errFile}`,
-                    stderr,
-                    (err) => {
-                        if (err) throw err;
-                    },
-                );
-            }
-        }
-
-        fs.writeFileSync(`${runPath}/done.log`, success);
+    // Trigger the background training and execution asynchronously on the next event loop tick
+    setImmediate(() => {
+        runBackground().catch((bgErr) => {
+            global.logger.error("Unhandleable background training failure:", bgErr);
+        });
     });
 
-
-
-    // exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
-    //     console.log("=== PYTHON SCRIPT COMPLETED ===");
-
-    //     if (stdout) {
-    //         console.log("STDOUT:", stdout);
-    //         fs.appendFile(`${absDarknetProjectRun}/${log}`, stdout, (err) => {
-    //             if (err) console.log("Error writing stdout to log:", err);
-    //         });
-    //     }
-    //     if (stderr) {
-    //         console.log("STDERR:", stderr);
-    //         fs.appendFile(`${absDarknetProjectRun}/${log}`, stderr, (err) => {
-    //             if (err) console.log("Error writing stderr to log:", err);
-    //         });
-    //     }
-
-    //     if (err) {
-    //         console.log(`Python script error: ${err.message}`);
-    //         error = err.message;
-    //         fs.writeFile(
-    //             `${darknetProjectRun}/${errFile}`,
-    //             error,
-    //             (err) => {
-    //                 if (err) throw err;
-    //             },
-    //         );
-    //     } else {
-    //         success = "Training completed successfully";
-    //     }
-
-    //     fs.writeFile(`${runPath}/done.log`, success || "Process completed", (err) => {
-    //         if (err) throw err;
-    //     });
-    // });
     res.send({ Success: `YOLO Training Started` });
 }
 
