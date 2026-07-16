@@ -206,7 +206,7 @@ const importIfcb = async (req, res) => {
                         }
 
                         annotationMap.set(normalizeKey(roiName), className);
-                        classSet.add(className);
+                        classSet.add(className.replaceAll(" ", "_"));
                     }
                 }
 

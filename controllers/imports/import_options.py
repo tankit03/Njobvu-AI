@@ -564,9 +564,9 @@ def coco_archive_import(db_name, input_dir, output, weights_file=None):
 
     print(f"COCO Archive Import completed successfully. Inserted {label_id - 1} labels.")
 
-# Main argument parsing and execution logic
+# main argument parsing and execution logic
 if __name__ == '__main__':
-    # Parse all arguments first
+    # parse all arguments first
     for i in range(1, len(sys.argv)):
         if sys.argv[i] == '-i':
             input_dir = sys.argv[i+1]
@@ -584,7 +584,7 @@ if __name__ == '__main__':
             help()
             sys.exit()
 
-    # Then, after the loop, decide what to run
+    # then, after the loop, decide what to run
     if runs == 'class':
         classification_plus_import(db_name, input_dir, output)
     elif runs == 'inf':
