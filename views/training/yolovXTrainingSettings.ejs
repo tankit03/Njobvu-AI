@@ -329,7 +329,7 @@
 					// Class selection helper buttons
 					var selectAllBtn = document.getElementById("selectAllClasses");
 					var deselectAllBtn = document.getElementById("deselectAllClasses");
-					var minClassLabelsInput = document.getElementById("minClassLabels");
+					var minClassLabelsInput = document.getElementById("minClassImages") || document.getElementById("minClassLabels");
 
 					// Unchecks any class checkbox whose image count is below the configured minimum,
 					// so Select All (or manually re-checking a box) can't bypass the clamp.
